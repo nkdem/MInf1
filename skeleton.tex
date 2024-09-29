@@ -81,52 +81,95 @@ Any acknowledgements go here.
 
 
 \chapter{Introduction}
+Hearing loss is a prevalent condition affecting as much as 
+430 million people - or 1 in 18 people. This is expected 
+to rise to 1 in 10 by 2050 \cite{DeafnessHearingLoss}.
+The most common treatment for hearing loss is the 
+provision of hearing technology - such as Hearing Aid (HA) or cochlear implants.
+There are many types of HAs, but the most common
+type is the behind-the-ear (BTE) hearing aid \cite{kochkinMarkeTrakVIIIConsumer2010}.
+However, HA users often report that they struggle to hear speech
+in noisy environments. For example, in a study by Kochkin \cite{kochkinMarkeTrakVIIIConsumer2010},
+42\% of HA users reported that wind noise was a significant issue for them.
+This project aims to evaluate the effectiveness of machine learning algorithms
+in prioritising the speech in various environments (such as windy environments).
 
-The preliminary material of your report should contain:
-\begin{itemize}
-\item
-The title page.
-\item
-An abstract page.
-\item
-Declaration of ethics and own work.
-\item
-Optionally an acknowledgements page.
-\item
-The table of contents.
-\end{itemize}
+Modern hearing aids now apply a wide range of techniques to achieve 
+better speech prioritisation. For wind noise reduction, this can be achieved 
+from mechanical solutions - product design to covers that reduce wind noise - to 
+signal processing techniques to compensate for mechanical limitations.
+However, current techniques are still not perfect as shown by the study from Kochkin \cite{kochkinMarkeTrakVIIIConsumer2010}.
 
-As in this example \texttt{skeleton.tex}, the above material should be
-included between:
-\begin{verbatim}
-\begin{preliminary}
-    ...
-\end{preliminary}
-\end{verbatim}
-This style file uses roman numeral page numbers for the preliminary material.
+Wind noise reduction and indeed, noise reduction in general, is a challenging problem
+when paired with speech. This is because you have 
+to strike a balance between reducing background noise and
+preserving speech. 
+Korhen's paper \cite{korhonenWindNoiseManagement2021} outlines 
+various techniques that could be used to reduce the wind noise in hearing aids -
+from modulation-based noise reduction algorithms (Wiener filtering),
+adaptive filtering algorithms, to machine learning techniques.
+The paper mentions that the the proposed ML technique:
+Long Short-Term Memory (LSTM) neural networks provided
+modest improvements in wind noise reduction, however, it did highlight
+that ML techniques may still have utility through further research 
+and careful algorithmic choices. 
 
-The main content of the dissertation, starting with the first chapter,
-starts with page~1. \emph{\textbf{The main content must not go beyond page~40.}}
+This project aims to pair the proposed machine learning techniques with
+signal processing techniques to evaluate the effectiveness of 
+speech prioritisation in noisy environments. The idea is to first 
+perform acoustic scene analysis (ASA) to classify the environment
+based on the audio signal. Afterwards, speech enhancement 
+techniques will be applied to the signal to prioritise speech.
+ASA can be done using a dataset of varying environments, and 
+using machine learning techniques to classify the environment.
 
-The report then contains a bibliography and any appendices, which may go beyond
-page~40. The appendices are only for any supporting material that's important to
-go on record. However, you cannot assume markers of dissertations will read them.
+In this project, we will be using a novel dataset proposed by Huwel et al. \cite{huwelHearingAidResearch2020b}.
+This dataset (called HEAR-DS) is unique because it is specially tailored for HA signal processing and contains
+various environments. Normally, voice activity detection (VAD) is used to
+detect speech, however, the dataset helpfully contains 
+labels which samples contain speech. This can be used 
+to implicitly train the machine learning model to classify the environment 
+and whether speech is present. Additionally, the paper presents an 
+elementary example of how the dataset can be used: to classify the environment -
+it showcases the use of a
+convolutional neural network (CNN) to classify the environment.
+This project will be extending the paper by actually using the dataset
+and comparing various machine learning techniques to evaluate the
+effectiveness of the proposed machine learning techniques. 
 
-You may not change the dissertation format (e.g., reduce the font size, change
-the margins, or reduce the line spacing from the default single spacing). Be
-careful if you copy-paste packages into your document preamble from elsewhere.
-Some \LaTeX{} packages, such as \texttt{fullpage} or \texttt{savetrees}, change
-the margins of your document. Do not include them!
+This project will investigate how recurrent neural networks (RNN) and 
+their variants, such as LSTMs, can be used to classify the environment.
+ Based on the environment classified, the system will then apply
+signal processing techniques to enhance the speech. 
+The project 
+however has to be mindful in its algorithmic choices - as the computational
+power required in HA is limited. Delay constraints are also
+important in HA, as the user needs to hear the speech in real-time.
+For example, so long as the speech production is no higher 
+than 30 milliseconds (ms), and ideally less than 20ms, the user
+is unaffected by the delay \cite{stoneTolerableHearingAid2002}.
+It is difficult to pinpoint the exact computational power of a HA
+due to the proprietary nature of the devices. However, a paper 
+from 2021 investigating techniques in VAD for hearing aids 
+quotes that it `rarely exceeds 5 million instructions per second (MIPS)` \cite{garcia-gomezLinearDetectorNeural2021}.
+Depending on the results, the project may also investigate other machine learning
+techniques such as the transformer architecture. 
 
-Over-length or incorrectly-formatted dissertations will not be accepted and you
-would have to modify your dissertation and resubmit. You cannot assume we will
-check your submission before the final deadline and if it requires resubmission
-after the deadline to conform to the page and style requirements you will be
-subject to the usual late penalties based on your final submission time.
+Thus, the evaluation plays a crucial role in this project. From
+objective measures such as the short-time objective intelligibility (STOI)
+and perceptual evaluation of speech quality (PESQ), to quantitative
+measures such as multiply-accumulate operations (MACs) and delay requirements or
+real time factor (RTF) i.e. how fast a system can compute a speech result. 
+The combination of these measures will provide a comprehensive evaluation
+of the proposed machine learning techniques.
 
-\section{Using Sections}
-
-Divide your chapters into sub-parts as appropriate.
+The project is predominantly aimed at the hearing aid industry. If successful, the project
+could advance the state-of-the-art techniques in hearing aids.
+Which in turn could improve the quality of life for hearing aid users.
+A secondary goal is to make hearing aid research more accessible to the 
+computer science community.
+The project also hopes to benefit other fields that deal with audio signal processing,
+such as mainstream wearables like headphones or microphones.
 
 \section{Citations}
 
@@ -143,10 +186,9 @@ and use {\tt {\textbackslash}citep} for a parenthetical citation:
 
 You may use any consistent reference style that you prefer, including ``[1]'' numerical citations. 
 
-\chapter{Your next chapter}
+\chapter{Background}
 
-A dissertation usually contains several chapters.
-
+% TODO: Add background information about the project
 \chapter{Conclusions}
 
 \section{Final Reminder}
