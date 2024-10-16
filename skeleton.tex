@@ -15,7 +15,7 @@
 
 \usepackage{microtype} % recommended, but you can remove if it causes problems
 \usepackage[square,numbers]{natbib} % recommended for citations
-\bibliographystyle{plainnat}
+\bibliographystyle{unsrtnat}
 
 \begin{document}
 \begin{preliminary}
@@ -34,12 +34,7 @@
 \date{\today}
 
 \abstract{
-This skeleton demonstrates how to use the \texttt{infthesis} style for
-undergraduate dissertations in the School of Informatics. It also emphasises the
-page limit, and that you must not deviate from the required style.
-The file \texttt{skeleton.tex} generates this document and should be used as a
-starting point for your thesis. Replace this abstract text with a concise
-summary of your report.
+TODO: Write Abstract
 }
 
 \maketitle
@@ -49,21 +44,21 @@ summary of your report.
    {\end{frontenv}\newpage}
 
 \begin{ethics}
-\textbf{Instructions:} \emph{Agree with your supervisor which
-statement you need to include. Then delete the statement that you are not using,
-and the instructions in italics.\\
-\textbf{Either complete and include this statement:}}\\ % DELETE THESE INSTRUCTIONS
-%
-% IF ETHICS APPROVAL WAS REQUIRED:
-This project obtained approval from the Informatics Research Ethics committee.\\
-Ethics application number: ???\\
-Date when approval was obtained: YYYY-MM-DD\\
-%
-\emph{[If the project required human participants, edit as appropriate, otherwise delete:]}\\ % DELETE THIS LINE
-The participants' information sheet and a consent form are included in the appendix.\\
-%
-% IF ETHICS APPROVAL WAS NOT REQUIRED:
-\textbf{\emph{Or include this statement:}}\\ % DELETE THIS LINE
+% \textbf{Instructions:} \emph{Agree with your supervisor which
+% statement you need to include. Then delete the statement that you are not using,
+% and the instructions in italics.\\
+% \textbf{Either complete and include this statement:}}\\ % DELETE THESE INSTRUCTIONS
+% %
+% % IF ETHICS APPROVAL WAS REQUIRED:
+% This project obtained approval from the Informatics Research Ethics committee.\\
+% Ethics application number: ???\\
+% Date when approval was obtained: YYYY-MM-DD\\
+% %
+% \emph{[If the project required human participants, edit as appropriate, otherwise delete:]}\\ % DELETE THIS LINE
+% The participants' information sheet and a consent form are included in the appendix.\\
+% %
+% % IF ETHICS APPROVAL WAS NOT REQUIRED:
+% \textbf{\emph{Or include this statement:}}\\ % DELETE THIS LINE
 This project was planned in accordance with the Informatics Research
 Ethics policy. It did not involve any aspects that required approval
 from the Informatics Research Ethics committee.
@@ -73,7 +68,7 @@ from the Informatics Research Ethics committee.
 
 
 \begin{acknowledgements}
-Any acknowledgements go here.
+TODO: Write Acknowledgement
 \end{acknowledgements}
 
 
@@ -182,53 +177,106 @@ The project also hopes to benefit other fields that deal with audio signal proce
 such as mainstream wearables like headphones or microphones.
 
 \chapter{Background}
-% TODO: Add background information about the project
-\chapter{Conclusions}
+% We will begin by briefly giving a high level overview of hearing loss, before discussing 
+% what the current treatment and future of hearing loss treatment looks like. We will 
+% end on the techniques used to enhance speechV
 
-\section{Final Reminder}
+\section{Hearing Loss}
+\subsection{Ear Anatomy}
+TODO
+\subsection{Congenital Hearing Loss}
+TODO
+\subsection{Exposure to Loud Noises}
+TODO
+\subsection{Ageing}
+TODO
 
-The body of your dissertation, before the references and any appendices,
-\emph{must} finish by page~40. The introduction, after preliminary material,
-should have started on page~1.
+\section{Hearing Loss Treatment}
+\subsection{Hearing Technology}
+As mentioned in the Introduction, the most common treatment for hearing loss 
+is the provision of hearing technology. It should be pointed out that there is an active area 
+of research into curing congenitial hearing loss - individuals who have been diagnosed with 
+a hearing loss since birth.
+\subsubsection{Hearing Aids}
+TODO
+Microphone info, the reason for multiple mics etc
+There is a surge into rechargable hearing aids.
+Smaller model = higher battery life 
+\subsubsection{Cohlear Implants}
+TODO
+\subsection{New Approaches to Treatment}
+\subsubsection{Gene-Based Therapy}
+Genitic mutations account for 70-75\% of congenital hearing loss, and with the advent 
+of gene-based therapy, it is not surprising to see that this avenue is explored with hearing loss. 
+However, besides it being an active area of research, it will not be applicable 
+to individuals that have 
 
-You may not change the dissertation format (e.g., reduce the font size, change
-the margins, or reduce the line spacing from the default single spacing). Be
-careful if you copy-paste packages into your document preamble from elsewhere.
-Some \LaTeX{} packages, such as \texttt{fullpage} or \texttt{savetrees}, change
-the margins of your document. Do not include them!
+\section{Acoustic Scene Analysis (ASA)}
+\subsection{Approach 1: Voice Activation Detection (VAD)}
+TODO: Write 
+\subsection{Approach 2: Machine Learning}
+TODO: Write
 
-Over-length or incorrectly-formatted dissertations will not be accepted and you
-would have to modify your dissertation and resubmit. You cannot assume we will
-check your submission before the final deadline and if it requires resubmission
-after the deadline to conform to the page and style requirements you will be
-subject to the usual late penalties based on your final submission time.
+
+\section{Speech Processing}
+\subsection{Waveform}
+TODO
+\subsection{Feature Engineering}
+
+\section{Related Work}
+HEAR-DS...
+
+
+ 
+
+
+
+% \chapter{Conclusions}
+
+% \section{Final Reminder}
+
+% The body of your dissertation, before the references and any appendices,
+% \emph{must} finish by page~40. The introduction, after preliminary material,
+% should have started on page~1.
+
+% You may not change the dissertation format (e.g., reduce the font size, change
+% the margins, or reduce the line spacing from the default single spacing). Be
+% careful if you copy-paste packages into your document preamble from elsewhere.
+% Some \LaTeX{} packages, such as \texttt{fullpage} or \texttt{savetrees}, change
+% the margins of your document. Do not include them!
+
+% Over-length or incorrectly-formatted dissertations will not be accepted and you
+% would have to modify your dissertation and resubmit. You cannot assume we will
+% check your submission before the final deadline and if it requires resubmission
+% after the deadline to conform to the page and style requirements you will be
+% subject to the usual late penalties based on your final submission time.
 
 \bibliography{mybibfile}
 
 
 % You may delete everything from \appendix up to \end{document} if you don't need it.
-\appendix
+% \appendix
 
-\chapter{First appendix}
+% \chapter{First appendix}
 
-\section{First section}
+% \section{First section}
 
-Any appendices, including any required ethics information, should be included
-after the references.
+% Any appendices, including any required ethics information, should be included
+% after the references.
 
-Markers do not have to consider appendices. Make sure that your contributions
-are made clear in the main body of the dissertation (within the page limit).
+% Markers do not have to consider appendices. Make sure that your contributions
+% are made clear in the main body of the dissertation (within the page limit).
 
-\chapter{Participants' information sheet}
+% \chapter{Participants' information sheet}
 
-If you had human participants, include key information that they were given in
-an appendix, and point to it from the ethics declaration.
+% If you had human participants, include key information that they were given in
+% an appendix, and point to it from the ethics declaration.
 
-\chapter{Participants' consent form}
+% \chapter{Participants' consent form}
 
-If you had human participants, include information about how consent was
-gathered in an appendix, and point to it from the ethics declaration.
-This information is often a copy of a consent form.
+% If you had human participants, include information about how consent was
+% gathered in an appendix, and point to it from the ethics declaration.
+% This information is often a copy of a consent form.
 
 
 \end{document}
