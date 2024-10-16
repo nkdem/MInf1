@@ -14,7 +14,8 @@
 % you should catch most accidental changes of page layout though.
 
 \usepackage{microtype} % recommended, but you can remove if it causes problems
-\usepackage[round]{natbib} % recommended for citations
+\usepackage[square,numbers]{natbib} % recommended for citations
+\bibliographystyle{plainnat}
 
 \begin{document}
 \begin{preliminary}
@@ -81,15 +82,16 @@ Any acknowledgements go here.
 
 
 \chapter{Introduction}
+\section{Motivations}
 Hearing loss is a prevalent condition affecting as much as 
 430 million people - or 1 in 18 people. This is expected 
-to rise to 1 in 10 by 2050 \cite{DeafnessHearingLoss}.
+to rise to 1 in 10 by 2050 \cite{WHO2024deafness}.
 The most common treatment for hearing loss is the 
 provision of hearing technology - such as Hearing Aid (HA) or cochlear implants.
 There are many types of HAs, but the most common
-type is the behind-the-ear (BTE) hearing aid \cite{kochkinMarkeTrakVIIIConsumer2010}.
+type is the behind-the-ear (BTE) hearing aid \cite{Kochkin2010MarkeTrak8}.
 However, HA users often report that they struggle to hear speech
-in noisy environments. For example, in a study by Kochkin \cite{kochkinMarkeTrakVIIIConsumer2010},
+in noisy environments. For example, in a study by Kochkin \cite{Kochkin2010MarkeTrak8},
 42\% of HA users reported that wind noise was a significant issue for them.
 This project aims to evaluate the effectiveness of machine learning algorithms
 in prioritising the speech in various environments (such as windy environments).
@@ -98,13 +100,13 @@ Modern hearing aids now apply a wide range of techniques to achieve
 better speech prioritisation. For wind noise reduction, this can be achieved 
 from mechanical solutions - product design to covers that reduce wind noise - to 
 signal processing techniques to compensate for mechanical limitations.
-However, current techniques are still not perfect as shown by the study from Kochkin \cite{kochkinMarkeTrakVIIIConsumer2010}.
+However, current techniques are still not perfect as shown by the study from Kochkin.
 
 Wind noise reduction and indeed, noise reduction in general, is a challenging problem
 when paired with speech. This is because you have 
 to strike a balance between reducing background noise and
 preserving speech. 
-Korhen's paper \cite{korhonenWindNoiseManagement2021} outlines 
+Korhen's paper \cite{Korhonen2021WindNoise} outlines 
 various techniques that could be used to reduce the wind noise in hearing aids -
 from modulation-based noise reduction algorithms (Wiener filtering),
 adaptive filtering algorithms, to machine learning techniques.
@@ -123,7 +125,7 @@ techniques will be applied to the signal to prioritise speech.
 ASA can be done using a dataset of varying environments, and 
 using machine learning techniques to classify the environment.
 
-In this project, we will be using a novel dataset proposed by Huwel et al. \cite{huwelHearingAidResearch2020b}.
+In this project, we will be using a novel dataset proposed by Huwel et al. \cite{Huwel2020HearDS}
 This dataset (called HEAR-DS) is unique because it is specially tailored for HA signal processing and contains
 various environments. Normally, voice activity detection (VAD) is used to
 detect speech, however, the dataset helpfully contains 
@@ -133,7 +135,7 @@ and whether speech is present. Additionally, the paper presents an
 elementary example of how the dataset can be used: to classify the environment -
 it showcases the use of a
 convolutional neural network (CNN) to classify the environment.
-This project will be extending the paper by actually using the dataset
+This project will be extending the paper by actually using the dataset 
 and comparing various machine learning techniques to evaluate the
 effectiveness of the proposed machine learning techniques. 
 
@@ -143,25 +145,33 @@ their variants, such as LSTMs, can be used to classify the environment.
 signal processing techniques to enhance the speech. 
 The project 
 however has to be mindful in its algorithmic choices - as the computational
-power required in HA is limited. Delay constraints are also
+power required in HA is limited. It is difficult to pinpoint the exact computational power of a HA
+due to the proprietary nature of the devices. In August 2024,
+Phonak (Sonova Holding AG) released a new HA which is their first AI 
+equipped HA. The device is said to be capable of handling 7,700 Million 
+Operations Per Second to accommmodate its neural network with 4.5 million parameters.  Contrast this with a paper 
+from 2021 investigating techniques in VAD for hearing aids 
+quotes that it `rarely exceeds 5 million instructions per second (MIPS)` \cite{Gomez2021MIPS}
+Moreover, Apple's release of a FDA approved hearing aid in which was previously a mainstream earphone wearable,
+Apple Airpods, also shows that there's more interest in this area.
+So suffice to say, the computational power of hearing aids is accelerating 
+and is most likely going to continue to grow. 
+
+Delay constraints are also
 important in HA, as the user needs to hear the speech in real-time.
 For example, so long as the speech production is no higher 
 than 30 milliseconds (ms), and ideally less than 20ms, the user
-is unaffected by the delay \cite{stoneTolerableHearingAid2002}.
-It is difficult to pinpoint the exact computational power of a HA
-due to the proprietary nature of the devices. However, a paper 
-from 2021 investigating techniques in VAD for hearing aids 
-quotes that it `rarely exceeds 5 million instructions per second (MIPS)` \cite{garcia-gomezLinearDetectorNeural2021}.
-Depending on the results, the project may also investigate other machine learning
-techniques such as the transformer architecture. 
+is unaffected by the delay \cite{Stone2002Delays}.
 
-Thus, the evaluation plays a crucial role in this project. From
-objective measures such as the short-time objective intelligibility (STOI)
-and perceptual evaluation of speech quality (PESQ), to quantitative
-measures such as multiply-accumulate operations (MACs) and delay requirements or
-real time factor (RTF) i.e. how fast a system can compute a speech result. 
-The combination of these measures will provide a comprehensive evaluation
-of the proposed machine learning techniques.
+
+% Thus, the evaluation plays a crucial role in this project. From
+% objective measures such as the short-time objective intelligibility (STOI)
+% and perceptual evaluation of speech quality (PESQ), to quantitative
+% measures such as multiply-accumulate operations (MACs) and delay requirements or
+% real time factor (RTF) i.e. how fast a system can compute a speech result. 
+% The combination of these measures will provide a comprehensive evaluation
+% of the proposed machine learning techniques.
+%
 
 The project is predominantly aimed at the hearing aid industry. If successful, the project
 could advance the state-of-the-art techniques in hearing aids.
@@ -171,23 +181,7 @@ computer science community.
 The project also hopes to benefit other fields that deal with audio signal processing,
 such as mainstream wearables like headphones or microphones.
 
-\section{Citations}
-
-When citing work using author names, your sentences should still read
-as correct English if any parts in parenthesis are removed.
-Use {\tt {\textbackslash}citet} when citing the name as text that's part of your sentence: 
-\begin{quote}
-  We follow the method of \citet{P1}.
-\end{quote}
-and use {\tt {\textbackslash}citep} for a parenthetical citation:
-\begin{quote}
-  It's possible to learn first-order Horn sequences from entailment \citep{P2}.
-\end{quote}
-
-You may use any consistent reference style that you prefer, including ``[1]'' numerical citations. 
-
 \chapter{Background}
-
 % TODO: Add background information about the project
 \chapter{Conclusions}
 
@@ -209,8 +203,6 @@ check your submission before the final deadline and if it requires resubmission
 after the deadline to conform to the page and style requirements you will be
 subject to the usual late penalties based on your final submission time.
 
-% \bibliographystyle{plain}
-\bibliographystyle{plainnat}
 \bibliography{mybibfile}
 
 
