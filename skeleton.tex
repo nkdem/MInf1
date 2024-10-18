@@ -271,13 +271,16 @@ Moreover, hearing loss may occur in one ear (unilateral) or in both ears (binaur
 \subsection{Hearing Technology}
 As mentioned in the Introduction, the most common treatment for hearing loss 
 is the provision of hearing technology. There are two common approaches 
-to fitting of hearing technology. The equipment of a Hearing Aid (HA) 
+to fitting of hearing technology: the equipment of a Hearing Aid (HA) 
 or the fitting of a Cohlear Implant. There are similarities in the 
 two, and both can be used to fit users that are experiencing profound hearing loss, 
 though typically cohlear implants are only considered if the user is experiencing 
 a severe hearing loss or further. Another consideration is cost,
 the fitting of a hearing aid is a lower barrier of entry since there 
-does not need to be any surgical operations done. 
+does not need to be any surgical operations done. It is enough 
+to know for now that the devices will contain multiple microphones, and 
+a dedicated chip which does further processing on the sound depending 
+on the environment the user is faced with.
 % It should be pointed out that there is an active area 
 % of research into curing congenitial hearing loss - individuals who have been diagnosed with 
 % a hearing loss since birth.
@@ -295,8 +298,39 @@ does not need to be any surgical operations done.
 % However, besides it being an active area of research, it will not be applicable 
 % to individuals that have 
 
+\section{Speech Processing Techniques}
+\subsubsection{Digitisation}
+To be able to perform speech processing on a device containing a chip/processor (such as a HA), requires us 
+to have some sort of digital representation of the sound wave. A waveform is just that, a digital representation 
+of the sound we hear. Digital devices can't have infinite precision, so the signal produced by the sound will 
+be divided into discrete samples, and the rate at which this occurs is known as the sampling rate. Additionally,
+the precision of the amplitude of the signal will be quantized into discrete numbers, and the precision is 
+dictated by the bit depth (or the quantization rate).
+
+How do we choose these two values, you may ask? The sampling 
+rate will vary between different speech tasks, and part of the decision 
+is dictated by a theorem known as the Nyquist-Shannon Sampling Theorem, 
+which states that the sampling rate should be at least twice the 
+highest frequency range present in the signal. In other words, 
+if your speech processing task involves working with frequencies 
+of 8KHz, then the sampling rate should be at least 16KHz.
+As for the selection of an appropriate bit depth value, 
+this depends on the need of representing a wide dynamic range 
+of air pressure in a speech signal. Typically, it is 
+common to use 16 bits as it can represent an amplitude range of 96.34dB.
+
+\subsubsection{Engineered Acoustic Features}
+The prevalance of engineering acoustic features in previous work relating to my project warrants a high level 
+overview of this concept to better understand its usage... 
+TODO: Will write this in more detail once I cover this in the Speech Processing course (Week 7-8).
+
 \section{Acoustic Scene Analysis (ASA)}
-Acoustic Scene Analysis (ASA) is the process of 
+Acoustic Scene Analysis (ASA) is the process of classifying the environment of an audio sample. 
+
+
+
+This is 
+We will talk about
 TODO: write
 
 \section{Voice Activity Detection (VAD)}
