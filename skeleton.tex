@@ -122,7 +122,7 @@ techniques will be applied to the signal to prioritise speech.
 ASA can be done using a dataset of varying environments, and 
 using machine learning techniques to classify the environment.
 
-In this project, we will be using a novel dataset proposed by Huwel et al. \cite{Huwel2020HearDS}
+In this project, we will be using a novel dataset proposed by \citet{Huwel2020HearDS}
 This dataset (called HEAR-DS) is unique because it is specially tailored for HA signal processing and contains
 various environments. Normally, voice activity detection (VAD) is used to
 detect speech, however, the dataset helpfully contains 
@@ -146,7 +146,7 @@ power required in HA is limited. It is difficult to pinpoint the exact computati
 due to the proprietary nature of the devices. In August 2024,
 Phonak (Sonova Holding AG) released a new HA which is their first AI 
 equipped HA. The device is said to be capable of handling 7,700 Million 
-Operations Per Second to accommmodate its neural network with 4.5 million parameters [TODO: Cite].  Contrast this with a paper 
+Operations Per Second to accommmodate its neural network with 4.5 million parameters \cite{Hasemann2024PhonakSphere}.  Contrast this with a paper 
 from 2021 investigating techniques in VAD for hearing aids 
 quotes that it `rarely exceeds 5 million instructions per second (MIPS)` \cite{Gomez2021MIPS}
 Moreover, Apple's release of a FDA approved hearing aid in which was previously a mainstream earphone wearable,
@@ -261,7 +261,7 @@ so the oscillations that pass through it get coverted to neural impulses and tra
 As we have seen, the hair cells play a major role in allowing humans to register sound. Unfortunately,
 it is the major cause of hearing loss since those hair cells are suspectible to damage.
 The cause of hair cell loss is complex, since it could be due to many factors such as 
-genetic abnormalities, infection, diseases or extrinistic factors such as exposure to loud noises.
+genetic abnormalities (congenital hearing loss), infection, diseases or extrinistic factors such as exposure to loud noises.
 It can also occur due to aging, which could be due to the reasons mentioned above, but also 
 could be triggered due to age related hearing loss genes. To make matters worse, hair cell loss is unrecoverable in humans \cite{Furness2015HairCell}.
 Hearing loss is a spectrum, and varies from mild (26-40dB loss), moderate (41-60dB loss), severe (61-80dB loss) to profound($>80$dB loss) \cite{Nieman2020HearingLoss}.
@@ -277,10 +277,11 @@ two, and both can be used to fit users that are experiencing profound hearing lo
 though typically cohlear implants are only considered if the user is experiencing 
 a severe hearing loss or further. Another consideration is cost,
 the fitting of a hearing aid is a lower barrier of entry since there 
-does not need to be any surgical operations done. It is enough 
-to know for now that the devices will contain multiple microphones, and 
-a dedicated chip which does further processing on the sound depending 
-on the environment the user is faced with.
+does not need to be any surgical operations done. 
+% It is enough 
+% to know for now that the devices will contain multiple microphones, and 
+% a dedicated chip which does further processing on the sound depending 
+% on the environment the user is faced with.
 % It should be pointed out that there is an active area 
 % of research into curing congenitial hearing loss - individuals who have been diagnosed with 
 % a hearing loss since birth.
@@ -299,7 +300,7 @@ on the environment the user is faced with.
 % to individuals that have 
 
 \section{Speech Processing Techniques}
-\subsubsection{Digitisation}
+\subsection{Digitisation}
 To be able to perform speech processing on a device containing a chip/processor (such as a HA), requires us 
 to have some sort of digital representation of the sound wave. A waveform is just that, a digital representation 
 of the sound we hear. Digital devices can't have infinite precision, so the signal produced by the sound will 
@@ -317,32 +318,47 @@ of 8KHz, then the sampling rate should be at least 16KHz.
 As for the selection of an appropriate bit depth value, 
 this depends on the need of representing a wide dynamic range 
 of air pressure in a speech signal. Typically, it is 
-common to use 16 bits as it can represent an amplitude range of 96.34dB.
+common to use 16 bits as it can represent an amplitude range of 96dB.
 
-\subsubsection{Engineered Acoustic Features}
-The prevalance of engineering acoustic features in previous work relating to my project warrants a high level 
-overview of this concept to better understand its usage... 
+\subsection{Engineered Acoustic Features}
+The prevalance of engineering acoustic features in previous work relating to my project and speech processing in general,
+warrants a high level overview of this concept to better understand its usage. 
+
 TODO: Will write this in more detail once I cover this in the Speech Processing course (Week 7-8).
 
-\section{Acoustic Scene Analysis (ASA)}
-Acoustic Scene Analysis (ASA) is the process of classifying the environment of an audio sample. 
+% \subsection{Acoustic Scene Analysis (ASA)}
+% The first step will be 
 
+% \subsection{Blind Source Seperation}
 
+% Blind source seperation 
 
-This is 
-We will talk about
-TODO: write
-
-\section{Voice Activity Detection (VAD)}
-TODO:
-
-\section{Speech Enhancement}
 
 \section{Related Work}
-HEAR-DS...
+As this project will chain two algorithms—Acoustic Speech Analysis (ASA) and Speech Prioritization, which is also referred to as Blind Source Separation in some literature—we will cover each in separate sections.
+We will discuss the work that has been done and my plans for further development.
+
+\subsection{Acoustic Scene Analysis (ASA)}
+Acoustic Scene Analysis is the process of classifying the scene (environment) from an audio stream. For this project 
+we will be using a supervised machine learning model for ASA. So, we need 
+a audio dataset that contains useful metadata on the recording such as the environment it is in.
+This project aims to use the HEAR-DS dataset presented by \citet{Huwel2020HearDS}. According to the researchers, 
+the dataset came to fruition because existing acoustic scene classification databases are inappropriate for 
+HA processing. We will go into more detail of the dataset in Chapter X [TODO: reference correclty once done]. 
+But it is enough to know that the dataset is classified in an environment of which it is subcategorised as 
+either containing speech only, background only or speech \& background (both). To prevent machine learning 
+models from overfitting and to increase the diversity of situations, each environment enforces a minimum of three recording situations (REC-SITs) i.e.
+there must be at least three different locations for the recordings. The researchers presented the applicability 
+of this dataset by performing a series of classification experiments using various Convolutional Neural Networks (CNN) of differing sizes.
+This is where the paper could be more clear on the design decisions of the CNN, esepcially because the accuracy of the classification of the models 
+can vary as high as 20\%. This project hopes to reproduce the results, and explain the high variability in the accuracy and how those can be circumvented,
+because the high variability suggests that the random initialisation of weights during training is the primary factor influencing the model performance.
+[To Hao: This is what I understood from your interpretation in the discussion of this paper last Friday, did I understand you correctly?].
+% For the recordings labeled as being in environments containing both speech and background noise, the researchers decided against recording the samples in situ.
+% Instead they took the speech data from CHiME 
+\subsection{Speech Prioritisation}
 
 
- 
 
 
 
