@@ -52,9 +52,6 @@ class HEARDS(Dataset):
                     # Create the full file path
                     file_path = os.path.join(root, file)
 
-                    # Add the file path and its corresponding label (environment) to the list
-                    # audio_files.append((file_path, environment))
-
                     # Log if the file is a left or right channel
                     if '_L' in file:
                         logger.debug(f'Found left channel file: {file_path}')
@@ -132,6 +129,12 @@ class HEARDS(Dataset):
 
             return logmel_mean
     
+    """
+    Args:
+        idx (int): Index of the audio file
+    Returns:
+        MFCC features of the audio file at the given index
+    """
     def get_MFCC(self, idx):
         pairs, recsit, label = self.audio_files[idx]
         return self._get_mfcc(pairs[0], pairs[1])
