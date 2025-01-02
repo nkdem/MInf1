@@ -1,4 +1,5 @@
 import os
+import time
 import torch
 import torch.nn as nn
 import torch.optim.sgd
@@ -9,6 +10,7 @@ from tqdm import tqdm
 
 from constants import MODELS
 from hear_ds import HEARDS
+from helpers import get_truly_random_seed_through_os, seed_everything
 from models import AudioCNN 
 
 logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
@@ -22,8 +24,12 @@ def loss_fn(weights, outputs, targets):
     return nn.CrossEntropyLoss(weights)(outputs, targets)
 
 if __name__ == '__main__':
+
+    number = get_truly_random_seed_through_os()
+    seed_everything(number)
+    logger.info(f"Random seed: {number}")
+
     dataset = HEARDS('/Users/nkdem/Downloads/HEAR-DS')
-    # dataset.split_dataset(size=0.1)
     dataset.split_dataset()
 
     train_data = dataset.get_train_data()
@@ -32,8 +38,8 @@ if __name__ == '__main__':
     train_dataset = HEARDS('/Users/nkdem/Downloads/HEAR-DS', train_data)
     test_dataset = HEARDS('/Users/nkdem/Downloads/HEAR-DS', test_data)
 
-    train_loader = DataLoader(train_dataset, batch_size=48, shuffle=True)
-    test_loader = DataLoader(test_dataset, batch_size=48, shuffle=False)
+    train_loader = DataLoader(train_dataset, batch_size=64, shuffle=True)
+    test_loader = DataLoader(test_dataset, batch_size=64, shuffle=False)
 
     num_of_classes = dataset.get_num_classes()
     models_to_train = MODELS
@@ -50,7 +56,7 @@ if __name__ == '__main__':
         optimiser = torch.optim.SGD(model.parameters(), lr=initial_lr)
 
         learning_rates = [0.05, 0.01, 0.001, 0.0005, 0.0002, 0.0001]
-        lr_change_epoch = 5
+        lr_change_epoch = 40
 
         DIR_TO_SAVE = model_name
 
@@ -67,7 +73,7 @@ if __name__ == '__main__':
             for int_label, label in dataset.int_to_label.items():
                 f.write(f'{int_label} {label}\n')
         
-        num_epochs = 5 
+        num_epochs = 280
         for epoch in range(num_epochs):
             if epoch > 0 and epoch % lr_change_epoch == 0:
                 if (epoch // lr_change_epoch) - 1 < len(learning_rates):

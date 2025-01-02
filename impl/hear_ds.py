@@ -135,11 +135,10 @@ class HEARDS(Dataset):
 
         return logmel_mean
     
-    def split_dataset(self, random_seed=42, size=1):
+    def split_dataset(self, size=1):
         self.train_indices = []
         self.test_indices = []
         envs = {}
-        random.seed(random_seed)
         for i, (pairs, recsit, label) in enumerate(self.audio_files):
             if label not in envs:
                 envs[label] = {}
