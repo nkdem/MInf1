@@ -6,6 +6,9 @@ from constants import MODELS
 from hear_ds import HEARDS
 import logging
 from torch.utils.data import DataLoader
+import matplotlib.pyplot as plt
+import numpy as np
+import seaborn as sns
 
 from models import AudioCNN
 
@@ -38,7 +41,7 @@ if __name__ == '__main__':
                 if len(test_data) != len(test_files):
                     logger.warning("Some test data is missing")
                 
-                logger.info(f"No. of test data: {len(test_data)}")
+                logger.debug(f"No. of test data: {len(test_data)}")
 
                 # read int_to_label mapping
                 DIR = os.path.join(os.getcwd(), model_name, 'int_to_label.txt')
@@ -46,7 +49,7 @@ if __name__ == '__main__':
                     int_to_label = f.readlines()
                     int_to_label = [line.strip().split() for line in int_to_label]
                     int_to_label = {int(line[0]): line[1] for line in int_to_label}
-                    logger.info(f"int_to_label mapping: {int_to_label}")
+                    logger.debug(f"int_to_label mapping: {int_to_label}")
 
 
                 test_dataset = HEARDS('/Users/nkdem/Downloads/HEAR-DS', test_data, int_to_label)
@@ -54,6 +57,9 @@ if __name__ == '__main__':
 
                 correct = 0 
                 total = 0
+                
+                # store confusion matrix
+                confusion_matrix = torch.zeros(num_classes, num_classes).to(device)
 
                 logger.info("Loading model")
                 model = AudioCNN(num_classes, cnn1_channels, cnn2_channels, fc_neurons).to(device)
@@ -70,9 +76,32 @@ if __name__ == '__main__':
                         _, predicted = torch.max(outputs, 1)
                         total += labels.size(0)
                         correct += (predicted.to(device) == labels).sum().item()
+                        for t, p in zip(labels.view(-1), predicted.view(-1)):
+                            confusion_matrix[t.long(), p.long()] += 1
                 accuracy = correct / total
-                logger.info(f"Accuracy: {accuracy}")
+                accuracy = accuracy * 100
+                logger.info(f"Accuracy: {accuracy}%")
             logger.info(f"Testing model {model_name} is done")
-                
+            
+            # plot confusion matrix
+# plot confusion matrix
+            confusion_matrix = confusion_matrix.cpu().numpy()
+            plt.figure(figsize=(10, 10))
+
+            # Create the heatmap with centered annotations
+            sns.heatmap(confusion_matrix, annot=True, fmt='g', cmap='Blues', 
+                        annot_kws={"size": 12, "va": "center", "ha": "center"})  # Adjust the size and alignment
+
+            # Set x and y ticks before saving the figure
+            plt.xlabel('Predicted label')
+            plt.ylabel('True label')
+            plt.xticks(np.arange(num_classes) + 0.5, [int_to_label[i] for i in range(num_classes)], rotation=90)  # Shift x ticks
+            plt.yticks(np.arange(num_classes) + 0.5, [int_to_label[i] for i in range(num_classes)], rotation=0)  # Shift y ticks
+            plt.title(f"Confusion matrix of {model_name} (Accuracy: {accuracy:.2f}%)")
+
+            # Save the figure after setting the ticks
+            plt.savefig(f"{model_name}/confusion_matrix.png")
+            plt.close() 
+
         else:
             logger.warning(f"Model {model_name} does not exist")
