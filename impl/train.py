@@ -1,3 +1,4 @@
+import math
 import os
 import time
 import torch
@@ -23,7 +24,7 @@ logger.info(f"Using device: {device}")
 def loss_fn(weights, outputs, targets):
     return nn.CrossEntropyLoss(weights)(outputs, targets)
 
-def train(base_dir):
+def train(base_dir,num_epochs, batch_size, learning_rates = [0.05, 0.01, 0.001, 0.0005, 0.0002, 0.0001]):
     number = get_truly_random_seed_through_os()
     seed_everything(number)
     logger.info(f"Random seed: {number}")
@@ -35,10 +36,8 @@ def train(base_dir):
     test_data = dataset.get_test_data()
 
     train_dataset = HEARDS('/Users/nkdem/Downloads/HEAR-DS', train_data)
-    test_dataset = HEARDS('/Users/nkdem/Downloads/HEAR-DS', test_data)
 
-    train_loader = DataLoader(train_dataset, batch_size=64, shuffle=True)
-    test_loader = DataLoader(test_dataset, batch_size=64, shuffle=False)
+    train_loader = DataLoader(train_dataset, batch_size=batch_size, shuffle=True)
 
     num_of_classes = dataset.get_num_classes()
     models_to_train = MODELS
@@ -51,11 +50,10 @@ def train(base_dir):
             os.makedirs(os.path.join(base_dir, model_name))
     for model_name, (cnn1_channels, cnn2_channels, fc_neurons) in models_to_train.items():
         model = AudioCNN(num_of_classes, cnn1_channels, cnn2_channels, fc_neurons).to(device)
-        initial_lr = 0.05
+        initial_lr = learning_rates[0]
         optimiser = torch.optim.SGD(model.parameters(), lr=initial_lr)
 
-        learning_rates = [0.05, 0.01, 0.001, 0.0005, 0.0002, 0.0001]
-        lr_change_epoch = 30
+        lr_change_epoch = math.ceil(num_epochs / len(learning_rates) + 1)
 
         DIR_TO_SAVE = os.path.join(base_dir, model_name)
 
@@ -67,12 +65,21 @@ def train(base_dir):
             for audio_file in test_data:
                 f.write(f'{audio_file[0]}\n')
 
+        # metadata
+        with open(f'{DIR_TO_SAVE}/metadata.txt', 'w') as f:
+            f.write(f'Number of classes: {num_of_classes}\n')
+            f.write(f'Number of epochs: {num_epochs}\n')
+            f.write(f'Initial learning rate: {initial_lr}\n')
+            f.write(f'Learning rate change epoch: {lr_change_epoch}\n')
+            f.write(f'Learning rates: {learning_rates}\n')
+            f.write(f'Weights: {weights}\n')
+            f.write(f'Model parameters: {model}\n')
+
         # save the int_to_label mapping
         with open(f'{DIR_TO_SAVE}/int_to_label.txt', 'w') as f:
             for int_label, label in dataset.int_to_label.items():
                 f.write(f'{int_label} {label}\n')
         
-        num_epochs = 210
         for epoch in range(num_epochs):
             if epoch > 0 and epoch % lr_change_epoch == 0:
                 if (epoch // lr_change_epoch) - 1 < len(learning_rates):
