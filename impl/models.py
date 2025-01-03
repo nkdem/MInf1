@@ -29,7 +29,7 @@ class AudioCNN(nn.Module):
             nn.Linear(fc_neurons, num_classes),  # Final output layer
             nn.Softmax(dim=1)
         )
-        self._initialize_weights()
+        # self._initialize_weights()
 
     def _initialize_weights(self):
         for m in self.modules():

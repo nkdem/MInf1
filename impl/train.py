@@ -49,11 +49,16 @@ def train(base_dir,num_epochs, batch_size, learning_rates = [0.05, 0.01, 0.001, 
         if not os.path.exists(os.path.join(base_dir, model_name)):
             os.makedirs(os.path.join(base_dir, model_name))
     for model_name, (cnn1_channels, cnn2_channels, fc_neurons) in models_to_train.items():
+        # store the losses at each epoch
+        losses = []
+        # store how long it took to train the model (get start time)
+        start_time = time.time()
+
         model = AudioCNN(num_of_classes, cnn1_channels, cnn2_channels, fc_neurons).to(device)
         initial_lr = learning_rates[0]
         optimiser = torch.optim.SGD(model.parameters(), lr=initial_lr)
 
-        lr_change_epoch = math.ceil(num_epochs / len(learning_rates) + 1)
+        lr_change_epoch = math.ceil(num_epochs / (len(learning_rates) + 1))
 
         DIR_TO_SAVE = os.path.join(base_dir, model_name)
 
@@ -103,7 +108,15 @@ def train(base_dir,num_epochs, batch_size, learning_rates = [0.05, 0.01, 0.001, 
 
                 running_loss += loss.item()
             print(f"Training loss: {running_loss / len(train_loader)}")
+            losses.append(running_loss / len(train_loader))
 
 
+        end = time.time()
         torch.save(model.state_dict(), f'{DIR_TO_SAVE}/model.pth')
+        # save losses
+        with open(f'{DIR_TO_SAVE}/losses.txt', 'w') as f:
+            for loss in losses:
+                f.write(f'{loss}\n')
+        with open(f'{DIR_TO_SAVE}/duration.txt', 'w') as f:
+            f.write(f'{end - start_time}\n')
         print(f"Model {model_name} saved")
