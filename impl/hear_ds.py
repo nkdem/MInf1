@@ -101,7 +101,7 @@ class HEARDS(Dataset):
         feature_file = os.path.join(self.feature_dir, f'{basename}.pt')
         if os.path.exists(feature_file):
             # logger.debug(f'Loading saved MFCC for {basename} and saving to cache')
-            self.feature_cache[cache_key] = torch.load(feature_file)
+            self.feature_cache[cache_key] = torch.load(feature_file, weights_only=True)
             return self.feature_cache[cache_key]
         
         logger.info(f'Computing MFCC for {basename}')

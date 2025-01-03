@@ -23,8 +23,7 @@ logger.info(f"Using device: {device}")
 def loss_fn(weights, outputs, targets):
     return nn.CrossEntropyLoss(weights)(outputs, targets)
 
-if __name__ == '__main__':
-
+def train(base_dir):
     number = get_truly_random_seed_through_os()
     seed_everything(number)
     logger.info(f"Random seed: {number}")
@@ -48,17 +47,17 @@ if __name__ == '__main__':
 
     # create directory to save the model
     for model_name, (cnn1_channels, cnn2_channels, fc_neurons) in models_to_train.items():
-        if not os.path.exists(model_name):
-            os.makedirs(model_name)
+        if not os.path.exists(os.path.join(base_dir, model_name)):
+            os.makedirs(os.path.join(base_dir, model_name))
     for model_name, (cnn1_channels, cnn2_channels, fc_neurons) in models_to_train.items():
         model = AudioCNN(num_of_classes, cnn1_channels, cnn2_channels, fc_neurons).to(device)
         initial_lr = 0.05
         optimiser = torch.optim.SGD(model.parameters(), lr=initial_lr)
 
         learning_rates = [0.05, 0.01, 0.001, 0.0005, 0.0002, 0.0001]
-        lr_change_epoch = 40
+        lr_change_epoch = 30
 
-        DIR_TO_SAVE = model_name
+        DIR_TO_SAVE = os.path.join(base_dir, model_name)
 
         # save the paths of audio files used for training and testing
         with open(f'{DIR_TO_SAVE}/train_files.txt', 'w') as f:
@@ -73,7 +72,7 @@ if __name__ == '__main__':
             for int_label, label in dataset.int_to_label.items():
                 f.write(f'{int_label} {label}\n')
         
-        num_epochs = 280
+        num_epochs = 210
         for epoch in range(num_epochs):
             if epoch > 0 and epoch % lr_change_epoch == 0:
                 if (epoch // lr_change_epoch) - 1 < len(learning_rates):
@@ -101,6 +100,3 @@ if __name__ == '__main__':
 
         torch.save(model.state_dict(), f'{DIR_TO_SAVE}/model.pth')
         print(f"Model {model_name} saved")
-
-                
-
