@@ -57,6 +57,10 @@ class HEARDS(Dataset):
 
                     if relative_diff == 3:
                         environment += '_speech'
+                        # get SNR 
+                        SNR = root_split[-1]
+                        if SNR != '0':
+                            continue
                     recsit = file.split('_')[1]  # Assuming RECSIT is extracted from the filename
 
                     file_path = os.path.join(root, file)

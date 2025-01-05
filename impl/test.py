@@ -17,35 +17,62 @@ logger = logging.getLogger(__name__)
 device = torch.device("mps" if torch.backends.mps.is_available() else ("cuda" if torch.cuda.is_available() else "cpu"))
 logger.info(f"Using device: {device}")
 
-def test(dataset: HEARDS, base_dir,model_name, cnn1_channels, cnn2_channels, fc_neurons):
+def test(dataset: HEARDS, base_dir, model_name, cnn1_channels, cnn2_channels, fc_neurons, samples_per_class=None):
+    """
+    Test the model on the dataset.
+    
+    Args:
+        dataset (HEARDS): The dataset object
+        base_dir (str): Base directory path
+        model_name (str): Name of the model
+        cnn1_channels (int): Number of channels in first CNN layer
+        cnn2_channels (int): Number of channels in second CNN layer
+        fc_neurons (int): Number of neurons in fully connected layer
+        samples_per_class (int, optional): Number of samples to test per class. 
+                                         If None, uses all available samples.
+    """
     num_classes = dataset.get_num_classes()
     DIR = os.path.join(base_dir)
     if os.path.exists(DIR):
         logger.info(f"Testing model {model_name}")
         logger.info(f"Model parameters: {cnn1_channels}, {cnn2_channels}, {fc_neurons}")
+        logger.info(f"Samples per class: {'all' if samples_per_class is None else samples_per_class}")
         logger.info("Reading test data")
+        
         with open(os.path.join(DIR, 'test_files.txt'), 'r') as f:
             test_files = f.readlines()
             test_files = [line.strip().split() for line in test_files]
             test_files = [line[0][2:-2] for line in test_files]
-            test_data = []
-            for i in tqdm(range(len(dataset)), desc="Extracting test data"):
-                audio_file = dataset.get_audio_file(i)
-                pair = audio_file[0]
-                if pair[0] in test_files:
-                    test_data.append(audio_file)
-            if len(test_data) != len(test_files):
-                logger.warning("Some test data is missing")
             
-            logger.debug(f"No. of test data: {len(test_data)}")
-
             # read int_to_label mapping
             with open(os.path.join(DIR, 'int_to_label.txt'), 'r') as f:
                 int_to_label = f.readlines()
                 int_to_label = [line.strip().split() for line in int_to_label]
                 int_to_label = {int(line[0]): line[1] for line in int_to_label}
                 logger.debug(f"int_to_label mapping: {int_to_label}")
+            label_to_int = {v: k for k, v in int_to_label.items()}
 
+            # Initialize counters for each class
+            class_counts = {i: 0 for i in range(num_classes)}
+            test_data = []
+            
+            # Collect samples
+            for i in tqdm(range(len(dataset)), desc="Extracting test data"):
+                audio_file = dataset.get_audio_file(i)
+                pair = audio_file[0]
+                label = label_to_int[audio_file[2]]
+                
+                if pair[0] in test_files:
+                    if samples_per_class is None or class_counts[label] < samples_per_class:
+                        test_data.append(audio_file)
+                        class_counts[label] += 1
+                    
+                    # Check if we have enough samples for all classes
+                    if samples_per_class is not None and all(count >= samples_per_class for count in class_counts.values()):
+                        break
+            
+            logger.debug(f"No. of test data: {len(test_data)}")
+            logger.debug(f"Samples per class: {class_counts}")
 
             test_dataset = HEARDS('/Users/nkdem/Downloads/HEAR-DS', test_data, int_to_label)
             test_loader = DataLoader(test_dataset, batch_size=16, shuffle=False)
@@ -108,13 +135,13 @@ def test(dataset: HEARDS, base_dir,model_name, cnn1_channels, cnn2_channels, fc_
                 ha='right',   # Align the labels
                 rotation_mode='anchor')  # Better rotation alignment
 
-
         # Adjust y-axis labels
         plt.yticks(np.arange(num_classes) + 0.5, [int_to_label[i] for i in range(num_classes)], rotation=0)
         plt.ylabel('True Scene')
 
         # Set title
-        plt.title(f"Normalised Confusion Matrix of {model_name} (Accuracy: {accuracy:.2f}%)")
+        sampling_info = f"({samples_per_class} samples/class)" if samples_per_class is not None else "(all samples)"
+        plt.title(f"Normalised Confusion Matrix of {model_name} {sampling_info}\n(Accuracy: {accuracy:.2f}%)")
 
         # Adjust layout with more bottom space
         plt.tight_layout()
@@ -134,6 +161,8 @@ def test(dataset: HEARDS, base_dir,model_name, cnn1_channels, cnn2_channels, fc_
                     bbox_inches='tight', 
                     dpi=300)
         plt.close()
+
+        return confusion_matrix, accuracy
 
     else:
         logger.warning(f"Model {model_name} does not exist")
