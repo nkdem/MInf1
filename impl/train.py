@@ -26,7 +26,6 @@ def loss_fn(weights, outputs, targets):
     return nn.CrossEntropyLoss(weights)(outputs, targets)
 
 def train(base_dir,num_epochs, batch_size, max_lr=None, learning_rates = None):
-    # [0.05,0.01, 0.001, 0.0005, 0.0002, 0.0001]
     number = get_truly_random_seed_through_os()
     seed_everything(number)
     logger.info(f"Random seed: {number}")
@@ -89,36 +88,35 @@ def train(base_dir,num_epochs, batch_size, max_lr=None, learning_rates = None):
             torch.nn.utils.clip_grad_norm_(model.parameters(), max_norm=1.0)
             model.train() # Set the model to training mode
             running_loss = 0.0
-            for _, logmel, labels in tqdm(train_loader, desc=f'Training {model_name} [Epoch {epoch + 1}/{num_epochs}] [LR: {optimiser.param_groups[0]["lr"]}]', unit='batch'):
-                logmel, labels = logmel.to(device), labels.to(device)
-                
-                # Forward pass
-                outputs = model(logmel)
-                loss = loss_fn(weights, outputs, labels)
-                
-                # Backward pass and optimization
-                optimiser.zero_grad()
-                loss.backward()
-                optimiser.step()
-                scheduler.step()
-                
-                running_loss += loss.item()
-            
-            epoch_loss = running_loss / len(train_loader)
-            logger.info(f"Epoch [{epoch + 1}/{num_epochs}], Loss: {epoch_loss:.4f}")
-            losses.append(epoch_loss)
-            learning_rates.append(optimiser.param_groups[0]['lr'])
+            for epoch in range(num_epochs):
+                for _, logmel, labels in tqdm(train_loader, desc=f'Training {model_name} [Epoch {epoch + 1}/{num_epochs}] [LR: {optimiser.param_groups[0]["lr"]}]', unit='batch'):
+                    logmel, labels = logmel.to(device), labels.to(device)
+                    
+                    # Forward pass
+                    outputs = model(logmel)
+                    loss = loss_fn(weights, outputs, labels)
+                    
+                    # Backward pass and optimization
+                    optimiser.zero_grad()
+                    loss.backward()
+                    optimiser.step()
+                    scheduler.step()
+                    
+                    running_loss += loss.item()
+                epoch_loss = running_loss / len(train_loader)
+                logger.info(f"Epoch [{epoch + 1}/{num_epochs}], Loss: {epoch_loss:.4f}")
+                losses.append(epoch_loss)
+                learning_rates.append(optimiser.param_groups[0]['lr'])
         elif learning_rates is not None:
             print("Learning rates are provided")
             optimiser = torch.optim.SGD(model.parameters(), lr=learning_rates[0])
-            lr_change_epoch = math.ceil(num_epochs / (len(learning_rates) + 1))
+            lr_change_epoch = math.ceil(num_epochs / (len(learning_rates)))
             for epoch in range(num_epochs):
-                if epoch > 0 and epoch % lr_change_epoch == 0:
-                    if (epoch // lr_change_epoch) - 1 < len(learning_rates):
-                        new_lr = learning_rates[(epoch // lr_change_epoch) - 1]
-                        for param_group in optimiser.param_groups:
-                            param_group['lr'] = new_lr
-                        print(f"Learning rate changed to: {new_lr}")
+                # change optimiser param group lr if epoch is divisible by lr_change_epoch
+                if (epoch + 1) % lr_change_epoch == 0:
+                    index = (epoch + 1) // lr_change_epoch
+                    optimiser.param_groups[0]['lr'] = learning_rates[index - 1]
+                    logger.info(f"Learning rate changed to {optimiser.param_groups[0]['lr']}")
                 model.train() # Set the model to training mode
                 running_loss = 0.0
                 for _, logmel, labels in tqdm(train_loader, desc=f'Training {model_name} [Epoch {epoch + 1}/{num_epochs}] [LR: {optimiser.param_groups[0]["lr"]}]', unit='batch'):
