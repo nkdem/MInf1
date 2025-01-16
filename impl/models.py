@@ -27,7 +27,6 @@ class AudioCNN(nn.Module):
             nn.ReLU(),
             nn.Dropout(0.3),
             nn.Linear(fc_neurons, num_classes),
-            nn.Softmax(dim=1)
         )
 
     def forward(self, x):
