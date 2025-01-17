@@ -12,15 +12,14 @@ import numpy as np
 logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
 logger = logging.getLogger(__name__)
 
-device = torch.device("mps" if torch.backends.mps.is_available() else ("cuda" if torch.cuda.is_available() else "cpu"))
-logger.info(f"Using device: {device}")
-
 class HEARDS(Dataset):
     """
     Args:
         root_dir (str): Root directory of dataset 
     """
-    def __init__(self, root_dir, audio_files=None, int_to_label=None, feature_cache=None):
+    def __init__(self, root_dir, audio_files=None, int_to_label=None, feature_cache=None, cuda=False):
+        self.device = torch.device("mps" if not cuda else "cuda")
+        logger.info(f"Using device: {self.device}")
         self.root_dir = root_dir
         if audio_files is None:
             self.audio_files = self._get_all_audio_files()
@@ -82,7 +81,7 @@ class HEARDS(Dataset):
     def __getitem__(self, idx):
         pairs, recsit, label = self.audio_files[idx]
         logmel = self._get_mfcc(pairs[0], pairs[1])
-        label_tensor = torch.tensor(self.label_to_int[label], dtype=torch.long).to(device)
+        label_tensor = torch.tensor(self.label_to_int[label], dtype=torch.long).to(self.device)
         return pairs, logmel, label_tensor  
     
     def _basename(self, pairs):
@@ -128,8 +127,8 @@ class HEARDS(Dataset):
         mel_L = mel_transform(waveform_L)
         mel_R = mel_transform(waveform_R)
 
-        logmel_L = 20 * torch.log10(mel_L + 1e-10).to(device)
-        logmel_R = 20 * torch.log10(mel_R + 1e-10).to(device)
+        logmel_L = 20 * torch.log10(mel_L + 1e-10).to(self.device)
+        logmel_R = 20 * torch.log10(mel_R + 1e-10).to(self.device)
 
         logmel_mean = (logmel_L + logmel_R) / 2
         logmel_mean = logmel_mean.view(1, n_mels, -1)  # Shape will be (1, n_mels, n_frames)
@@ -195,7 +194,7 @@ class HEARDS(Dataset):
     def get_weights(self):
         labels = np.array([self.label_to_int[label] for label in self.label_to_int])
         class_weights = compute_class_weight('balanced', classes=labels, y=np.array([self.label_to_int[label] for _, _, label in self.audio_files]))
-        return torch.tensor(class_weights, dtype=torch.float).to(device)
+        return torch.tensor(class_weights, dtype=torch.float).to(self.device)
 
 
 if __name__ == '__main__':

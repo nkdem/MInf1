@@ -3,3 +3,5 @@ venv/
 net*/
 
 __pycache__/
+
+models*/

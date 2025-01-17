@@ -7,14 +7,13 @@ from train import train
 from test import test
 import seaborn as sns
 
-dataset = HEARDS('/Users/nkdem/Downloads/HEAR-DS')
  
-def run_experiment(num_epochs, batch_size, number_of_experiments, max_lr=None, learning_rates=None):
-    experiment_name = f'{num_epochs}_epochs_{batch_size}_batch_SNR_OMITTED'
+def run_experiment(num_epochs, batch_size, number_of_experiments, max_lr=None, learning_rates=None, cuda=False):
+    experiment_name = f'{num_epochs}_epochs_{batch_size}_batch'
     for i in range(1, number_of_experiments + 1):
         base_dir = f'models/{experiment_name}/{i}'
         os.makedirs(base_dir, exist_ok=True)
-        train(base_dir=base_dir, num_epochs=num_epochs, batch_size=batch_size, max_lr=max_lr, learning_rates=learning_rates)
+        train(dataset=dataset, base_dir=base_dir, num_epochs=num_epochs, batch_size=batch_size, max_lr=max_lr, learning_rates=learning_rates, cuda=cuda)
 
     # Initialize data structures to store results across all experiments
     all_confusion_matrices = {model: [] for model in MODELS.keys()}
@@ -54,7 +53,7 @@ def run_experiment(num_epochs, batch_size, number_of_experiments, max_lr=None, l
             root_dir = os.path.join(base_dir, model)
             if os.path.exists(root_dir):
                 # Get confusion matrix and accuracy
-                confusion_matrix, accuracy = test(dataset, root_dir, model, cnn1_channels, cnn2_channels, fc_neurons)
+                confusion_matrix, accuracy = test(dataset, root_dir, model, cnn1_channels, cnn2_channels, fc_neurons, cuda=cuda)
                 all_confusion_matrices[model].append(confusion_matrix)
                 all_accuracies[model].append(accuracy)
                 
@@ -119,7 +118,7 @@ def run_experiment(num_epochs, batch_size, number_of_experiments, max_lr=None, l
             plt.ylabel('True Scene')
 
             # Set title
-            plt.title(f"Standard Deviation of Confusion Matrix - {model}")
+            plt.title(f"Standard Deviation of Confusion Matrix - {model} [{experiment_name}]")
 
             # Adjust layout with more bottom space
             plt.tight_layout()
@@ -162,7 +161,7 @@ def run_experiment(num_epochs, batch_size, number_of_experiments, max_lr=None, l
                 int_to_label = {int(k): v for k, v in int_to_label.items()}
             
             plt.xticks(x, [int_to_label[i] for i in range(len(mean_accuracies))], rotation=45, ha='right')
-            plt.title(f'Classwise Accuracy - {model}')
+            plt.title(f'Classwise Accuracy - {model} [{experiment_name}]')
             plt.xlabel('Class')
             plt.ylabel('Accuracy')
             plt.ylim(0, 1)
@@ -180,7 +179,7 @@ def run_experiment(num_epochs, batch_size, number_of_experiments, max_lr=None, l
             std_acc = np.std(all_accuracies[model])
             plt.errorbar(model, mean_acc, yerr=std_acc, fmt='o', capsize=5)
 
-    plt.title('Model Accuracies with Standard Deviation')
+    plt.title(f'Model Accuracies with Standard Deviation [{experiment_name}]')
     plt.xlabel('Model')
     plt.ylabel('Accuracy (%)')
     plt.xticks(rotation=45)
@@ -203,7 +202,7 @@ def run_experiment(num_epochs, batch_size, number_of_experiments, max_lr=None, l
                             mean_losses + std_losses,
                             alpha=0.2)
 
-    plt.title('Training Loss over Epochs')
+    plt.title(f'Train Loss against Epochs [{experiment_name}]')
     plt.xlabel('Epoch')
     plt.ylabel('Loss')
     plt.legend()
@@ -220,7 +219,7 @@ def run_experiment(num_epochs, batch_size, number_of_experiments, max_lr=None, l
             std_time = np.std(all_training_times[model])
             plt.bar(model, mean_time, yerr=std_time, capsize=5)
 
-    plt.title('Average Training Time per Model')
+    plt.title(f'Training Time Analysis [{experiment_name}]')
     plt.xlabel('Model')
     plt.ylabel('Time (minutes)')
     plt.xticks(rotation=45)
@@ -229,8 +228,7 @@ def run_experiment(num_epochs, batch_size, number_of_experiments, max_lr=None, l
     plt.close()
 
 if __name__ == '__main__':
-    # run_experiment(num_epochs=80, batch_size=16, number_of_experiments=3, max_lr=0.1)
-    # run_experiment(num_epochs=80, batch_size=32, number_of_experiments=3, max_lr=0.1)
-    # run_experiment(num_epochs=80, batch_size=64, number_of_experiments=3, max_lr=0.1)
-    # run_experiment(num_epochs=80, batch_size=128, number_of_experiments=3, max_lr=0.1)
-    run_experiment(num_epochs=120, batch_size=32, number_of_experiments=3, learning_rates=[0.05,0.01, 0.001, 0.0005, 0.0002, 0.0001])
+    cuda = False
+    root_dir = '/Users/nkdem/Downloads/HEAR-DS' if not cuda else '/home/s2203859/minf-1/dataset'
+    dataset = HEARDS(root_dir=root_dir, cuda=cuda)
+    run_experiment(num_epochs=1, batch_size=16, number_of_experiments=2, learning_rates=[0.05,0.01], cuda=cuda)

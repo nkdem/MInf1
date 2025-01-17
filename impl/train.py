@@ -18,14 +18,12 @@ from models import AudioCNN
 logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
 logger = logging.getLogger(__name__)
 
-# local machine is a M4 chip, and uni cluster are cuda machines
-device = torch.device("mps" if torch.backends.mps.is_available() else ("cuda" if torch.cuda.is_available() else "cpu"))
-logger.info(f"Using device: {device}")
-
 def loss_fn(weights, outputs, targets):
     return nn.CrossEntropyLoss(weights)(outputs, targets)
 
-def train(dataset: HEARDS, base_dir,num_epochs, batch_size, max_lr=None, learning_rates = None):
+def train(dataset: HEARDS, base_dir,num_epochs, batch_size, max_lr=None, learning_rates = None, cuda=False):
+    device = torch.device("mps" if not cuda else "cuda")
+    logger.info(f"Using device: {device}")
     number = get_truly_random_seed_through_os()
     seed_everything(number)
     logger.info(f"Random seed: {number}")
@@ -35,7 +33,8 @@ def train(dataset: HEARDS, base_dir,num_epochs, batch_size, max_lr=None, learnin
     train_data = dataset.get_train_data()
     test_data = dataset.get_test_data()
 
-    train_dataset = HEARDS('/Users/nkdem/Downloads/HEAR-DS', train_data, feature_cache=dataset.feature_cache)
+    root_dir = '/Users/nkdem/Downloads/HEAR-DS' if not cuda else '/home/s2203859/minf-1/dataset'
+    train_dataset = HEARDS(root_dir, train_data, feature_cache=dataset.feature_cache, cuda=cuda)
 
     train_loader = DataLoader(train_dataset, batch_size=batch_size, shuffle=True)
 

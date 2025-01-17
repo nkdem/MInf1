@@ -14,10 +14,8 @@ from models import AudioCNN
 logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
 logger = logging.getLogger(__name__)
 
-device = torch.device("mps" if torch.backends.mps.is_available() else ("cuda" if torch.cuda.is_available() else "cpu"))
-logger.info(f"Using device: {device}")
 
-def test(dataset: HEARDS, base_dir, model_name, cnn1_channels, cnn2_channels, fc_neurons, samples_per_class=None):
+def test(dataset: HEARDS, base_dir, model_name, cnn1_channels, cnn2_channels, fc_neurons, samples_per_class=None, cuda=False):
     """
     Test the model on the dataset.
     
@@ -31,6 +29,8 @@ def test(dataset: HEARDS, base_dir, model_name, cnn1_channels, cnn2_channels, fc
         samples_per_class (int, optional): Number of samples to test per class. 
                                          If None, uses all available samples.
     """
+    device = torch.device("mps" if not cuda else "cuda")
+    logger.info(f"Using device: {device}")
     num_classes = dataset.get_num_classes()
     DIR = os.path.join(base_dir)
     if os.path.exists(DIR):
@@ -74,7 +74,8 @@ def test(dataset: HEARDS, base_dir, model_name, cnn1_channels, cnn2_channels, fc
             logger.debug(f"No. of test data: {len(test_data)}")
             logger.debug(f"Samples per class: {class_counts}")
 
-            test_dataset = HEARDS('/Users/nkdem/Downloads/HEAR-DS', test_data, int_to_label, feature_cache=dataset.feature_cache)
+            root_dir = '/Users/nkdem/Downloads/HEAR-DS' if not cuda else '/home/s2203859/minf-1/dataset'
+            test_dataset = HEARDS(root_dir, test_data, int_to_label, feature_cache=dataset.feature_cache)
             test_loader = DataLoader(test_dataset, batch_size=16, shuffle=False)
 
             correct = 0 
