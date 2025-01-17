@@ -20,7 +20,7 @@ class HEARDS(Dataset):
     Args:
         root_dir (str): Root directory of dataset 
     """
-    def __init__(self, root_dir, audio_files=None, int_to_label=None):
+    def __init__(self, root_dir, audio_files=None, int_to_label=None, feature_cache=None):
         self.root_dir = root_dir
         if audio_files is None:
             self.audio_files = self._get_all_audio_files()
@@ -32,7 +32,7 @@ class HEARDS(Dataset):
         self.test_indices = []
         
         # Initialize a cache for features
-        self.feature_cache = {}
+        self.feature_cache = feature_cache if feature_cache is not None else {}
 
         # Initialize label mappings
         if int_to_label is None:
@@ -58,9 +58,9 @@ class HEARDS(Dataset):
                     if relative_diff == 3:
                         environment += '_speech'
                         # get SNR 
-                        SNR = root_split[-1]
-                        if SNR != '0':
-                            continue
+                        # SNR = root_split[-1]
+                        # if SNR != '0':
+                        #     continue
                     recsit = file.split('_')[1]  # Assuming RECSIT is extracted from the filename
 
                     file_path = os.path.join(root, file)

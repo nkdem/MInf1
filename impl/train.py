@@ -25,18 +25,17 @@ logger.info(f"Using device: {device}")
 def loss_fn(weights, outputs, targets):
     return nn.CrossEntropyLoss(weights)(outputs, targets)
 
-def train(base_dir,num_epochs, batch_size, max_lr=None, learning_rates = None):
+def train(dataset: HEARDS, base_dir,num_epochs, batch_size, max_lr=None, learning_rates = None):
     number = get_truly_random_seed_through_os()
     seed_everything(number)
     logger.info(f"Random seed: {number}")
 
-    dataset = HEARDS('/Users/nkdem/Downloads/HEAR-DS')
     dataset.split_dataset()
 
     train_data = dataset.get_train_data()
     test_data = dataset.get_test_data()
 
-    train_dataset = HEARDS('/Users/nkdem/Downloads/HEAR-DS', train_data)
+    train_dataset = HEARDS('/Users/nkdem/Downloads/HEAR-DS', train_data, feature_cache=dataset.feature_cache)
 
     train_loader = DataLoader(train_dataset, batch_size=batch_size, shuffle=True)
 
@@ -113,9 +112,9 @@ def train(base_dir,num_epochs, batch_size, max_lr=None, learning_rates = None):
             lr_change_epoch = math.ceil(num_epochs / (len(learning_rates)))
             for epoch in range(num_epochs):
                 # change optimiser param group lr if epoch is divisible by lr_change_epoch
-                if (epoch + 1) % lr_change_epoch == 0:
+                if ((epoch + 1) % lr_change_epoch == 0) and (epoch + 1 != num_epochs):
                     index = (epoch + 1) // lr_change_epoch
-                    optimiser.param_groups[0]['lr'] = learning_rates[index - 1]
+                    optimiser.param_groups[0]['lr'] = learning_rates[index] 
                     logger.info(f"Learning rate changed to {optimiser.param_groups[0]['lr']}")
                 model.train() # Set the model to training mode
                 running_loss = 0.0

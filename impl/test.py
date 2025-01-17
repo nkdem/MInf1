@@ -74,7 +74,7 @@ def test(dataset: HEARDS, base_dir, model_name, cnn1_channels, cnn2_channels, fc
             logger.debug(f"No. of test data: {len(test_data)}")
             logger.debug(f"Samples per class: {class_counts}")
 
-            test_dataset = HEARDS('/Users/nkdem/Downloads/HEAR-DS', test_data, int_to_label)
+            test_dataset = HEARDS('/Users/nkdem/Downloads/HEAR-DS', test_data, int_to_label, feature_cache=dataset.feature_cache)
             test_loader = DataLoader(test_dataset, batch_size=16, shuffle=False)
 
             correct = 0 
