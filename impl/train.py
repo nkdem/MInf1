@@ -1,3 +1,4 @@
+import gc
 import math
 import os
 import time
@@ -33,21 +34,22 @@ def train(dataset: HEARDS, base_dir,num_epochs, batch_size, max_lr=None, learnin
     train_data = dataset.get_train_data()
     test_data = dataset.get_test_data()
 
-    root_dir = '/Users/nkdem/Downloads/HEAR-DS' if not cuda else '/home/s2203859/minf-1/dataset'
-    train_dataset = HEARDS(root_dir, train_data, feature_cache=dataset.feature_cache, cuda=cuda)
-
-    train_loader = DataLoader(train_dataset, batch_size=batch_size, shuffle=True)
 
     num_of_classes = dataset.get_num_classes()
     models_to_train = MODELS
 
-    weights = train_dataset.get_weights()
 
     # create directory to save the model
     for model_name, (cnn1_channels, cnn2_channels, fc_neurons) in models_to_train.items():
         if not os.path.exists(os.path.join(base_dir, model_name)):
             os.makedirs(os.path.join(base_dir, model_name))
     for model_name, (cnn1_channels, cnn2_channels, fc_neurons) in models_to_train.items():
+        root_dir = '/Users/nkdem/Downloads/HEAR-DS' if not cuda else '/home/s2203859/minf-1/dataset/abc'
+        train_dataset = HEARDS(root_dir, train_data, feature_cache=dataset.feature_cache, cuda=cuda)
+
+        train_loader = DataLoader(train_dataset, batch_size=batch_size, shuffle=True)
+
+        weights = train_dataset.get_weights()
         # store the losses at each epoch
         losses = []
         # store how long it took to train the model (get start time)
@@ -151,5 +153,18 @@ def train(dataset: HEARDS, base_dir,num_epochs, batch_size, max_lr=None, learnin
             f.write(f'Learning rates: {learning_rates}\n')
             f.write(f'Weights: {weights}\n')
             f.write(f'Model parameters: {model}\n')
+
+        del train_loader
+        
+        # Clear everything from train_dataset except feature_cache
+        if hasattr(train_dataset, 'feature_cache'):
+            train_dataset.feature_cache = None  # Remove reference but don't delete the cache
+        
+        del train_dataset
+        
+        if cuda:
+            torch.cuda.empty_cache()
+        gc.collect()
+
 
         print(f"Model {model_name} saved")

@@ -49,7 +49,7 @@ class HEARDS(Dataset):
         audio_files = []
         for root, dirs, files in os.walk(self.root_dir):
             for file in files:
-                if file.endswith('.wav'):
+                if file.endswith('.wav') or file.endswith('.wav.zst'):
                     root_split = root.split('/')
                     relative_diff = len(root_split) - len(self.root_dir.split('/'))
                     environment = root_split[-relative_diff]
