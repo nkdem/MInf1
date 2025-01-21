@@ -75,7 +75,7 @@ def test(dataset: HEARDS, base_dir, model_name, cnn1_channels, cnn2_channels, fc
             logger.debug(f"Samples per class: {class_counts}")
 
             root_dir = '/Users/nkdem/Downloads/HEAR-DS' if not cuda else '/home/s2203859/minf-1/dataset/abc'
-            test_dataset = HEARDS(root_dir, test_data, int_to_label, feature_cache=dataset.feature_cache)
+            test_dataset = HEARDS(root_dir, test_data, int_to_label, feature_cache=dataset.feature_cache, cuda=cuda)
             test_loader = DataLoader(test_dataset, batch_size=16, shuffle=False)
 
             correct = 0 
