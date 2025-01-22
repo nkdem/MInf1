@@ -3,6 +3,7 @@ import logging
 import random
 import torch
 from torch.utils.data import Dataset
+from torch.utils.data import DataLoader
 import torchaudio.transforms as T
 import torchaudio
 from sklearn.utils.class_weight import compute_class_weight
@@ -29,6 +30,18 @@ class HEARDS(Dataset):
         os.makedirs(self.feature_dir, exist_ok=True)
         self.train_indices = []
         self.test_indices = []
+        self.current_snr = None
+        self.snr_levels = [-21, -18, -15, -12, -9, -6, -3, 0, 3, 6, 9, 12, 15, 18, 21]
+        self.speech_lookup = {}
+
+        for idx, (pairs, recsit, label, snr) in enumerate(self.audio_files):
+            if '_speech' in label:
+                key = (label, recsit)
+                if key not in self.speech_lookup:
+                    self.speech_lookup[key] = {}
+                self.speech_lookup[key][snr] = pairs
+
+
         
         # Initialize a cache for features
         self.feature_cache = feature_cache if feature_cache is not None else {}
@@ -37,7 +50,7 @@ class HEARDS(Dataset):
         if int_to_label is None:
             self.label_to_int = {}
             self.int_to_label = {}
-            for (_, _, label) in self.audio_files:
+            for (_, _, label, _) in self.audio_files:
                 if label not in self.label_to_int:
                     self.label_to_int[label] = len(self.label_to_int)
                     self.int_to_label[self.label_to_int[label]] = label
@@ -55,11 +68,10 @@ class HEARDS(Dataset):
                     environment = root_split[-relative_diff]
 
                     if relative_diff == 3:
+                        snr_level = root_split[-1]
                         environment += '_speech'
-                        # get SNR 
-                        # SNR = root_split[-1]
-                        # if SNR != '0':
-                        #     continue
+                    else: 
+                        snr_level = None
                     recsit = file.split('_')[1]  # Assuming RECSIT is extracted from the filename
 
                     file_path = os.path.join(root, file)
@@ -72,14 +84,23 @@ class HEARDS(Dataset):
                             logger.warning(f'Pair file not found for left channel file: {file_path}')
                         else:
                             logger.debug(f'Found right channel file: {pair_file_path}')
-                            audio_files.append(([file_path, pair_file_path], recsit, environment))
+                            audio_files.append(([file_path, pair_file_path], recsit, environment, snr_level))
         return audio_files
     
+    def set_snr_level(self, snr):
+        """Set the SNR level for the current epoch"""
+        self.current_snr = str(snr)
     def __len__(self):
         return len(self.audio_files)
 
     def __getitem__(self, idx):
-        pairs, recsit, label = self.audio_files[idx]
+        pairs, recsit, label, snr = self.audio_files[idx]
+        if '_speech' in label:
+            if snr != self.current_snr:
+                # Use dictionary lookup instead of iteration
+                key = (label, recsit)
+                if key in self.speech_lookup and self.current_snr in self.speech_lookup[key]:
+                    pairs = self.speech_lookup[key][self.current_snr]
         logmel = self._get_mfcc(pairs[0], pairs[1])
         label_tensor = torch.tensor(self.label_to_int[label], dtype=torch.long).to(self.device)
         return pairs, logmel, label_tensor  
@@ -142,59 +163,149 @@ class HEARDS(Dataset):
         self.train_indices = []
         self.test_indices = []
         envs = {}
-        for i, (pairs, recsit, label) in enumerate(self.audio_files):
+        
+        # Group by environment and recsit
+        for i, (pairs, recsit, label, _) in enumerate(self.audio_files):
+            base_name = os.path.basename(pairs[0]).replace('_L_16kHz.wav', '')
             if label not in envs:
                 envs[label] = {}
             if recsit not in envs[label]:
-                envs[label][recsit] = []
-            envs[label][recsit].append(i)
+                envs[label][recsit] = {}  # Change to dict to store indices by base_name
+            if base_name not in envs[label][recsit]:
+                envs[label][recsit][base_name] = []
+            envs[label][recsit][base_name].append(i)
+        
         logger.info(f'Found {len(envs)} environments')
+        
         for label in envs:
             logger.info(f'Environment: {label} has {len(envs[label])} recsits')
+            
+            # Randomly select exactly 1 recsit for testing
             shuffled_recsits = list(envs[label].keys())
             random.shuffle(shuffled_recsits)
-            test_recsits = shuffled_recsits[:len(shuffled_recsits) // 2]
-            train_recsits = shuffled_recsits[len(shuffled_recsits) // 2:]
+            test_recsit = shuffled_recsits[0]  # Take just one recsit for testing
+            train_recsits = shuffled_recsits[1:]  # All other recsits go to training
+            
             logger.info(f'Train recsits: {train_recsits}')
-            logger.info(f'Test recsits: {test_recsits}')
+            logger.info(f'Test recsit: {test_recsit}')
 
+            # Collect indices
             train_indices = []
-            test_indices = []
             for recsit in train_recsits:
-                train_indices.extend(envs[label][recsit][:int(size * len(envs[label][recsit]))])
-            for recsit in test_recsits:
-                test_indices.extend(envs[label][recsit])
+                # Get one index per base audio file
+                for base_name, indices in envs[label][recsit].items():
+                    # Take the first index for each base audio file
+                    # (we'll vary SNR during training)
+                    train_indices.extend(indices[:1])
+            
+            # For test set, take all variants of the test recsit
+            test_indices = []
+            for indices in envs[label][test_recsit].values():
+                test_indices.extend(indices)
+            
             self.train_indices.extend(train_indices)
             self.test_indices.extend(test_indices)
 
             logger.info(f'Environment: {label} has {len(train_indices)} train samples and {len(test_indices)} test samples')
-        logger.info(f'Train set size: {len(self.train_indices)}')
-        logger.info(f'Test set size: {len(self.test_indices)}')
+        
+        logger.info(f'Total train set size: {len(self.train_indices)}')
+        logger.info(f'Total test set size: {len(self.test_indices)}')
+
 
     def get_train_data(self):
         train = []
+        seen_base_names = set()
+        
         for i in self.train_indices:
-            pairs, recsit, label = self.audio_files[i]
-            train.append((pairs, recsit, label))
+            pairs, recsit, label, snr = self.audio_files[i]
+            base_name = os.path.basename(pairs[0]).replace('_L_16kHz.wav', '')
+            
+            if base_name not in seen_base_names:
+                seen_base_names.add(base_name)
+                if '_speech' in label:
+                    # Add only one SNR version initially
+                    train.append((pairs, recsit, label, snr))
+                else:
+                    # For non-speech, add as normal
+                    train.append((pairs, recsit, label, snr))
+        
         return train
 
     def get_test_data(self):
         test = []
         for i in self.test_indices:
-            pairs, recsit, label = self.audio_files[i]
-            test.append((pairs, recsit, label))
+            pairs, recsit, label, snr = self.audio_files[i]
+            test.append((pairs, recsit, label, snr))
         return test
     
     def get_audio_file(self, idx):
         return self.audio_files[idx]
         
     def get_num_classes(self):
-        return len(set([label for _, _, label in self.audio_files]))
+        return len(set([label for _, _, label, _ in self.audio_files]))
     
     def get_weights(self):
         labels = np.array([self.label_to_int[label] for label in self.label_to_int])
-        class_weights = compute_class_weight('balanced', classes=labels, y=np.array([self.label_to_int[label] for _, _, label in self.audio_files]))
+        class_weights = compute_class_weight('balanced', classes=labels, y=np.array([self.label_to_int[label] for _, _, label, _ in self.audio_files]))
         return torch.tensor(class_weights, dtype=torch.float).to(self.device)
+class SNRAwareDataLoader(DataLoader):
+    """Custom DataLoader that ensures no SNR variants of the same audio file appear in the same batch"""
+    def __init__(self, dataset, batch_size, shuffle=True, **kwargs):
+        self._internal_dataset = dataset
+        self._internal_batch_size = batch_size
+        self._internal_shuffle = shuffle
+        super().__init__(dataset, batch_size, shuffle=False, **kwargs)
+        
+    def __iter__(self):
+        # Group indices by base audio file
+        indices_by_base = {}
+        for idx in range(len(self._internal_dataset)):
+            pairs, _, label, _ = self._internal_dataset.audio_files[idx]
+            base_name = os.path.basename(pairs[0]).replace('_L_16kHz.wav', '')
+            if base_name not in indices_by_base:
+                indices_by_base[base_name] = []
+            indices_by_base[base_name].append(idx)
+        
+        # Create batches ensuring no SNR variants in same batch
+        all_batches = []
+        available_bases = list(indices_by_base.keys())
+        if self._internal_shuffle:
+            random.shuffle(available_bases)
+        
+        current_batch = []
+        used_bases = set()
+        
+        for base_name in available_bases:
+            if len(current_batch) == self._internal_batch_size:
+                all_batches.append(current_batch)
+                current_batch = []
+                used_bases.clear()
+            
+            if base_name not in used_bases:
+                indices = indices_by_base[base_name]
+                if self._internal_shuffle:
+                    idx = random.choice(indices)
+                else:
+                    idx = indices[0]
+                current_batch.append(idx)
+                used_bases.add(base_name)
+        
+        if current_batch:
+            all_batches.append(current_batch)
+        
+        if self._internal_shuffle:
+            random.shuffle(all_batches)
+        
+        for batch in all_batches:
+            batch_samples = [self._internal_dataset[i] for i in batch]
+            # Reorganize the batch data
+            pairs = [sample[0] for sample in batch_samples]
+            logmels = torch.stack([sample[1] for sample in batch_samples])
+            labels = torch.stack([sample[2] for sample in batch_samples])
+            
+            yield pairs, logmels, labels
+
+
 
 
 if __name__ == '__main__':

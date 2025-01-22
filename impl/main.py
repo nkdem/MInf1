@@ -9,7 +9,7 @@ import seaborn as sns
 
  
 def run_experiment(num_epochs, batch_size, number_of_experiments, max_lr=None, learning_rates=None, cuda=False):
-    experiment_name = f'{num_epochs}_epochs_{batch_size}_batch'
+    experiment_name = f'{num_epochs}_epochs_{batch_size}_batch_refactor'
     for i in range(1, number_of_experiments + 1):
         base_dir = f'models/{experiment_name}/{i}'
         os.makedirs(base_dir, exist_ok=True)
@@ -231,4 +231,4 @@ if __name__ == '__main__':
     cuda = False
     root_dir = '/Users/nkdem/Downloads/HEAR-DS' if not cuda else '/home/s2203859/minf-1/dataset/abc'
     dataset = HEARDS(root_dir=root_dir, cuda=cuda)
-    run_experiment(num_epochs=240, batch_size=16, number_of_experiments=2, learning_rates=[0.05,0.01, 0.001, 0.0005, 0.0002, 0.0001], cuda=cuda)
+    run_experiment(num_epochs=240, batch_size=16, number_of_experiments=8, learning_rates=[0.05,0.01, 0.001, 0.0005, 0.0002, 0.0001], cuda=cuda)
