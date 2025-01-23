@@ -30,7 +30,6 @@ class HEARDS(Dataset):
         os.makedirs(self.feature_dir, exist_ok=True)
         self.train_indices = []
         self.test_indices = []
-        self.current_snr = None
         self.snr_levels = [-21, -18, -15, -12, -9, -6, -3, 0, 3, 6, 9, 12, 15, 18, 21]
         self.speech_lookup = {}
 
@@ -87,23 +86,29 @@ class HEARDS(Dataset):
                             audio_files.append(([file_path, pair_file_path], recsit, environment, snr_level))
         return audio_files
     
-    def set_snr_level(self, snr):
-        """Set the SNR level for the current epoch"""
-        self.current_snr = str(snr)
     def __len__(self):
         return len(self.audio_files)
 
     def __getitem__(self, idx):
-        pairs, recsit, label, snr = self.audio_files[idx]
+        pairs, recsit, label, _ = self.audio_files[idx]
+        
         if '_speech' in label:
-            if snr != self.current_snr:
-                # Use dictionary lookup instead of iteration
-                key = (label, recsit)
-                if key in self.speech_lookup and self.current_snr in self.speech_lookup[key]:
-                    pairs = self.speech_lookup[key][self.current_snr]
+            logger.debug(f'Getting speech sample for {label}')
+            # For speech samples, randomly select an SNR level each time
+            key = (label, recsit)
+            if key in self.speech_lookup:
+                random_snr = random.choice(self.snr_levels)
+                # Get the pairs for this SNR level
+                snr_variants = self.speech_lookup[key]
+                # Convert random_snr to string to match stored keys
+                str_snr = str(random_snr)
+                if str_snr in snr_variants:
+                    pairs = snr_variants[str_snr]
+                    logger.debug(f'Selected SNR variant: {str_snr}')
+        
         logmel = self._get_mfcc(pairs[0], pairs[1])
         label_tensor = torch.tensor(self.label_to_int[label], dtype=torch.long).to(self.device)
-        return pairs, logmel, label_tensor  
+        return pairs, logmel, label_tensor
     
     def _basename(self, pairs):
         depth = len(pairs[0].split('/')) - len(self.root_dir.split('/'))
@@ -166,21 +171,16 @@ class HEARDS(Dataset):
         
         # Group by environment and recsit
         for i, (pairs, recsit, label, _) in enumerate(self.audio_files):
-            base_name = os.path.basename(pairs[0]).replace('_L_16kHz.wav', '')
             if label not in envs:
                 envs[label] = {}
             if recsit not in envs[label]:
-                envs[label][recsit] = {}  # Change to dict to store indices by base_name
-            if base_name not in envs[label][recsit]:
-                envs[label][recsit][base_name] = []
-            envs[label][recsit][base_name].append(i)
+                envs[label][recsit] = []
+            envs[label][recsit].append(i)
         
         logger.info(f'Found {len(envs)} environments')
         
         for label in envs:
             logger.info(f'Environment: {label} has {len(envs[label])} recsits')
-            
-            # Randomly select exactly 1 recsit for testing
             shuffled_recsits = list(envs[label].keys())
             random.shuffle(shuffled_recsits)
             test_recsit = shuffled_recsits[0]  # Take just one recsit for testing
@@ -190,53 +190,21 @@ class HEARDS(Dataset):
             logger.info(f'Test recsit: {test_recsit}')
 
             # Collect indices
-            train_indices = []
             for recsit in train_recsits:
-                # Get one index per base audio file
-                for base_name, indices in envs[label][recsit].items():
-                    # Take the first index for each base audio file
-                    # (we'll vary SNR during training)
-                    train_indices.extend(indices[:1])
-            
-            # For test set, take all variants of the test recsit
-            test_indices = []
-            for indices in envs[label][test_recsit].values():
-                test_indices.extend(indices)
-            
-            self.train_indices.extend(train_indices)
-            self.test_indices.extend(test_indices)
+                self.train_indices.extend(envs[label][recsit])
+            self.test_indices.extend(envs[label][test_recsit])
 
-            logger.info(f'Environment: {label} has {len(train_indices)} train samples and {len(test_indices)} test samples')
+            logger.info(f'Environment: {label} has {len(envs[label][test_recsit])} test samples')
         
         logger.info(f'Total train set size: {len(self.train_indices)}')
         logger.info(f'Total test set size: {len(self.test_indices)}')
 
 
     def get_train_data(self):
-        train = []
-        seen_base_names = set()
-        
-        for i in self.train_indices:
-            pairs, recsit, label, snr = self.audio_files[i]
-            base_name = os.path.basename(pairs[0]).replace('_L_16kHz.wav', '')
-            
-            if base_name not in seen_base_names:
-                seen_base_names.add(base_name)
-                if '_speech' in label:
-                    # Add only one SNR version initially
-                    train.append((pairs, recsit, label, snr))
-                else:
-                    # For non-speech, add as normal
-                    train.append((pairs, recsit, label, snr))
-        
-        return train
+        return [(self.audio_files[i]) for i in self.train_indices]
 
     def get_test_data(self):
-        test = []
-        for i in self.test_indices:
-            pairs, recsit, label, snr = self.audio_files[i]
-            test.append((pairs, recsit, label, snr))
-        return test
+        return [(self.audio_files[i]) for i in self.test_indices]
     
     def get_audio_file(self, idx):
         return self.audio_files[idx]

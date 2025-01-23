@@ -48,8 +48,8 @@ def train(dataset: HEARDS, base_dir,num_epochs, batch_size, max_lr=None, learnin
         root_dir = '/Users/nkdem/Downloads/HEAR-DS' if not cuda else '/home/s2203859/minf-1/dataset/abc'
         train_dataset = HEARDS(root_dir, train_data, feature_cache=dataset.feature_cache, cuda=cuda)
 
-        # train_loader = DataLoader(train_dataset, batch_size=batch_size, shuffle=False)
-        train_loader = SNRAwareDataLoader(train_dataset, batch_size=batch_size, shuffle=True)
+        train_loader = DataLoader(train_dataset, batch_size=batch_size, shuffle=True)
+        # train_loader = SNRAwareDataLoader(train_dataset, batch_size=batch_size, shuffle=True)
 
         weights = train_dataset.get_weights()
         # store the losses at each epoch
@@ -113,12 +113,8 @@ def train(dataset: HEARDS, base_dir,num_epochs, batch_size, max_lr=None, learnin
             print("Learning rates are provided")
             optimiser = torch.optim.SGD(model.parameters(), lr=learning_rates[0])
             lr_change_epoch = math.ceil(num_epochs / (len(learning_rates)))
-            snr_levels_chosen = []
             # base_names = set()
             for epoch in range(num_epochs):
-                snr_level = random.choice(dataset.snr_levels)
-                snr_levels_chosen.append(snr_level)
-                train_dataset.set_snr_level(snr_level)
                 # change optimiser param group lr if epoch is divisible by lr_change_epoch
                 if ((epoch + 1) % lr_change_epoch == 0) and (epoch + 1 != num_epochs):
                     index = (epoch + 1) // lr_change_epoch
@@ -126,12 +122,7 @@ def train(dataset: HEARDS, base_dir,num_epochs, batch_size, max_lr=None, learnin
                     logger.info(f"Learning rate changed to {optimiser.param_groups[0]['lr']}")
                 model.train() # Set the model to training mode
                 running_loss = 0.0
-                for _, logmel, labels in tqdm(train_loader, desc=f'Training {model_name} [Epoch {epoch + 1}/{num_epochs}] [LR: {optimiser.param_groups[0]["lr"]}] [SNR: {snr_level}]', unit='batch'):
-                # for pairs, logmel, labels in tqdm(train_loader, desc=f'Training {model_name} [Epoch {epoch + 1}/{num_epochs}] [LR: {optimiser.param_groups[0]["lr"]}] [SNR: {snr_level}] [Total Samples: {len(base_names)}]', unit='batch'):
-                #     for pair in pairs:
-                #         base_name = os.path.basename(pair[0]).replace('_L_16kHz.wav', '')
-                #         assert base_name not in base_names, f"Duplicate sample found in batch: {base_name}"
-                #         base_names.add(base_name  + str(snr_level))
+                for _, logmel, labels in tqdm(train_loader, desc=f'Training {model_name} [Epoch {epoch + 1}/{num_epochs}] [LR: {optimiser.param_groups[0]["lr"]}]', unit='batch'):
                     logmel, labels = logmel.to(device), labels.to(device)
 
                     # Forward pass
@@ -165,7 +156,6 @@ def train(dataset: HEARDS, base_dir,num_epochs, batch_size, max_lr=None, learnin
             f.write(f'Number of epochs: {num_epochs}\n')
             f.write(f'Initial learning rate: {max_lr}\n')
             f.write(f'Learning rates: {learning_rates}\n')
-            f.write(f'SNR levels chosen: {snr_levels_chosen}\n')
             f.write(f'Weights: {weights}\n')
             f.write(f'Model parameters: {model}\n')
 
