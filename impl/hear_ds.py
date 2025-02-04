@@ -18,8 +18,10 @@ class HEARDS(Dataset):
     Args:
         root_dir (str): Root directory of dataset 
     """
-    def __init__(self, root_dir, audio_files=None, int_to_label=None, feature_cache=None, cuda=False):
+    def __init__(self, root_dir, audio_files=None, int_to_label=None, feature_cache=None, cuda=False, augmentation=False):
         self.device = torch.device("mps" if not cuda else "cuda")
+        self.augmentation = augmentation
+        logger.info(f"Augmentation: {augmentation}")
         logger.info(f"Using device: {self.device}")
         self.root_dir = root_dir
         if audio_files is None:
@@ -30,19 +32,15 @@ class HEARDS(Dataset):
         os.makedirs(self.feature_dir, exist_ok=True)
         self.train_indices = []
         self.test_indices = []
-        self.snr_levels = [-21, -18, -15, -12, -9, -6, -3, 0, 3, 6, 9, 12, 15, 18, 21]
-        self.speech_lookup = {}
-
-        for idx, (pairs, recsit, label, snr) in enumerate(self.audio_files):
-            if '_speech' in label:
-                key = (label, recsit)
-                if key not in self.speech_lookup:
-                    self.speech_lookup[key] = {}
-                self.speech_lookup[key][snr] = pairs
-
-
         
+        self.snr_levels = [-21, -18, -15, -12, -9, -6, -3, 0, 3, 6, 9, 12, 15, 18, 21]
+        if self.augmentation:
+            self.speech_lookup = self._initialize_speech_lookup()
+
+
         # Initialize a cache for features
+        if feature_cache is not None:
+            logger.info('Using provided feature cache')
         self.feature_cache = feature_cache if feature_cache is not None else {}
 
         # Initialize label mappings
@@ -57,6 +55,17 @@ class HEARDS(Dataset):
             self.int_to_label = int_to_label
             self.label_to_int = {v: k for k, v in int_to_label.items()}
 
+    def _initialize_speech_lookup(self):
+        speech_lookup = {}
+        if self.augmentation:
+            for idx, (pairs, recsit, label, snr) in enumerate(self.audio_files):
+                if '_speech' in label:
+                    key = (label, recsit)
+                    if key not in speech_lookup:
+                        speech_lookup[key] = {}
+                    speech_lookup[key][snr] = pairs
+        return speech_lookup
+
     def _get_all_audio_files(self):
         audio_files = []
         for root, dirs, files in os.walk(self.root_dir):
@@ -65,47 +74,42 @@ class HEARDS(Dataset):
                     root_split = root.split('/')
                     relative_diff = len(root_split) - len(self.root_dir.split('/'))
                     environment = root_split[-relative_diff]
-
+                    
+                    snr_level = None
                     if relative_diff == 3:
-                        snr_level = root_split[-1]
                         environment += '_speech'
-                    else: 
-                        snr_level = None
-                    recsit = file.split('_')[1]  # Assuming RECSIT is extracted from the filename
-
+                        if self.augmentation:
+                            snr_level = root_split[-1]
+                            
+                    recsit = file.split('_')[1]
                     file_path = os.path.join(root, file)
-
+                    
                     if '_L' in file:
-                        logger.debug(f'Found left channel file: {file_path}')
                         pair_file = file.replace('_L', '_R')
                         pair_file_path = os.path.join(root, pair_file)
-                        if not os.path.exists(pair_file_path):
-                            logger.warning(f'Pair file not found for left channel file: {file_path}')
-                        else:
-                            logger.debug(f'Found right channel file: {pair_file_path}')
-                            audio_files.append(([file_path, pair_file_path], recsit, environment, snr_level))
+                        if os.path.exists(pair_file_path):
+                            if self.augmentation:
+                                audio_files.append(([file_path, pair_file_path], recsit, environment, snr_level))
+                            else:
+                                audio_files.append(([file_path, pair_file_path], recsit, environment, None))
         return audio_files
     
     def __len__(self):
         return len(self.audio_files)
 
     def __getitem__(self, idx):
-        pairs, recsit, label, _ = self.audio_files[idx]
-        
-        if '_speech' in label:
-            logger.debug(f'Getting speech sample for {label}')
-            # For speech samples, randomly select an SNR level each time
-            key = (label, recsit)
-            if key in self.speech_lookup:
-                random_snr = random.choice(self.snr_levels)
-                # Get the pairs for this SNR level
-                snr_variants = self.speech_lookup[key]
-                # Convert random_snr to string to match stored keys
-                str_snr = str(random_snr)
-                if str_snr in snr_variants:
-                    pairs = snr_variants[str_snr]
-                    logger.debug(f'Selected SNR variant: {str_snr}')
-        
+        if self.augmentation:
+            pairs, recsit, label, _ = self.audio_files[idx]
+            if '_speech' in label:
+                key = (label, recsit)
+                if key in self.speech_lookup:
+                    random_snr = random.choice(self.snr_levels)
+                    str_snr = str(random_snr)
+                    if str_snr in self.speech_lookup[key]:
+                        pairs = self.speech_lookup[key][str_snr]
+        else:
+            pairs, recsit, label, _ = self.audio_files[idx]
+            
         logmel = self._get_mfcc(pairs[0], pairs[1])
         label_tensor = torch.tensor(self.label_to_int[label], dtype=torch.long).to(self.device)
         return pairs, logmel, label_tensor
@@ -177,6 +181,11 @@ class HEARDS(Dataset):
                 envs[label][recsit] = []
             envs[label][recsit].append(i)
         
+        
+        # for label in envs:
+        #     for recsit in envs[label]:
+        #         envs[label][recsit] = envs[label][recsit][:200]
+
         logger.info(f'Found {len(envs)} environments')
         
         for label in envs:
@@ -214,67 +223,8 @@ class HEARDS(Dataset):
     
     def get_weights(self):
         labels = np.array([self.label_to_int[label] for label in self.label_to_int])
-        class_weights = compute_class_weight('balanced', classes=labels, y=np.array([self.label_to_int[label] for _, _, label, _ in self.audio_files]))
+        class_weights = compute_class_weight('balanced', classes=labels, y=np.array([self.label_to_int[label] for _, _, label,_ in self.audio_files]))
         return torch.tensor(class_weights, dtype=torch.float).to(self.device)
-class SNRAwareDataLoader(DataLoader):
-    """Custom DataLoader that ensures no SNR variants of the same audio file appear in the same batch"""
-    def __init__(self, dataset, batch_size, shuffle=True, **kwargs):
-        self._internal_dataset = dataset
-        self._internal_batch_size = batch_size
-        self._internal_shuffle = shuffle
-        super().__init__(dataset, batch_size, shuffle=False, **kwargs)
-        
-    def __iter__(self):
-        # Group indices by base audio file
-        indices_by_base = {}
-        for idx in range(len(self._internal_dataset)):
-            pairs, _, label, _ = self._internal_dataset.audio_files[idx]
-            base_name = os.path.basename(pairs[0]).replace('_L_16kHz.wav', '')
-            if base_name not in indices_by_base:
-                indices_by_base[base_name] = []
-            indices_by_base[base_name].append(idx)
-        
-        # Create batches ensuring no SNR variants in same batch
-        all_batches = []
-        available_bases = list(indices_by_base.keys())
-        if self._internal_shuffle:
-            random.shuffle(available_bases)
-        
-        current_batch = []
-        used_bases = set()
-        
-        for base_name in available_bases:
-            if len(current_batch) == self._internal_batch_size:
-                all_batches.append(current_batch)
-                current_batch = []
-                used_bases.clear()
-            
-            if base_name not in used_bases:
-                indices = indices_by_base[base_name]
-                if self._internal_shuffle:
-                    idx = random.choice(indices)
-                else:
-                    idx = indices[0]
-                current_batch.append(idx)
-                used_bases.add(base_name)
-        
-        if current_batch:
-            all_batches.append(current_batch)
-        
-        if self._internal_shuffle:
-            random.shuffle(all_batches)
-        
-        for batch in all_batches:
-            batch_samples = [self._internal_dataset[i] for i in batch]
-            # Reorganize the batch data
-            pairs = [sample[0] for sample in batch_samples]
-            logmels = torch.stack([sample[1] for sample in batch_samples])
-            labels = torch.stack([sample[2] for sample in batch_samples])
-            
-            yield pairs, logmels, labels
-
-
-
 
 if __name__ == '__main__':
     dataset = HEARDS('/Users/nkdem/Downloads/HEAR-DS')

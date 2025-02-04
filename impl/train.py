@@ -13,7 +13,7 @@ import logging
 from tqdm import tqdm
 
 from constants import MODELS
-from hear_ds import HEARDS, SNRAwareDataLoader
+from hear_ds import HEARDS 
 from helpers import get_truly_random_seed_through_os, seed_everything
 from models import AudioCNN 
 
@@ -23,14 +23,15 @@ logger = logging.getLogger(__name__)
 def loss_fn(weights, outputs, targets):
     return nn.CrossEntropyLoss(weights)(outputs, targets)
 
-def train(dataset: HEARDS, base_dir,num_epochs, batch_size, max_lr=None, learning_rates = None, cuda=False):
+def train(dataset: HEARDS, base_dir,num_epochs, batch_size, max_lr=None, learning_rates = None, cuda=False, split=True):
     device = torch.device("mps" if not cuda else "cuda")
     logger.info(f"Using device: {device}")
     number = get_truly_random_seed_through_os()
     seed_everything(number)
     logger.info(f"Random seed: {number}")
 
-    dataset.split_dataset()
+    if split:
+        dataset.split_dataset()
 
     train_data = dataset.get_train_data()
     test_data = dataset.get_test_data()
@@ -46,10 +47,9 @@ def train(dataset: HEARDS, base_dir,num_epochs, batch_size, max_lr=None, learnin
             os.makedirs(os.path.join(base_dir, model_name))
     for model_name, (cnn1_channels, cnn2_channels, fc_neurons) in models_to_train.items():
         root_dir = '/Users/nkdem/Downloads/HEAR-DS' if not cuda else '/home/s2203859/minf-1/dataset/abc'
-        train_dataset = HEARDS(root_dir, train_data, feature_cache=dataset.feature_cache, cuda=cuda)
+        train_dataset = HEARDS(root_dir, train_data, feature_cache=dataset.feature_cache, cuda=cuda, augmentation=dataset.augmentation)
 
         train_loader = DataLoader(train_dataset, batch_size=batch_size, shuffle=True)
-        # train_loader = SNRAwareDataLoader(train_dataset, batch_size=batch_size, shuffle=True)
 
         weights = train_dataset.get_weights()
         # store the losses at each epoch
@@ -91,12 +91,12 @@ def train(dataset: HEARDS, base_dir,num_epochs, batch_size, max_lr=None, learnin
             model.train() # Set the model to training mode
             running_loss = 0.0
             for epoch in range(num_epochs):
-                for _, logmel, labels in tqdm(train_loader, desc=f'Training {model_name} [Epoch {epoch + 1}/{num_epochs}] [LR: {optimiser.param_groups[0]["lr"]}]', unit='batch'):
+                for _, logmel, labels, _ in tqdm(train_loader, desc=f'Training {model_name} [Epoch {epoch + 1}/{num_epochs}] [LR: {optimiser.param_groups[0]["lr"]}]', unit='batch'):
                     logmel, labels = logmel.to(device), labels.to(device)
                     
                     # Forward pass
                     outputs = model(logmel)
-                    loss = loss_fn(weights, outputs, labels)
+                    loss = loss_fn(weights, outputs, labelsq)
                     
                     # Backward pass and optimization
                     optimiser.zero_grad()
@@ -173,3 +173,5 @@ def train(dataset: HEARDS, base_dir,num_epochs, batch_size, max_lr=None, learnin
 
 
         print(f"Model {model_name} saved")
+
+        return train_data, test_data
