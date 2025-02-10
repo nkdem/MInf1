@@ -15,7 +15,7 @@ logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(
 logger = logging.getLogger(__name__)
 
 
-def test(dataset: HEARDS, base_dir, model_name, cnn1_channels, cnn2_channels, fc_neurons, samples_per_class=None, cuda=False):
+def test(root_dir,dataset: HEARDS, base_dir, model_name, cnn1_channels, cnn2_channels, fc_neurons, samples_per_class=None, cuda=False):
     """
     Test the model on the dataset.
     
@@ -44,6 +44,12 @@ def test(dataset: HEARDS, base_dir, model_name, cnn1_channels, cnn2_channels, fc
             test_files = [line.strip().split() for line in test_files]
             test_files = [line[0][2:-2] for line in test_files]
             
+            # repalce each element starting path
+            # /home/s2203859/HEAR-DS/ReverberantEnvironment/Speech/-6/05_007_04_000_ITC_L_16kHz.wav
+            # to
+            # /Users/nkdem/Downloads/HEAR-DS/ReverberantEnvironment/Speech/-6/05_007_04_000_ITC_L_16kHz.wav
+            # by replacing /home/s2203859/HEAR-DS with /Users/nkdem/Downloads/HEAR-DS
+            test_files = [file.replace('/home/s2203859/HEAR-DS', '/Users/nkdem/Downloads/HEAR-DS') for file in test_files]
             # read int_to_label mapping
             with open(os.path.join(DIR, 'int_to_label.txt'), 'r') as f:
                 int_to_label = f.readlines()
@@ -74,7 +80,6 @@ def test(dataset: HEARDS, base_dir, model_name, cnn1_channels, cnn2_channels, fc
             logger.debug(f"No. of test data: {len(test_data)}")
             logger.debug(f"Samples per class: {class_counts}")
 
-            root_dir = '/Users/nkdem/Downloads/HEAR-DS' if not cuda else '/home/s2203859/minf-1/dataset/abc'
             test_dataset = HEARDS(root_dir, test_data, int_to_label, feature_cache=dataset.feature_cache, cuda=cuda)
             test_loader = DataLoader(test_dataset, batch_size=16, shuffle=False)
 
@@ -87,7 +92,7 @@ def test(dataset: HEARDS, base_dir, model_name, cnn1_channels, cnn2_channels, fc
             logger.info("Loading model")
             model = AudioCNN(num_classes, cnn1_channels, cnn2_channels, fc_neurons).to(device)
             model_path = os.path.join(DIR, 'model.pth')
-            model.load_state_dict(torch.load(model_path, weights_only=True))
+            model.load_state_dict(torch.load(model_path, weights_only=True, map_location=device))
 
             logger.info("Testing model")
             with torch.no_grad():

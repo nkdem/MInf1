@@ -13,16 +13,18 @@ class ChimeProcessor:
         self.sample_rate = 16000  # HEAR-DS uses 16kHz
         self.snippet_duration = 10  # seconds
         
-        # Create output directories for dev and eval
+        # Create output directories for dev, eval and train
         self.dev_dir = self.output_dir / 'dev'
         self.eval_dir = self.output_dir / 'eval'
         self.train_dir = self.output_dir / 'train'  # Added train directory
 
         self.dev_dir.mkdir(parents=True, exist_ok=True)
         self.eval_dir.mkdir(parents=True, exist_ok=True)
-        self.train_dir = self.output_dir / 'train'  # Added train directory
-
+        self.train_dir.mkdir(parents=True, exist_ok=True)
         
+        # Global counter to be used for assigning env_id alternation
+        self.global_segment_count = 0
+
     def load_transcription(self, session, split):
         """Load JSON transcription file for a session."""
         trans_path = self.chime_root / 'transcriptions' / split / f'{session}.json'
@@ -129,9 +131,18 @@ class ChimeProcessor:
             output_dir.mkdir(parents=True, exist_ok=True)
             
             # Process each segment
-            segments_processed = 0
             for i, segment in enumerate(segments):
                 try:
+                    # Determine env_id based on the global counter (half samples 100, half 101)
+                    env_id = "100" if self.global_segment_count % 2 == 0 else "101"
+                    
+                    # REC_ID: derived from session number by stripping the 'S' and adding 200
+                    rec_num = int(session[1:])  # e.g., "S02" -> 2
+                    rec_id = f"{rec_num + 200:03d}"  # S02 -> 202
+                    
+                    cut_id = "00"  # fixed as "00"
+                    snip_id = f"{i:03d}"  # segment index as SNIP_ID
+                    
                     # Find the P* file corresponding to the reference speaker
                     ref_speaker = segment['reference_speaker']
                     speaker_num = int(ref_speaker[1:])  # Extract number from P1, P2, etc.
@@ -156,17 +167,18 @@ class ChimeProcessor:
                     
                     # Save left and right channels
                     for ch_idx, side in enumerate(['L', 'R']):
-                        output_name = f"{session}_{i:03d}_ITC_{side}_16kHz.wav"
-                        output_path = output_dir / output_name
+                        track_name = f"ITC_{side}"
+                        filename = f"{env_id}_{rec_id}_{cut_id}_{snip_id}_{track_name}_16kHz.wav"
+                        output_path = output_dir / filename
                         
                         try:
-                            # Save individual channel
+                            # Save individual channel; ensure audio has at least the expected number of channels
                             sf.write(str(output_path), audio[ch_idx], self.sample_rate)
-                            segments_processed += 1
                         except Exception as e:
                             print(f"Error saving file {output_path}: {e}")
                             continue
                     
+                    self.global_segment_count += 1
                     if i % 10 == 0:
                         print(f"Processed {i+1}/{len(segments)} segments")
                         
@@ -174,17 +186,13 @@ class ChimeProcessor:
                     print(f"Error processing segment {i} in session {session}: {e}")
                     continue
                         
-            print(f"Successfully processed {segments_processed//2} segments in session {session}")
+            print(f"Successfully processed {self.global_segment_count} segments in session {session}")
                 
         except Exception as e:
             print(f"Error processing session {session}: {e}")
 
-
-
     def process_all(self):
         """Process all sessions in both dev and eval sets."""
-        total_segments = {'dev': 0, 'eval': 0, 'train': 0}
-        
         # Process dev set (S02 and S09)
         print("Processing dev set...")
         for session in ['S02', 'S09']:
@@ -215,7 +223,7 @@ class ChimeProcessor:
         print(f"Eval set: {len(eval_files)//2} segments")
         print(f"Train set: {len(train_files)//2} segments")
         
-        # Print total segments found vs processed
+        # Print detailed summary
         print("\nDetailed Summary:")
         for split in ['dev', 'eval', 'train']:
             dir_path = getattr(self, f'{split}_dir')
@@ -223,19 +231,19 @@ class ChimeProcessor:
             print(f"{split.capitalize()} set:")
             print(f"  - Segments processed: {len(files)//2}")
         
-        # now merge the dev and eval sets into a single folder
-        print("\nMerging train,dev and eval sets into a single folder...")
+        # Merge the dev, eval and train sets into a single folder
+        print("\nMerging train, dev and eval sets into a single folder...")
         merged_dir = self.output_dir / 'merged'
         merged_dir.mkdir(parents=True, exist_ok=True)
         
-        # Copy files from dev, eval and train to merged
+        # Move files from dev, eval and train to merged
         for split in ['dev', 'eval', 'train']:
             dir_path = getattr(self, f'{split}_dir')
             files = list(dir_path.glob('*.wav'))
             for f in files:
                 f.rename(merged_dir / f.name)
         
-        # and now move the merged folder to the output_dir
+        # Rename merged folder to "InterferingSpeakers"
         merged_dir.rename(self.output_dir / 'InterferingSpeakers')
 
         self.dev_dir.rmdir()
