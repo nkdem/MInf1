@@ -2,10 +2,10 @@
 import os
 from base_experiment import BaseExperiment
 from hear_ds import HEARDS
-from train import train_with_adam
+from train import AdamEarlyStopTrainer
 from constants import MODELS
 
-class Experiment1(BaseExperiment):
+class FullAdam(BaseExperiment):
     def __init__(self, dataset, num_epochs=1, batch_size=16, 
                  number_of_experiments=1, learning_rates=None, cuda=False):
         super().__init__(dataset, cuda)
@@ -13,7 +13,7 @@ class Experiment1(BaseExperiment):
         self.batch_size = batch_size
         self.number_of_experiments = number_of_experiments
         self.learning_rates = learning_rates
-        self.experiment_name = f'mac_adam_300_max_new_dataset'
+        self.experiment_name = f"full_adam_{num_epochs}epochs_{batch_size}batchsize_full"
 
     def run(self):
         # Training phase
@@ -25,14 +25,15 @@ class Experiment1(BaseExperiment):
         for i in range(1, self.number_of_experiments + 1):
             print(f"\nStarting experiment run {i}/{self.number_of_experiments}")
             base_dir = self.create_experiment_dir(self.experiment_name, i)
-            train_with_adam(
+            adam = AdamEarlyStopTrainer(
                 root_dir=self.dataset.root_dir,
                 dataset=self.dataset,
                 base_dir=base_dir,
                 num_epochs=self.num_epochs,
                 batch_size=self.batch_size,
-                cuda=self.cuda
+                cuda=self.cuda,
             )
+            adam.train()
 
         print("\nTraining phase completed. Starting results collection and analysis...")
 
@@ -114,15 +115,15 @@ class Experiment1(BaseExperiment):
         }
 
 if __name__ == '__main__':
-    root_dir = '/Users/nkdem/Downloads/HEAR-DS'
-    # root_dir = '/home/s2203859/HEAR-DS'
-    dataset = HEARDS(root_dir=root_dir, cuda=False)
-    experiment = Experiment1(
+    # root_dir = '/Users/nkdem/Downloads/HEAR-DS'
+    root_dir = '/home/s2203859/HEAR-DS'
+    dataset = HEARDS(root_dir=root_dir, cuda=False, augmentation=False)
+    experiment = FullAdam(
         dataset=dataset,
-        num_epochs=100, 
+        num_epochs=240, 
         batch_size=16, 
-        number_of_experiments=5, 
-        cuda=False
+        number_of_experiments=3, 
+        cuda=True
     )
     experiment.run()
     print(experiment)

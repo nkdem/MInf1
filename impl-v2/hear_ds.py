@@ -39,9 +39,11 @@ class HEARDS(Dataset):
 
 
         # Initialize a cache for features
-        if feature_cache is not None:
+        provided_cache = False
+        if feature_cache is not None and len(feature_cache.keys()) > 0:
             logger.info('Using provided feature cache')
-        self.feature_cache = feature_cache if feature_cache is not None else {}
+            provided_cache = True
+        self.feature_cache = feature_cache if provided_cache else {}
 
         # Initialize label mappings
         if int_to_label is None:
@@ -89,13 +91,12 @@ class HEARDS(Dataset):
                     snr_level = None
                     if relative_diff == 3:
                         environment += '_speech'
-                        # if self.augmentation:
-                        #     snr_level = root_split[-1]
-                        snr_level = root_split[-1]
+                        if self.augmentation:
+                            snr_level = root_split[-1]
 
                     # Check if we've already reached the max 50 files for this environment
-                    if env_file_count.get(environment + f'{snr_level}', 0) >= 300:
-                        continue
+                    # if env_file_count.get(environment, 0) >= 150:
+                    #     continue
 
                     # Get the recsit identifier
                     recsit = file.split('_')[1]
@@ -110,7 +111,7 @@ class HEARDS(Dataset):
                             else:
                                 audio_files.append(([file_path, pair_file_path], recsit, environment, None))
                             # Increment the count for the current environment
-                            env_file_count[environment + f'{snr_level}'] = env_file_count.get(environment + f'{snr_level}', 0) + 1
+                            env_file_count[environment] = env_file_count.get(environment, 0) + 1
 
         return audio_files
 
