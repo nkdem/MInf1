@@ -22,7 +22,7 @@ logger = logging.getLogger(__name__)
 
 
 def loss_fn(weights, outputs, targets):
-    return nn.CrossEntropyLoss()(outputs, targets)
+    return nn.CrossEntropyLoss(weights)(outputs, targets)
 
 
 class BaseTrainer:

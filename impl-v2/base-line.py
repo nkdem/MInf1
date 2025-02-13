@@ -2,10 +2,10 @@
 import os
 from base_experiment import BaseExperiment
 from hear_ds import HEARDS
-from train import AdamEarlyStopTrainer
+from train import FixedLRTrainer
 from constants import MODELS
 
-class FullAdam(BaseExperiment):
+class Baseline(BaseExperiment):
     def __init__(self, dataset, num_epochs=1, batch_size=16, 
                  number_of_experiments=1, learning_rates=None, cuda=False):
         super().__init__(dataset, cuda)
@@ -13,11 +13,11 @@ class FullAdam(BaseExperiment):
         self.batch_size = batch_size
         self.number_of_experiments = number_of_experiments
         self.learning_rates = learning_rates
-        self.experiment_name = f"full_adam_{num_epochs}epochs_{batch_size}batchsize_full_weights_fixed_full"
+        self.experiment_name = f'{num_epochs}_epochs_{batch_size}_full_paper'
 
     def run(self):
         # Training phase
-        print(f"Starting Experiment 1 with {self.number_of_experiments} runs...")
+        print(f"Starting Baseline with {self.number_of_experiments} runs...")
         print(f"Parameters: epochs={self.num_epochs}, batch_size={self.batch_size}")
         print(f"Learning rates: {self.learning_rates}")
 
@@ -25,15 +25,16 @@ class FullAdam(BaseExperiment):
         for i in range(1, self.number_of_experiments + 1):
             print(f"\nStarting experiment run {i}/{self.number_of_experiments}")
             base_dir = self.create_experiment_dir(self.experiment_name, i)
-            adam = AdamEarlyStopTrainer(
+            
+            trainer = FixedLRTrainer(
                 root_dir=self.dataset.root_dir,
-                dataset=self.dataset,
-                base_dir=base_dir,
-                num_epochs=self.num_epochs,
-                batch_size=self.batch_size,
-                cuda=self.cuda,
-            )
-            adam.train()
+                dataset=self.dataset, 
+                base_dir=base_dir, 
+                num_epochs=self.num_epochs, 
+                batch_size=self.batch_size, 
+                learning_rates=self.learning_rates, 
+                cuda=self.cuda)
+            trainer.train()
 
         print("\nTraining phase completed. Starting results collection and analysis...")
 
@@ -43,7 +44,7 @@ class FullAdam(BaseExperiment):
         os.makedirs(output_dir, exist_ok=True)
 
         # Collect and validate data consistency across experiments
-        for i in range(1, 3):
+        for i in range(1, self.number_of_experiments + 1):
             print(f"Collecting results from experiment run {i}...")
             base_dir = f'models/{self.experiment_name}/{i}'
             
@@ -117,12 +118,13 @@ class FullAdam(BaseExperiment):
 if __name__ == '__main__':
     root_dir = '/Users/nkdem/Downloads/HEAR-DS'
     # root_dir = '/home/s2203859/HEAR-DS'
-    dataset = HEARDS(root_dir=root_dir, cuda=False, augmentation=False)
-    experiment = FullAdam(
+    dataset = HEARDS(root_dir=root_dir, cuda=False)
+    experiment = Baseline(
         dataset=dataset,
-        num_epochs=240, 
+        num_epochs=2, 
         batch_size=32, 
-        number_of_experiments=5, 
+        number_of_experiments=2, 
+        learning_rates=[0.05,0.01,0.001,0.0005,0.0002,0.0001],
         cuda=False
     )
     experiment.run()

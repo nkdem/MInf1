@@ -49,7 +49,7 @@ def test(root_dir,dataset: HEARDS, base_dir, model_name, cnn1_channels, cnn2_cha
             # to
             # /Users/nkdem/Downloads/HEAR-DS/ReverberantEnvironment/Speech/-6/05_007_04_000_ITC_L_16kHz.wav
             # by replacing /home/s2203859/HEAR-DS with /Users/nkdem/Downloads/HEAR-DS
-            test_files = [file.replace('/home/s2203859/HEAR-DS', '/Users/nkdem/Downloads/HEAR-DS') for file in test_files]
+            # test_files = [file.replace('/home/s2203859/HEAR-DS', '/Users/nkdem/Downloads/HEAR-DS') for file in test_files]
             # read int_to_label mapping
             with open(os.path.join(DIR, 'int_to_label.txt'), 'r') as f:
                 int_to_label = f.readlines()

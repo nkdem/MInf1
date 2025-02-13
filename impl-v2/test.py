@@ -45,13 +45,7 @@ def test(dataset: HEARDS, base_dir, model_name, cnn1_channels, cnn2_channels, fc
             test_files = [line.strip().split() for line in test_files]
             test_files = [line[0][2:-2] for line in test_files]
             
-            # repalce each element starting path
-            # /home/s2203859/HEAR-DS/ReverberantEnvironment/Speech/-6/05_007_04_000_ITC_L_16kHz.wav
-            # to
-            # /Users/nkdem/Downloads/HEAR-DS/ReverberantEnvironment/Speech/-6/05_007_04_000_ITC_L_16kHz.wav
-            # by replacing /home/s2203859/HEAR-DS with /Users/nkdem/Downloads/HEAR-DS
-            test_files = [file.replace('/home/s2203859/HEAR-DS', '/Users/nkdem/Downloads/HEAR-DS') for file in test_files]
-            # read int_to_label mapping
+            # test_files = [file.replace('/home/s2203859/HEAR-DS', '/Users/nkdem/Downloads/HEAR-DS') for file in test_files]
             with open(os.path.join(DIR, 'int_to_label.txt'), 'r') as f:
                 int_to_label = f.readlines()
                 int_to_label = [line.strip().split() for line in int_to_label]
@@ -93,7 +87,7 @@ def test(dataset: HEARDS, base_dir, model_name, cnn1_channels, cnn2_channels, fc
             logger.info("Loading model")
             model = AudioCNN(num_classes, cnn1_channels, cnn2_channels, fc_neurons).to(device)
             model_path = os.path.join(DIR, 'model.pth')
-            model.load_state_dict(torch.load(model_path, map_location=device))
+            model.load_state_dict((torch.load(model_path, weights_only=True)))
 
             model.eval()
             logger.info("Testing model")
