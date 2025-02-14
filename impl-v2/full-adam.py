@@ -13,7 +13,7 @@ class FullAdam(BaseExperiment):
         self.batch_size = batch_size
         self.number_of_experiments = number_of_experiments
         self.learning_rates = learning_rates
-        self.experiment_name = f"full_adam_{num_epochs}epochs_{batch_size}batchsize_full_weights_fixed_full"
+        self.experiment_name = f"full_adam_{num_epochs}epochs_{batch_size}batchsize"
 
     def run(self):
         # Training phase
@@ -88,11 +88,6 @@ class FullAdam(BaseExperiment):
 
         print(f"\nExperiment completed. Results saved in: {output_dir}")
 
-        # --- New part: Compare SNR performance ---
-        # print("\nStarting SNR performance analysis (PESQ and STOI) for each environment...")
-        # snr_results = self.compare_snr_performance()
-        # print("\nSNR performance analysis completed.")
-
     def __str__(self):
         """String representation of the experiment configuration"""
         return (f"Experiment1("
@@ -115,15 +110,17 @@ class FullAdam(BaseExperiment):
         }
 
 if __name__ == '__main__':
-    root_dir = '/Users/nkdem/Downloads/HEAR-DS'
-    # root_dir = '/home/s2203859/HEAR-DS'
-    dataset = HEARDS(root_dir=root_dir, cuda=False, augmentation=False)
+    # root_dir = '/Users/nkdem/Downloads/HEAR-DS'
+    # chime_dir = '/Volumes/SSD/Datasets/CHiME3/CHiME3-Isolated-DEV/dt05_bth'
+    chime_dir = '/home/s2203859/CHiME3/dt05_bth'
+    root_dir = '/home/s2203859/HEAR-DS'
+    dataset = HEARDS(root_dir=root_dir, chime_dir=chime_dir, cuda=True)
     experiment = FullAdam(
         dataset=dataset,
         num_epochs=240, 
         batch_size=32, 
         number_of_experiments=5, 
-        cuda=False
+        cuda=True
     )
     experiment.run()
     print(experiment)

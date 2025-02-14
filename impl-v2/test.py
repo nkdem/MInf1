@@ -1,3 +1,4 @@
+import copy
 import os
 import time
 
@@ -75,7 +76,8 @@ def test(dataset: HEARDS, base_dir, model_name, cnn1_channels, cnn2_channels, fc
             logger.debug(f"No. of test data: {len(test_data)}")
             logger.debug(f"Samples per class: {class_counts}")
 
-            test_dataset = HEARDS(dataset.root_dir, test_data, int_to_label, feature_cache=dataset.feature_cache, cuda=cuda)
+            test_dataset = copy.deepcopy(dataset)
+            test_dataset.audio_files = test_data
             test_loader = DataLoader(test_dataset, batch_size=16, shuffle=False)
 
             correct = 0 
@@ -92,8 +94,32 @@ def test(dataset: HEARDS, base_dir, model_name, cnn1_channels, cnn2_channels, fc
             model.eval()
             logger.info("Testing model")
             with torch.no_grad():
-                for audio, logmels, labels in tqdm(test_loader, desc="Testing", unit="batch"):
-                    logmels = logmels.to(device)
+                for batch in tqdm(test_loader, desc="Testing", unit="batch"):
+                    # logmels = logmels.to(device)
+                    # labels = labels.to(device)
+
+                    pairs, _, labels = batch
+                    num_samples = len(pairs[0])
+
+                    samples = []
+                    for i in range(num_samples):
+                        sample_paths = [pairs[0][i], pairs[1][i]]
+                        sample = test_dataset.get_mel(sample_paths, labels[i], train=False)
+                        samples.append(sample)
+                    logmels = torch.stack(samples).to(device)
+
+                    actual_labels = []
+                    for i in range(num_samples):
+                        label = labels[i]
+                        if label == 'InterfereringSpeakers' or label == 'CocktailParty':
+                            actual_labels.append(label)
+                        else:
+                            if test_dataset.is_pair_speech(pairs[0][i]):
+                                actual_labels.append(f'{label}_speech')
+                            else:
+                                actual_labels.append(label)
+                    labels_to_int = [test_dataset.label_to_int[label] for label in actual_labels]
+                    labels = torch.tensor(labels_to_int, dtype=torch.long)
                     labels = labels.to(device)
 
                     outputs = model(logmels)
