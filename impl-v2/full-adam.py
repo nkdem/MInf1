@@ -1,99 +1,79 @@
 # experiment1.py
+import gc
 import os
+import pickle
+
+import torch
 from base_experiment import BaseExperiment
-from hear_ds import HEARDS
+from models import AudioCNN
 from train import AdamEarlyStopTrainer
 from constants import MODELS
 
 class FullAdam(BaseExperiment):
-    def __init__(self, dataset, num_epochs=1, batch_size=16, 
-                 number_of_experiments=1, learning_rates=None, cuda=False):
-        super().__init__(dataset, cuda)
+    def __init__(self, num_epochs=1, batch_size=16, 
+                 experiment_no=1, learning_rates=None, cuda=False):
+        self.heards_dir = '/Users/nkdem/Downloads/HEAR-DS' if not cuda else '/disk/scratch/s2203859/minf-1/HEAR-DS'
+        self.speech_dir = '/Volumes/SSD/Datasets/CHiME3/CHiME3-Isolated-DEV/dt05_bth' if not cuda else '/disk/scratch/s2203859/minf-1/dt05_bth/'
+        super().__init__(heards_dir=self.heards_dir, speech_dir=self.speech_dir, batch_size=32, cuda=cuda)
         self.num_epochs = num_epochs
         self.batch_size = batch_size
-        self.number_of_experiments = number_of_experiments
+        self.exp_no = experiment_no
         self.learning_rates = learning_rates
-        self.experiment_name = f"full_adam_{num_epochs}epochs_{batch_size}batchsize"
+        # self.experiment_name = f"full_adam_{num_epochs}epochs_{batch_size}batchsize"
+        self.experiment_name = f"test"
 
     def run(self):
         # Training phase
-        print(f"Starting Experiment 1 with {self.number_of_experiments} runs...")
+        print(f"Starting experiment: {self.experiment_name}")
         print(f"Parameters: epochs={self.num_epochs}, batch_size={self.batch_size}")
         print(f"Learning rates: {self.learning_rates}")
 
-        # Run training for each experiment
-        for i in range(1, self.number_of_experiments + 1):
-            print(f"\nStarting experiment run {i}/{self.number_of_experiments}")
-            base_dir = self.create_experiment_dir(self.experiment_name, i)
-            adam = AdamEarlyStopTrainer(
-                root_dir=self.dataset.root_dir,
-                dataset=self.dataset,
-                base_dir=base_dir,
-                num_epochs=self.num_epochs,
-                batch_size=self.batch_size,
-                cuda=self.cuda,
-            )
-            adam.train()
+        print(f"\nStarting experiment run {self.exp_no}...")
+        base_dir = self.create_experiment_dir(self.experiment_name, self.exp_no)
+        adam = AdamEarlyStopTrainer(
+            cuda=self.cuda,
+            base_dir=base_dir,
+            train_loader=self.train_loader,
+            num_epochs=self.num_epochs,
+        )
+        adam.train()
 
         print("\nTraining phase completed. Starting results collection and analysis...")
 
         # Initialize results containers
         results = self.initialize_result_containers()
-        output_dir = f'models/{self.experiment_name}/combined_results'
-        os.makedirs(output_dir, exist_ok=True)
 
-        # Collect and validate data consistency across experiments
-        for i in range(1, 3):
-            print(f"Collecting results from experiment run {i}...")
-            base_dir = f'models/{self.experiment_name}/{i}'
-            
-            # Collect training and testing data
-            training_data, testing_data = self.collect_experiment_data(base_dir)
-            
-            # Validate data consistency
-            try:
-                self.validate_data_consistency(training_data, testing_data)
-            except AssertionError as e:
-                print(f"Warning: Data consistency check failed for run {i}: {e}")
-                continue
-
-            # Collect results for each model
-            for model in MODELS.keys():
-                self.collect_model_results(base_dir, model, results)
-
-        print("\nResults collection completed. Generating visualization plots...")
-
-        # Generate all plots
-        first_exp_dir = f'models/{self.experiment_name}/1'  # Use first experiment for reference
-        self.generate_plots(
-            results=results,
-            base_dir=first_exp_dir,
-            output_dir=output_dir,
-            experiment_name=self.experiment_name
-        )
-
-        # Print summary statistics
-        print("\nExperiment Summary:")
+        print(f"Collecting results from experiment run {self.exp_no}...")
         for model in MODELS.keys():
-            if results['accuracies'][model]:
-                mean_acc = sum(results['accuracies'][model]) / len(results['accuracies'][model])
-                mean_time = sum(results['training_times'][model]) / len(results['training_times'][model])
-                print(f"\n{model}:")
-                print(f"  Average Accuracy: {mean_acc:.2f}%")
-                print(f"  Average Training Time: {mean_time:.2f} minutes")
-                if results['losses'][model]:
-                    final_losses = [losses[-1] for losses in results['losses'][model]]
-                    mean_final_loss = sum(final_losses) / len(final_losses)
-                    print(f"  Average Final Loss: {mean_final_loss:.4f}")
+            cnn1_channels, cnn2_channels, fc_neurons = MODELS[model]
+            cnn = AudioCNN(adam.num_of_classes, cnn1_channels, cnn2_channels, fc_neurons).to(self.device)
+            model_path = os.path.join(base_dir, model, 'model.pth')
+            cnn.load_state_dict(torch.load(model_path, weights_only=True, map_location=self.device)) 
+            classwise_accuracy, total_accuracy, confusion_matrix = self.collect_model_results(test_loader=self.test_loader, model=cnn, no_classes=adam.num_of_classes, env_to_int=adam.env_to_int)
+            results['losses'][model].append(adam.losses[model])
+            results['duration'][model].append(adam.durations[model])
+            results['learning_rates'][model].append(adam.learning_rates[model])
+            results['class_accuracies'][model].append(classwise_accuracy)
+            results['total_accuracies'][model].append(total_accuracy)
+            results['confusion_matrix_raw'][model].append(confusion_matrix)
+            results['trained_models'][model].append(cnn)
 
-        print(f"\nExperiment completed. Results saved in: {output_dir}")
+        # save results 
+        with open(os.path.join(base_dir, 'results.pkl'), 'wb') as f:
+            pickle.dump(results, f)
+        print(f"Results saved in {base_dir}")
+        print(results)
+
+        with open(os.path.join(base_dir, 'test_files.csv'), 'w') as f:
+            for _, env, _, _, base, snr in self.test_loader:
+                for e,b in zip(env,base):
+                    f.write(f'{b[0]}, {e}{", " + " ".join(b[1]) if b[1] is not None else ""}\n')
 
     def __str__(self):
         """String representation of the experiment configuration"""
         return (f"Experiment1("
                 f"num_epochs={self.num_epochs}, "
                 f"batch_size={self.batch_size}, "
-                f"number_of_experiments={self.number_of_experiments}, "
                 f"learning_rates={self.learning_rates}, "
                 f"cuda={self.cuda})")
 
@@ -103,25 +83,32 @@ class FullAdam(BaseExperiment):
             "experiment_type": "Experiment1",
             "num_epochs": self.num_epochs,
             "batch_size": self.batch_size,
-            "number_of_experiments": self.number_of_experiments,
             "learning_rates": self.learning_rates,
             "cuda": self.cuda,
             "experiment_name": self.experiment_name
         }
 
 if __name__ == '__main__':
-    # root_dir = '/Users/nkdem/Downloads/HEAR-DS'
-    # chime_dir = '/Volumes/SSD/Datasets/CHiME3/CHiME3-Isolated-DEV/dt05_bth'
-    chime_dir = '/home/s2203859/CHiME3/dt05_bth'
-    root_dir = '/home/s2203859/HEAR-DS'
-    dataset = HEARDS(root_dir=root_dir, chime_dir=chime_dir, cuda=True)
+    # get command line arg for --experiment_no
+    # import argparse
+    # parser = argparse.ArgumentParser()
+    # parser.add_argument("--experiment_no", type=int)
+    # parser.add_argument("--cuda", action='store_true', default=False)
+    # args = parser.parse_args()
+
+    # # if arg is not provided, default to 1
+    # # but warn 
+    # if args.experiment_no is None:
+    #     print("No experiment number provided. Defaulting to 1.")
+    #     experiment_no = 1
+    # cuda = args.cuda
+    experiment_no = 1
+    cuda = False 
+    experiment_no = experiment_no
     experiment = FullAdam(
-        dataset=dataset,
-        num_epochs=240, 
+        num_epochs=1, 
         batch_size=32, 
-        number_of_experiments=5, 
-        cuda=True
+        experiment_no=experiment_no,
+        cuda=cuda
     )
     experiment.run()
-    print(experiment)
-    print(experiment.get_experiment_config())
