@@ -36,3 +36,55 @@ class AudioCNN(nn.Module):
         x = x.view(x.size(0), -1)  # Flatten the tensor
         x = self.fc(x)
         return x
+class CNNSpeechEnhancer(nn.Module):
+    def __init__(self):
+        super(CNNSpeechEnhancer, self).__init__()
+
+        self.conv_block = nn.Sequential(
+            nn.Conv2d(in_channels=40, out_channels=64, kernel_size=3, padding="same"),
+            nn.BatchNorm2d(64),
+            nn.ReLU(inplace=True),
+
+            nn.Conv2d(in_channels=64, out_channels=128, kernel_size=3, padding="same"),
+            nn.BatchNorm2d(128),
+            nn.ReLU(inplace=True),
+
+            nn.Conv2d(in_channels=128, out_channels=64, kernel_size=3, padding="same"),
+            nn.BatchNorm2d(64),
+            nn.ReLU(inplace=True),
+        )
+
+        self.conv_final = nn.Conv2d(in_channels=64, out_channels=40, kernel_size=3, padding="same")
+
+    def forward(self, x):
+        print(f"Input shape: {x.shape}")
+        feats = self.conv_block(x)
+        print(f"After conv_block: {feats.shape}")
+        out = self.conv_final(feats)
+        print(f"Output shape: {out.shape}")
+        return out
+
+class CNNSpeechEnhancer(nn.Module):
+    def __init__(self):
+        super(CNNSpeechEnhancer, self).__init__()
+
+        self.conv_block = nn.Sequential(
+            nn.Conv2d(in_channels=40, out_channels=64, kernel_size=(1, 3), padding=(0, 1)),
+            nn.BatchNorm2d(64),
+            nn.ReLU(inplace=True),
+
+            nn.Conv2d(in_channels=64, out_channels=128, kernel_size=(1, 3), padding=(0, 1)),
+            nn.BatchNorm2d(128),
+            nn.ReLU(inplace=True),
+
+            nn.Conv2d(in_channels=128, out_channels=64, kernel_size=(1, 3), padding=(0, 1)),
+            nn.BatchNorm2d(64),
+            nn.ReLU(inplace=True),
+        )
+
+        self.conv_final = nn.Conv2d(in_channels=64, out_channels=40, kernel_size=(1, 3), padding=(0, 1))
+
+    def forward(self, x):
+        feats = self.conv_block(x)
+        out = self.conv_final(feats)
+        return out.squeeze(2)  # Remove the height dimension

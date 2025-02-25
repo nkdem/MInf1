@@ -63,7 +63,7 @@ class BackgroundDataset(Dataset):
     For a pair, one file contains "_L" and the other "_R".
     __getitem__ returns a tuple (file_pair, recsit, label) where label=0 indicates background-only.
     """
-    def __init__(self, root_dir: str, max_samples_per_env: int = 15, files_to_use: List[Tuple[List[str]]] = None):
+    def __init__(self, root_dir: str, max_samples_per_env: int = 10000, files_to_use: List[Tuple[List[str]]] = None):
         self.root_dir = root_dir
         if files_to_use is None:
             self.audio_files = self._get_all_audio_files(max_samples_per_env)
@@ -177,7 +177,7 @@ class MixedAudioDataset(Dataset):
     Uses ensure_valid_lengths_with_speech to trim/pad and mix_signals to combine.
     Returns a tuple (mixed_audio_pair, label) where label=1 indicates speech is present.
     """
-    def __init__(self, background_dataset: Dataset, speech_dataset: Dataset, snr_levels: List[int] = None):
+    def __init__(self, background_dataset: BackgroundDataset, speech_dataset: SpeechDataset, snr_levels: List[int] = None):
         self.background_dataset = background_dataset
         self.speech_dataset = speech_dataset
         if snr_levels is None:
@@ -210,31 +210,62 @@ class MixedAudioDataset(Dataset):
         return concatenated_speech, samples_used
 
     def __getitem__(self, idx: int):
+        """
+        Returns:
+        - mixed_waveforms (list of length 2, e.g. [mixed_left, mixed_right])
+        - clean_waveforms (list of length 2, e.g. [clean_left, clean_right])
+        - environment, recsit, cut_id, (basename, speech_used), snr
+        """
         file_pair, environment, recsit, cut_id, _, _ = self.background_dataset[idx]
-        # Read background channels.
-        background_l, _ = sf.read(file_pair[0])
-        background_r, _ = sf.read(file_pair[1])
+
+        # Load background channels
+        background_l, _sr1 = sf.read(file_pair[0])
+        background_r, _sr2 = sf.read(file_pair[1])
         if background_l.ndim > 1:
             background_l = background_l[:, 0]
         if background_r.ndim > 1:
             background_r = background_r[:, 0]
 
-        # Check if the current sample is from a dataset that already has speech content.
-        # If yes, do not add speech mixing.
+        basename = base_name(os.path.basename(file_pair[0]))
+        # If environment already has speech, skip mixing and treat as background-only.
+        # e.g. "CocktailParty", "InterfereringSpeakers"
         if environment in ["CocktailParty", "InterfereringSpeakers"]:
-            # Return the background channels directly with label 0 (background-only).
-            return [background_l, background_r], environment, recsit, cut_id, 1 
+            # We return the background as if "no speech" => label 0 or 1 — up to your pipeline
+            # For consistency, let's keep it "0 = no speech" or "1 = has speech".
+            # But you originally used "return [bgL, bgR], environment, recsit, ... label=1"
+            # We'll assume label=0 means background-only, label=1 means speech present
+            # so maybe we do label=0 here, or preserve your earlier usage.
+            # We'll do label=0 to indicate no added speech.
+            return [background_l, background_r], None, environment, recsit, cut_id, (basename, None), 0
 
+        # Otherwise, we do the usual mixing
         snr = random.choice(self.snr_levels)
         combined_speech, speech_used = self._get_combined_speech()
+
+        # For stereo "clean", you might replicate the same speech on both channels if desired:
         speech_l, bg_chunk_l = ensure_valid_lengths_with_speech(combined_speech, background_l)
         speech_r, bg_chunk_r = ensure_valid_lengths_with_speech(combined_speech, background_r)
+
+        # The “clean” waveforms are what we’d feed to the MSE as the target
+        clean_l, clean_r = speech_l.copy(), speech_r.copy()
+
+        # Now mix them at the chosen snr
         mixed_l = mix_signals(speech_l, bg_chunk_l, snr)
         mixed_r = mix_signals(speech_r, bg_chunk_r, snr)
-        environment = f'SpeechIn_{environment}'
-        basename = base_name(os.path.basename(file_pair[0]))
-        return [mixed_l, mixed_r], environment, recsit, cut_id, (basename, speech_used), snr
 
+        environment = f"SpeechIn_{environment}"
+
+        # Return: (noisy, clean, env, recsit, cut_id, extra_info, label=1)
+        # Because we intentionally added speech:
+        return (
+            [mixed_l, mixed_r],                # noisy mixture
+            [clean_l, clean_r],                # clean speech
+            environment, 
+            recsit, 
+            cut_id, 
+            (basename, speech_used),
+            snr
+        )
 
 ###############################################################################
 # Helper functions for splitting datasets based on recsit and speaker.

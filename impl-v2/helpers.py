@@ -5,6 +5,8 @@ import random
 import numpy as np
 import torch
 import torchaudio.transforms as T
+import torchaudio.functional as F
+
 
 
 def seed_everything(seed=42):
@@ -135,3 +137,73 @@ def compute_average_logmel(
     # Add a channel dimension to match expected shape: (batch_size, 1, n_mels, n_frames)
     return avg_logmel.unsqueeze(1)
 
+
+def logmel_to_linear(logmel_spectrogram, sample_rate, n_fft, n_mels, device):
+    """
+    Convert a log-mel spectrogram to a linear spectrogram.
+
+    Parameters:
+        logmel_spectrogram (torch.Tensor): Log-mel spectrogram with shape (batch_size, 1, n_mels, n_frames)
+        sample_rate (int): Sample rate of the audio signals.
+        n_fft (int): FFT size.
+        n_mels (int): Number of mel bands.
+        device (torch.device): The device to use.
+
+    Returns:
+        torch.Tensor: Linear spectrogram with shape (batch_size, 1, n_fft//2 + 1, n_frames)
+    """
+    # Remove the channel dimension
+    logmel_spectrogram = logmel_spectrogram.squeeze(1)
+
+    # Exponentiate the log-mel spectrogram
+    mel_spectrogram = torch.pow(10.0, logmel_spectrogram / 20.0)
+
+    # Create the inverse mel filter bank
+    mel_to_linear_transform = T.InverseMelScale(
+        n_stft=int((n_fft // 2) + 1), # due to nyquist frequency
+        n_mels=n_mels,
+        sample_rate=sample_rate,
+    ).to('cpu' if device != 'cuda' else 'cuda')
+
+    # Convert mel spectrogram back to linear spectrogram
+    linear_spectrogram = mel_to_linear_transform(mel_spectrogram.to('cpu' if device != 'cuda' else 'cuda'))
+
+    return linear_spectrogram.unsqueeze(1)
+
+def linear_to_waveform(linear_spectrogram_batch, sample_rate, n_fft, hop_length, win_length, device, num_iters=32):
+    """
+    Convert a batch of linear spectrograms to waveforms using the Griffin-Lim algorithm.
+
+    Parameters:
+        linear_spectrogram_batch (torch.Tensor): Linear spectrograms with shape (batch_size, 1, n_fft//2 + 1, n_frames)
+        sample_rate (int): Sample rate of the audio signals.
+        n_fft (int): FFT size.
+        hop_length (int): Number of samples between successive frames.
+        win_length (int): Each frame of audio is windowed by `win_length` samples.
+        device (torch.device): The device to use.
+        num_iters (int): Number of iterations for the Griffin-Lim algorithm.
+
+    Returns:
+        torch.Tensor: Reconstructed waveforms with shape (batch_size, waveform_length)
+    """
+    # Remove the channel dimension
+    linear_spectrogram_batch = linear_spectrogram_batch.squeeze(1)
+    # send to device
+    linear_spectrogram_batch = linear_spectrogram_batch.to(device)
+
+    # Instantiate the Griffin-Lim transformation
+    griffin_lim = T.GriffinLim(
+        n_fft=n_fft,
+        win_length=win_length,
+        hop_length=hop_length,
+        n_iter=num_iters,
+    ).to(device)
+
+    # Reconstruct waveforms
+    waveforms = []
+    for linear_spectrogram in linear_spectrogram_batch:
+        waveform = griffin_lim(linear_spectrogram)
+        waveforms.append(waveform)
+
+    # Stack the waveforms to return as a batch
+    return torch.stack(waveforms)
