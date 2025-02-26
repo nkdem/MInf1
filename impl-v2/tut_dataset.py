@@ -24,7 +24,14 @@ class TUTDataset(Dataset):
         if audio_files is None:
             self.audio_files = self._get_audio_files()
         else:
-            self.audio_files = [(audio_file, self.labels[f'{os.path.basename(audio_file)}']) for audio_file in audio_files]
+            # self.audio_files = [(audio_file, self.labels[f'{os.path.basename(audio_file)}']) for audio_file in audio_files]
+            self.audio_files = [] 
+            for audio_file in audio_files:
+                base = os.path.basename(audio_file)
+                label = self.labels.get(f'{base}', 'unknown')
+                # check if it exists
+                if os.path.exists(audio_file):
+                    self.audio_files.append((audio_file, label))
     
     def _get_audio_files(self): 
         audio_files = []
@@ -88,12 +95,10 @@ def get_datasets_for_fold(root_dir: str, down_sampled_dir: str, fold: str) -> Tu
     test_files = []
 
     # Collect training files from all other folds
-    for f in folds:
-        if f != fold:
-            train_files.extend([os.path.join(down_sampled_dir, file[0]) for file in folds[f]['train']])
+    train_files.extend([os.path.join(down_sampled_dir, file[0]) for file in folds[fold]['train']])
     
     # Collect test files from the specified fold
-    test_files = [os.path.join(root_dir, file[0]) for file in folds[fold]['evaluate']]
+    test_files = [os.path.join(down_sampled_dir, file[0]) for file in folds[fold]['evaluate']]
 
     # Create datasets
     train_dataset = TUTDataset(root_dir=root_dir, audio_files=train_files)

@@ -51,8 +51,8 @@ class AudioProcessor:
         print(f"Successfully processed {total_files_processed} files")
 
 def main():
-    input_dir = Path("/Users/nkdem/Downloads/TUT-acoustic-scenes-2017-development")
-    output_dir = Path("/Users/nkdem/Downloads/TUT-acoustic-scenes-2017-development-16k")
+    input_dir = Path("/Users/nkdem/Downloads/TUT-acoustic-scenes-2017-evaluation")
+    output_dir = Path("/Users/nkdem/Downloads/TUT-acoustic-scenes-2017-evaluation-16k")
     # input_dir = Path("/home/s2203859/TUT-acoustic-scenes-2017-development")
     # output_dir = Path("/home/s2203859/TUT-acoustic-scenes-2017-development-16k")
     

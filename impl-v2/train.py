@@ -216,8 +216,13 @@ class AdamEarlyStopTrainer(BaseTrainer):
             extra_meta = {
                 "Final loss": epoch_loss,
                 "Model parameters": str(model),
+                "env_to_int": self.env_to_int,
             }
             self.save_metadata(model_name, losses, start_time, end_time, learning_rates, extra_meta)
+
+            # save metadata to model_dior
+            with open(os.path.join(model_dir, "metadata.json"), "w") as f:
+                json.dump(self.meta_data, f, indent=4)
             print(f"Model {model_name} saved with Adam optimiser and early stopping.")
 
         feature_cache = {}

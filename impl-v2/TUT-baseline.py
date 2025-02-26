@@ -95,6 +95,21 @@ class TUTBaselineExperiment(BaseExperiment):
             train_dataset, test_dataset = get_datasets_for_fold(self.tut_root_dir, self.tut_dir, fold)
             train_loader = torch.utils.data.DataLoader(train_dataset, batch_size=self.batch_size, shuffle=True)
             test_loader = torch.utils.data.DataLoader(test_dataset, batch_size=self.batch_size, shuffle=False)
+
+            # as a sanity check lets validate that test_loader is disjoint from train_loader
+            added = set()
+            for batch in tqdm(train_loader, desc="Checking disjointness of train and test loaders", unit="batch"):
+                pair, envs, base = batch
+                for b in base:
+                    added.add(b)
+            bases_repeated = set()
+            for batch in tqdm(test_loader, desc="Checking disjointness of train and test loaders", unit="batch"):
+                pair, envs, base = batch
+                for b in base:
+                    if b in added:
+                        bases_repeated.add(b)
+            assert len(bases_repeated) == 0, "Bases are repeated in train and test loaders"
+
             adam = AdamEarlyStopTrainer(
                 cuda=self.cuda,
                 base_dir=os.path.join(base_dir, f'{fold}'),
