@@ -118,7 +118,7 @@ class BackgroundDataset(Dataset):
         waveform_l, _ = torchaudio.load(file_pair[0])
         waveform_r, _ = torchaudio.load(file_pair[1])
         basename = base_name(os.path.basename(file_pair[0]))
-        return file_pair, environment, recsit, cut_id, (basename, None), None # last element is SNR level, which is not used for background samples
+        return file_pair, [], environment, recsit, cut_id, (basename, None), None # last element is SNR level, which is not used for background samples
 
 
 ###############################################################################
@@ -216,7 +216,7 @@ class MixedAudioDataset(Dataset):
         - clean_waveforms (list of length 2, e.g. [clean_left, clean_right])
         - environment, recsit, cut_id, (basename, speech_used), snr
         """
-        file_pair, environment, recsit, cut_id, _, _ = self.background_dataset[idx]
+        file_pair, _, environment, recsit, cut_id, _, _ = self.background_dataset[idx]
 
         # Load background channels
         background_l, _sr1 = sf.read(file_pair[0])

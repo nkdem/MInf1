@@ -42,15 +42,22 @@ class BaseTrainer:
         # iterate over the dataset to get the number of classes
         self.envs = {}
         logger.info("Counting number of classes...")
-        with open(os.path.join(self.base_dir, "train_files.csv"), "w") as f:
-            for _, env, _, _, base, snr in self.train_loader:
-                # env and speech are arrays
-                for e, b in zip(env, base):
-                    if e not in self.envs:
-                        self.envs[e] = 0
-                    else:
-                        self.envs[e] += 1
-                    f.write(f'{b[0]}, {e}{", " + " ".join(b[1]) if b[1] is not None else ""}\n')
+        # with open(os.path.join(self.base_dir, "train_files.csv"), "w") as f:
+            # for _, env, _, _, base, snr in self.train_loader:
+        for batch in tqdm(self.train_loader, desc="Counting number of classes", unit="batch"):
+            if len(batch) == 7:
+                # hear-ds
+                _, _, env, _, _, base, snr = batch
+            elif len(batch) == 3:
+                # tut-ds
+                pair, env, base = batch
+
+            for e, b in zip(env, base):
+                if e not in self.envs:
+                    self.envs[e] = 0
+                else:
+                    self.envs[e] += 1
+                    # f.write(f'{b[0]}, {e}{", " + " ".join(b[1]) if b[1] is not None else ""}\n')
         self.num_of_classes = len(self.envs)
         logger.info(f"Number of classes: {self.num_of_classes}")
         self.env_to_int = {env: i for i, env in enumerate(self.envs.keys())}
@@ -103,7 +110,6 @@ class AdamEarlyStopTrainer(BaseTrainer):
         self.patience = patience
 
     def train(self):
-        # Instead of deep copying, consider instantiating a fresh instance if possible
         criterion = nn.CrossEntropyLoss(self.weights)
         feature_cache = {}
         for model_name, (cnn1_channels, cnn2_channels, fc_neurons) in self.models_to_train.items():
@@ -128,10 +134,30 @@ class AdamEarlyStopTrainer(BaseTrainer):
                     desc=f"Training {model_name} [Epoch {epoch + 1}/{self.num_epochs}] [LR: {optimiser.param_groups[0]['lr']}]",
                     unit="batch"
                 ):
-                    waveforms, envs, recsits, cuts, _, snrs = batch
+                    # Determine the dataset type based on batch length
+                    if len(batch) == 7:
+                        # HEAR-DS
+                        waveforms, _ , envs, recsits, cuts, _, snrs = batch
+                    elif len(batch) == 3:
+                        # TUT-DS
+                        pair, envs, base = batch
+                        waveforms = pair  # Assuming pair contains the audio data
+
+                        # base is of the form a026_140_150.wav
+                        # let's assume the format is: recsit_CUT_CUT.wav
+                        recsits = [None] * len(envs)  # Placeholder for recsits
+                        cuts = [None] * len(envs)  # Placeholder for cuts
+                        for i, b in enumerate(base):
+                            recsit, cut, rest = b.split("_")
+                            # rest has CUT.wav, append cut with rest but without the wav
+                            cut = f"{cut}_{rest[:-4]}"
+                            recsits[i] = recsit
+                            cuts[i] = cut
+                        snrs = [None] * len(envs)  # Placeholder for snrs
+                    else:
+                        raise ValueError(f"Unexpected batch length: {len(batch)}. Expected 3 or 6.")
 
                     keys = []
-
                     for env, recsit, cut, snr in zip(envs, recsits, cuts, snrs):
                         key = f"{env}_{recsit}_{cut}_{snr}"
                         keys.append(key)
@@ -145,22 +171,22 @@ class AdamEarlyStopTrainer(BaseTrainer):
                             logger.debug(f"Missing feature for {key}")
                             missing_keys.append(i)
                     
-                        if missing_keys:
-                            logger.debug(f"Missing {len(missing_keys)} features. Computing...")
-                            # Build a list of audio pairs from the missing keys.
-                            missing_audio = [waveforms[i] for i in missing_keys]
-                            computed_logmel = compute_average_logmel(missing_audio, self.device)
-                            for idx, i in enumerate(missing_keys):
-                                result = computed_logmel[idx].view(1, 40, -1)  # Shape: (1, n_mels, n_frames)
-                                cached_results[keys[i]] = result
-                                feature_cache[keys[i]] = result
+                    if missing_keys:
+                        logger.debug(f"Missing {len(missing_keys)} features. Computing...")
+                        # Build a list of audio pairs from the missing keys.
+                        missing_audio = [waveforms[i] if len(batch) == 7 else (waveforms[0][i], waveforms[1][i]) for i in missing_keys]
+                        computed_logmel = compute_average_logmel(missing_audio, self.device)
+                        for idx, i in enumerate(missing_keys):
+                            result = computed_logmel[idx].view(1, 40, -1)  # Shape: (1, n_mels, n_frames)
+                            cached_results[keys[i]] = result
+                            feature_cache[keys[i]] = result
 
-                    logmels = [cached_results[key] for key in keys] # Reorder the results to match the original order
+                    logmels = [cached_results[key] for key in keys]  # Reorder the results to match the original order
                     logmels = torch.stack(logmels, dim=0)
 
                     actual_labels = torch.tensor(np.array([self.env_to_int[env] for env in envs]), dtype=torch.long).to(self.device)
                     outputs = model(logmels)
-                    loss = criterion(outputs, actual_labels )
+                    loss = criterion(outputs, actual_labels)
 
                     optimiser.zero_grad()
                     loss.backward()
