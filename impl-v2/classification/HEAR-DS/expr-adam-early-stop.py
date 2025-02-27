@@ -2,31 +2,28 @@
 import gc
 import os
 import pickle
+import sys
 
 import torch
-from datasets import BackgroundDataset, SpeechDataset, split_speech_dataset
-from models import AudioCNN
-from train import AdamEarlyStopTrainer
-from constants import MODELS
 import collections
 import logging
-import json
 import os
 import numpy as np
 import matplotlib.pyplot as plt
 import pandas as pd
 import soundfile as sf
-# from pesq import pesq
 from torch.utils.data import DataLoader
-# from pystoi import stoi
 import seaborn as sns
 from abc import ABC, abstractmethod
 
 import torch
 from tqdm import tqdm
 
+sys.path.append(os.path.abspath(os.path.join('.')))
+from models import AudioCNN
+from classification.train import AdamEarlyStopTrainer
 from constants import MODELS
-from datasets import BackgroundDataset, MixedAudioDataset, SpeechDataset, split_background_dataset, split_speech_dataset
+from heards_dataset import BackgroundDataset, MixedAudioDataset, SpeechDataset, split_background_dataset, split_speech_dataset
 from helpers import compute_average_logmel
 
 logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')

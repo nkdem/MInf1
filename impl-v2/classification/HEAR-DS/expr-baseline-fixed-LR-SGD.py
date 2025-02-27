@@ -2,7 +2,7 @@
 import os
 from base_experiment import BaseExperiment
 from hear_ds import HEARDS
-from train import FixedLRTrainer
+from classification.train import FixedLRTrainer
 from constants import MODELS
 
 class Baseline(BaseExperiment):

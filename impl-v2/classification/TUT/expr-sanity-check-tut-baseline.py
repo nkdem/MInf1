@@ -3,18 +3,20 @@ import collections
 import gc
 import os
 import pickle
+import sys
 
 import numpy as np
 import torch
 from tqdm import tqdm
-from base_experiment import BaseExperiment
-from helpers import compute_average_logmel
-from models import AudioCNN
-from train import AdamEarlyStopTrainer
-from constants import MODELS
 from abc import ABC, abstractmethod
 
-from tut_dataset import get_datasets_for_fold, get_folds
+sys.path.append(os.path.abspath(os.path.join('.')))
+from helpers import compute_average_logmel
+from models import AudioCNN
+from classification.train import AdamEarlyStopTrainer
+from constants import MODELS
+
+from classification.TUT.tut_dataset import get_datasets_for_fold, get_folds
 
 class BaseExperiment(ABC):
     def __init__(self, batch_size, cuda):
@@ -26,12 +28,6 @@ class BaseExperiment(ABC):
         self.tut_root_dir = '/Users/nkdem/Downloads/TUT-acoustic-scenes-2017-development' if not cuda else '/disk/scratch/s2203859/minf-1/TUT-acoustic-scenes-2017-development'
         self.folds = get_folds(root_dir=self.root_dir)
     def initialize_result_containers(self):
-        # return {
-        #     'confusion_matrices': {model: [] for model in MODELS.keys()},
-        #     'accuracies': {model: [] for model in MODELS.keys()},
-        #     'losses': {model: [] for model in MODELS.keys()},
-        #     'training_times': {model: [] for model in MODELS.keys()}
-        # }
         return collections.OrderedDict(
             {
             'class_accuracies': {model: [] for model in MODELS.keys()},

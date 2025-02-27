@@ -17,14 +17,16 @@ from tqdm import tqdm
 
 from sklearn.utils.class_weight import compute_class_weight
 
-from constants import MODELS
+import torch
+import sys 
+import os 
+sys.path.append(os.path.abspath(os.path.join('.')))
 from helpers import compute_average_logmel, get_truly_random_seed_through_os, seed_everything
 from models import CNNSpeechEnhancer
 
 logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
 logger = logging.getLogger(__name__)
 
-import torch
 
 def get_pytorch_device(prefer_cuda: bool = True):
     """
