@@ -32,6 +32,7 @@ class BaseTrainer:
         self.num_epochs = num_epochs
         self.batch_size = batch_size
         self.cuda = cuda
+        self.feature_cache = {}
 
         self.device = torch.device("mps" if not self.cuda else "cuda")
         logger.info(f"Using device: {self.device}")
@@ -71,7 +72,7 @@ class BaseTrainer:
 
         self.metadata = {}
         self.losses = {model: [] for model in self.models_to_train.keys()}
-        self.learning_rates = {model: [] for model in self.models_to_train.keys()}
+        self.learning_rates_used = {model: [] for model in self.models_to_train.keys()}
         self.durations = {model: [] for model in self.models_to_train.keys()}
 
         with open(os.path.join(self.base_dir, "int_to_label.txt"), "w") as f:
@@ -80,7 +81,7 @@ class BaseTrainer:
 
     def save_metadata(self, model, losses, start_time, end_time, learning_rates, extra_meta: dict):
         self.losses[model] = losses
-        self.learning_rates[model] = learning_rates
+        self.learning_rates_used[model] = learning_rates
         self.durations[model] = end_time - start_time
         self.meta_data = {
             "Seed": self.seed_val,
@@ -96,9 +97,108 @@ class BaseTrainer:
             os.makedirs(model_dir)
         # self.save_file_lists(model_dir)
         return model_dir
+    def compute_logmels(self, waveforms, envs, recsits, cuts, snrs): 
+        keys = []
+        for env, recsit, cut, snr in zip(envs, recsits, cuts, snrs):
+            key = f"{env}_{recsit}_{cut}_{snr}"
+            keys.append(key)
+        
+        cached_results = {}
+        missing_keys = []
+        for i, key in enumerate(keys):
+            if key in self.feature_cache:
+                cached_results[key] = self.feature_cache[key]
+            else:
+                missing_keys.append(i)
+        
+        if missing_keys:
+            logger.debug(f"Missing {len(missing_keys)} features. Computing...")
+            missing_audio = [waveforms[i] for i in missing_keys]
+            computed_logmel = compute_average_logmel(missing_audio, self.device)
+            for idx, i in enumerate(missing_keys):
+                result = computed_logmel[idx].view(1, 40, -1)
+                cached_results[keys[i]] = result
+                self.feature_cache[keys[i]] = result
+
+        logmels = [cached_results[key] for key in keys]
+        return torch.stack(logmels, dim=0)
 
     def train(self):
         raise NotImplementedError("Subclasses must implement this method!")
+    
+
+class FixedLRSGDTrainer(BaseTrainer):
+    def __init__(self, base_dir, num_epochs, train_loader: DataLoader, learning_rates: list, change_lr_at_epoch: list, batch_size=32, cuda=False):
+        super().__init__(base_dir=base_dir, num_epochs=num_epochs, batch_size=batch_size, cuda=cuda, train_loader=train_loader)
+        self.learning_rates = learning_rates
+        self.change_lr_at_epoch = change_lr_at_epoch
+
+    def train(self):
+        criterion = nn.CrossEntropyLoss(self.weights)
+        for model_name, (cnn1_channels, cnn2_channels, fc_neurons) in self.models_to_train.items():
+            losses = []
+            learning_rates = []
+            model_dir = self.prepare_directory(model_name)
+
+            start_time = time.time()
+
+            model = AudioCNN(self.num_of_classes, cnn1_channels, cnn2_channels, fc_neurons).to(self.device)
+            initial_lr = self.learning_rates[0]
+            optimiser = torch.optim.SGD(model.parameters(), lr=initial_lr)
+
+            lr_chosen = -1
+            for epoch in range(self.num_epochs):
+                model.train()
+                running_loss = 0.0
+                if epoch % self.change_lr_at_epoch == 0:
+                    lr_chosen += 1
+                    optimiser = torch.optim.SGD(model.parameters(), lr=self.learning_rates[lr_chosen])
+
+
+                for batch in tqdm(
+                    self.train_loader,
+                    desc=f"Training {model_name} [Epoch {epoch + 1}/{self.num_epochs}] [LR: {optimiser.param_groups[0]['lr']}]",
+                    unit="batch"
+                ):
+                    # Determine the dataset type based on batch length
+                    if len(batch) == 7:
+                        # HEAR-DS
+                        waveforms, _ , envs, recsits, cuts, _, snrs = batch
+                    else:
+                        raise ValueError(f"Fixed LR SGD only supports HEAR-DS for now. Received batch length: {len(batch)}")
+                    
+                    logmels = self.compute_logmels(waveforms, envs, recsits, cuts, snrs)
+
+
+                    actual_labels = torch.tensor(np.array([self.env_to_int[env] for env in envs]), dtype=torch.long).to(self.device)
+                    outputs = model(logmels)
+                    loss = criterion(outputs, actual_labels)
+
+                    optimiser.zero_grad()
+                    loss.backward()
+                    optimiser.step()
+
+                    running_loss += loss.item()
+                epoch_loss = running_loss / len(self.train_loader)
+                logger.info(f"Epoch [{epoch + 1}/{self.num_epochs}], Loss: {epoch_loss:.4f}")
+                losses.append(epoch_loss)
+                learning_rates.append(optimiser.param_groups[0]['lr'])
+
+            end_time = time.time()
+            torch.save(model.state_dict(), os.path.join(model_dir, "model.pth"))
+            extra_meta = {
+                "Final loss": epoch_loss,
+                "Model parameters": str(model),
+                "env_to_int": self.env_to_int,
+            }
+            self.save_metadata(model_name, losses, start_time, end_time, learning_rates, extra_meta)
+
+            with open(os.path.join(model_dir, "metadata.json"), "w") as f:
+                json.dump(self.meta_data, f, indent=4)
+            print(f"Model {model_name} saved with fixed LR SGD.")
+            
+        self.feature_cache = {}
+
 
 
 class AdamEarlyStopTrainer(BaseTrainer):
@@ -111,7 +211,6 @@ class AdamEarlyStopTrainer(BaseTrainer):
 
     def train(self):
         criterion = nn.CrossEntropyLoss(self.weights)
-        feature_cache = {}
         for model_name, (cnn1_channels, cnn2_channels, fc_neurons) in self.models_to_train.items():
             model_dir = self.prepare_directory(model_name)
 
@@ -157,32 +256,7 @@ class AdamEarlyStopTrainer(BaseTrainer):
                     else:
                         raise ValueError(f"Unexpected batch length: {len(batch)}. Expected 3 or 6.")
 
-                    keys = []
-                    for env, recsit, cut, snr in zip(envs, recsits, cuts, snrs):
-                        key = f"{env}_{recsit}_{cut}_{snr}"
-                        keys.append(key)
-                    
-                    cached_results = {}
-                    missing_keys = []
-                    for i, key in enumerate(keys):
-                        if key in feature_cache:
-                            cached_results[key] = feature_cache[key]
-                        else:
-                            logger.debug(f"Missing feature for {key}")
-                            missing_keys.append(i)
-                    
-                    if missing_keys:
-                        logger.debug(f"Missing {len(missing_keys)} features. Computing...")
-                        # Build a list of audio pairs from the missing keys.
-                        missing_audio = [waveforms[i] if len(batch) == 7 else (waveforms[0][i], waveforms[1][i]) for i in missing_keys]
-                        computed_logmel = compute_average_logmel(missing_audio, self.device)
-                        for idx, i in enumerate(missing_keys):
-                            result = computed_logmel[idx].view(1, 40, -1)  # Shape: (1, n_mels, n_frames)
-                            cached_results[keys[i]] = result
-                            feature_cache[keys[i]] = result
-
-                    logmels = [cached_results[key] for key in keys]  # Reorder the results to match the original order
-                    logmels = torch.stack(logmels, dim=0)
+                    logmels = self.compute_logmels(waveforms, envs, recsits, cuts, snrs)
 
                     actual_labels = torch.tensor(np.array([self.env_to_int[env] for env in envs]), dtype=torch.long).to(self.device)
                     outputs = model(logmels)
@@ -225,4 +299,4 @@ class AdamEarlyStopTrainer(BaseTrainer):
                 json.dump(self.meta_data, f, indent=4)
             print(f"Model {model_name} saved with Adam optimiser and early stopping.")
 
-        feature_cache = {}
+        self.feature_cache = {}

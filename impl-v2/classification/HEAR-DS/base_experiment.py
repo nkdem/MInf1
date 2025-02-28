@@ -67,7 +67,7 @@ class BaseExperiment(ABC):
             classwise_accuracy, total_accuracy, confusion_matrix = self.collect_model_results(test_loader=self.test_loader, model=cnn, no_classes=trainer.num_of_classes, env_to_int=trainer.env_to_int)
             results['losses'][model].append(trainer.losses[model])
             results['duration'][model].append(trainer.durations[model])
-            results['learning_rates'][model].append(trainer.learning_rates[model])
+            results['learning_rates'][model].append(trainer.learning_rates_used[model])
             results['class_accuracies'][model].append(classwise_accuracy)
             results['total_accuracies'][model].append(total_accuracy)
             results['confusion_matrix_raw'][model].append(confusion_matrix)

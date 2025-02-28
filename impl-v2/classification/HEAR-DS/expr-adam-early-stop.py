@@ -19,19 +19,17 @@ logger = logging.getLogger(__name__)
 
 class FullAdam(BaseExperiment):
     def __init__(self, train_combined, test_combined, num_epochs=1, batch_size=16,
-                 experiment_no=1, learning_rates=None, cuda=False):
+                 experiment_no=1, cuda=False):
         super().__init__(batch_size=32, cuda=cuda, 
                          train_combined=train_combined, test_combined=test_combined)
         self.num_epochs = num_epochs
         self.batch_size = batch_size
         self.exp_no = experiment_no
-        self.learning_rates = learning_rates
         self.experiment_name = f"adam-early-stop-{experiment_no}"
 
     def run(self):
         print(f"Starting experiment: {self.experiment_name}")
         print(f"Parameters: epochs={self.num_epochs}, batch_size={self.batch_size}")
-        print(f"Learning rates: {self.learning_rates}")
 
         print(f"\nStarting experiment run {self.exp_no}...")
         base_dir = self.create_experiment_dir(self.experiment_name, self.exp_no)
