@@ -63,7 +63,7 @@ class BackgroundDataset(Dataset):
     For a pair, one file contains "_L" and the other "_R".
     __getitem__ returns a tuple (file_pair, recsit, label) where label=0 indicates background-only.
     """
-    def __init__(self, root_dir: str, max_samples_per_env: int = 10000, files_to_use: List[Tuple[List[str]]] = None):
+    def __init__(self, root_dir: str, max_samples_per_env: int = 50, files_to_use: List[Tuple[List[str]]] = None):
         self.root_dir = root_dir
         if files_to_use is None:
             self.audio_files = self._get_all_audio_files(max_samples_per_env)

@@ -22,11 +22,11 @@ while True:
         if 1 <= choice <= len(experiment_files):
             selected_experiment = experiment_files[choice - 1]
             print(f"Running experiment: {selected_experiment}")
-
             # how many experiments to run
             num_experiments = int(input("How many experiments do you want to run? "))
-            os.system(f"python {selected_experiment} --experiment_no {num_experiments}")
-            # os.system(f"python {selected_experiment} --experiment_no {num_experiments} --cuda")
+            for i in range(num_experiments):
+                os.system(f"python {selected_experiment} --experiment_no {i+1} --cuda")
+                print(f"Experiment {i+1} completed.")
             break
         else:
             print("Invalid choice. Please enter a number between 1 and", len(experiment_files))

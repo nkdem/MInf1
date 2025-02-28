@@ -25,8 +25,8 @@ if __name__ == '__main__':
 
         train_background_ds, test_background_ds, train_background_speech_ds, test_background_speech_ds = split_background_dataset(full_background_ds)
 
-        train_mixed_ds = MixedAudioDataset(background_dataset=train_background_ds, speech_dataset=train_background_speech_ds)
-        test_mixed_ds = MixedAudioDataset(background_dataset=test_background_ds, speech_dataset=test_background_speech_ds)
+        train_mixed_ds = MixedAudioDataset(background_dataset=train_background_speech_ds, speech_dataset=full_speech_ds)
+        test_mixed_ds = MixedAudioDataset(background_dataset=test_background_speech_ds, speech_dataset=full_speech_ds)
 
         train_combined = ConcatDataset([train_background_ds, train_mixed_ds])
         test_combined = ConcatDataset([test_background_ds, test_mixed_ds])

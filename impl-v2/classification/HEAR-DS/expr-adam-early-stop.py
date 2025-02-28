@@ -12,7 +12,7 @@ import numpy as np
 import matplotlib.pyplot as plt
 import pandas as pd
 import soundfile as sf
-from torch.utils.data import DataLoader
+from torch.utils.data import DataLoader, ConcatDataset
 import seaborn as sns
 from abc import ABC, abstractmethod
 
@@ -30,26 +30,7 @@ logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(
 logger = logging.getLogger(__name__)
 
 class BaseExperiment(ABC):
-    def __init__(self, heards_dir, speech_dir, batch_size=16, cuda=False):
-        full_background_ds = BackgroundDataset(heards_dir)
-        full_speech_ds = SpeechDataset(speech_dir)
-        
-        # Split the background dataset based on recsit.
-        train_background_ds, test_background_ds, train_background_speech_ds, test_background_speech_ds = split_background_dataset(full_background_ds)
-        
-        # Split the speech dataset based on speaker.
-        train_speech_ds, test_speech_ds = split_speech_dataset(full_speech_ds)
-        
-        logger.info(f"Train background samples: {len(train_background_ds)}; Test background samples: {len(test_background_ds)}")
-        logger.info(f"Train speech samples: {len(train_speech_ds)}; Test speech samples: {len(test_speech_ds)}")
-        
-        # Create Mixed Audio Datasets for training and test sets.
-        train_mixed_ds = MixedAudioDataset(train_background_speech_ds, train_speech_ds)
-        test_mixed_ds = MixedAudioDataset(test_background_speech_ds, test_speech_ds)
-        
-        train_combined = torch.utils.data.ConcatDataset([train_background_ds, train_mixed_ds])
-        test_combined = torch.utils.data.ConcatDataset([test_background_ds, test_mixed_ds])
-
+    def __init__(self, train_combined: ConcatDataset, test_combined: ConcatDataset, batch_size=16, cuda=False):
         def collate_fn(batch):
             audios, clean, environments, recsits, cut_ids, extra, snrs= zip(*batch)
             audios = []
@@ -72,12 +53,6 @@ class BaseExperiment(ABC):
         return base_dir
 
     def initialize_result_containers(self):
-        # return {
-        #     'confusion_matrices': {model: [] for model in MODELS.keys()},
-        #     'accuracies': {model: [] for model in MODELS.keys()},
-        #     'losses': {model: [] for model in MODELS.keys()},
-        #     'training_times': {model: [] for model in MODELS.keys()}
-        # }
         return collections.OrderedDict(
             {
             'class_accuracies': {model: [] for model in MODELS.keys()},
@@ -95,23 +70,6 @@ class BaseExperiment(ABC):
             assert training_data[j] == training_data[j + 1], 'Training data is not the same across models'
             assert testing_data[j] == testing_data[j + 1], 'Testing data is not the same across models'
 
-    def collect_experiment_data(self, base_dir):
-        training_data = [[] for _ in range(len(MODELS))]
-        testing_data = [[] for _ in range(len(MODELS))]
-
-        for j, (model, _) in enumerate(MODELS.items()):
-            root_dir = os.path.join(base_dir, model)
-            if os.path.exists(root_dir):
-                train_data = os.path.join(root_dir, 'train_files.txt')
-                test_data = os.path.join(root_dir, 'test_files.txt')
-                if os.path.exists(train_data) and os.path.exists(test_data):
-                    with open(train_data, 'r') as f:
-                        training_data[j] = f.readlines()
-                    with open(test_data, 'r') as f:
-                        testing_data[j] = f.readlines()
-        
-        return training_data, testing_data
-    
     def collect_model_results(self, test_loader, model, no_classes, env_to_int):
         model.eval()
         total = 0
@@ -119,8 +77,8 @@ class BaseExperiment(ABC):
         confusion_matrix = np.zeros((no_classes, no_classes))
         with torch.no_grad():
             for batch in tqdm(test_loader, desc="Testing", unit="batch"):
-                audios, environments, recsits, cut_id, extra, snr = batch
-                logmels = compute_average_logmel(audios, self.device)
+                noisy, clean, environments, recsits, cut_id, extra, snr = batch
+                logmels = compute_average_logmel(noisy, self.device)
                 labels = torch.tensor([env_to_int[env] for env in environments], dtype=torch.long).to(self.device)
                 outputs = model(logmels)
                 _, predicted = torch.max(outputs.data, 1)
@@ -142,20 +100,17 @@ class BaseExperiment(ABC):
 
 
 class FullAdam(BaseExperiment):
-    def __init__(self, num_epochs=1, batch_size=16, 
+    def __init__(self, train_combined, test_combined, num_epochs=1, batch_size=16,
                  experiment_no=1, learning_rates=None, cuda=False):
-        self.heards_dir = '/Users/nkdem/Downloads/HEAR-DS' if not cuda else '/disk/scratch/s2203859/minf-1/HEAR-DS'
-        self.speech_dir = '/Volumes/SSD/Datasets/CHiME3/CHiME3-Isolated-DEV/dt05_bth' if not cuda else '/disk/scratch/s2203859/minf-1/dt05_bth/'
-        super().__init__(heards_dir=self.heards_dir, speech_dir=self.speech_dir, batch_size=32, cuda=cuda)
+        super().__init__(batch_size=32, cuda=cuda, 
+                         train_combined=train_combined, test_combined=test_combined)
         self.num_epochs = num_epochs
         self.batch_size = batch_size
         self.exp_no = experiment_no
         self.learning_rates = learning_rates
-        # self.experiment_name = f"full_adam_{num_epochs}epochs_{batch_size}batchsize"
         self.experiment_name = f"test"
 
     def run(self):
-        # Training phase
         print(f"Starting experiment: {self.experiment_name}")
         print(f"Parameters: epochs={self.num_epochs}, batch_size={self.batch_size}")
         print(f"Learning rates: {self.learning_rates}")
@@ -194,10 +149,14 @@ class FullAdam(BaseExperiment):
         with open(os.path.join(base_dir, 'results.pkl'), 'wb') as f:
             pickle.dump(results, f)
         print(f"Results saved in {base_dir}")
-        print(results)
+
+        # print accuracy
+        for model in MODELS.keys():
+            print(f"\nModel: {model}")
+            print(f"Average total accuracy: {np.mean(results['total_accuracies'][model])}")
 
         with open(os.path.join(base_dir, 'test_files.csv'), 'w') as f:
-            for _, env, _, _, base, snr in self.test_loader:
+            for _, _, env, _, _, base, snr in self.test_loader:
                 for e,b in zip(env,base):
                     f.write(f'{b[0]}, {e}{", " + " ".join(b[1]) if b[1] is not None else ""}\n')
 
@@ -210,9 +169,8 @@ class FullAdam(BaseExperiment):
                 f"cuda={self.cuda})")
 
     def get_experiment_config(self):
-        """Return experiment configuration as a dictionary"""
         return {
-            "experiment_type": "Experiment1",
+            "experiment_type": "Adam Early Stop",
             "num_epochs": self.num_epochs,
             "batch_size": self.batch_size,
             "learning_rates": self.learning_rates,
@@ -237,10 +195,17 @@ if __name__ == '__main__':
     experiment_no = 1
     cuda = False 
     experiment_no = experiment_no
-    experiment = FullAdam(
-        num_epochs=1, 
-        batch_size=32, 
-        experiment_no=experiment_no,
-        cuda=cuda
-    )
-    experiment.run()
+    split_file = f'splits/split_{experiment_no - 1}.pkl' # 0-indexed
+    with open(split_file, 'rb') as f:
+        split = pickle.load(f)
+        train_combined = split['train']
+        test_combined = split['test']
+        experiment = FullAdam(
+            train_combined=train_combined,
+            test_combined=test_combined,
+            num_epochs=1, 
+            batch_size=32, 
+            experiment_no=experiment_no,
+            cuda=cuda
+        )
+        experiment.run()
