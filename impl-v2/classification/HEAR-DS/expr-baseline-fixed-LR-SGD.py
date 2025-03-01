@@ -41,7 +41,7 @@ class FixedLR_SGD(BaseExperiment):
             train_loader=self.train_loader,
             num_epochs=self.num_epochs,
             learning_rates=self.learning_rates,
-            change_lr_at_epoch=1
+            change_lr_at_epoch=40
         )
         trainer.train()
 
@@ -78,22 +78,14 @@ class FixedLR_SGD(BaseExperiment):
         }
 
 if __name__ == '__main__':
-    # get command line arg for --experiment_no
-    # import argparse
-    # parser = argparse.ArgumentParser()
-    # parser.add_argument("--experiment_no", type=int)
-    # parser.add_argument("--cuda", action='store_true', default=False)
-    # args = parser.parse_args()
+    import argparse
+    parser = argparse.ArgumentParser()
+    parser.add_argument("--experiment_no", type=int)
+    parser.add_argument("--cuda", action='store_true', default=False)
+    args = parser.parse_args()
 
-    # # if arg is not provided, default to 1
-    # # but warn 
-    # if args.experiment_no is None:
-    #     print("No experiment number provided. Defaulting to 1.")
-    #     experiment_no = 1
-    # cuda = args.cuda
-    experiment_no = 1
-    cuda = False 
-    experiment_no = experiment_no
+    experiment_no = args.experiment_no
+    cuda = args.cuda
     split_file = f'splits/split_{experiment_no - 1}.pkl' # 0-indexed
     with open(split_file, 'rb') as f:
         split = pickle.load(f)
@@ -102,7 +94,7 @@ if __name__ == '__main__':
         experiment = FixedLR_SGD(
             train_combined=train_combined,
             test_combined=test_combined,
-            num_epochs=6, 
+            num_epochs=240, 
             batch_size=32, 
             experiment_no=experiment_no,
             cuda=cuda,

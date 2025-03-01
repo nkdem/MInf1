@@ -146,11 +146,11 @@ class FixedLRSGDTrainer(BaseTrainer):
             initial_lr = self.learning_rates[0]
             optimiser = torch.optim.SGD(model.parameters(), lr=initial_lr)
 
-            lr_chosen = -1
+            lr_chosen = 0
             for epoch in range(self.num_epochs):
                 model.train()
                 running_loss = 0.0
-                if epoch % self.change_lr_at_epoch == 0:
+                if epoch != 0 and (epoch % self.change_lr_at_epoch) == 0:
                     lr_chosen += 1
                     optimiser = torch.optim.SGD(model.parameters(), lr=self.learning_rates[lr_chosen])
 
