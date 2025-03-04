@@ -35,8 +35,23 @@
 
 \date{\today}
 
+% TOOD: Need to tidy up and expand the abstract
 \abstract{
-TODO: Write Abstract
+   This dissertation takes the intersection of Machine Learning, Automatic Speech Recognition (ASR) and Hearing Aids (HA) 
+   to evaluate the effectiveness of machine learning algorithms in prioritising speech in noisy environments. 
+   The aim is to classify the environment based on the audio signal, and then apply heuristic speech enhancement techniques to 
+   prioritise speech in particular environments. The experiments are conducted on a novel dataset called HEAR-DS where 
+   we evaluate the baseline Convolutional Neural Network (CNN) classifier presented by the authors of the dataset. 
+   We then demonstrate techniques that speed up the training process of the CNN model, by using the Adam optimiser. 
+   It is also shown that the model can generalise better by applying data augmentation techniques.
+   We then compare the performance of the CNN model to a Recurrent Neural Network (RNN) model, specifically 
+   the Long Short-Term Memory (LSTM). The results show that the LSTM model outperforms the CNN model. 
+
+
+   Moreover, we develop a baseline speech enhancement model using a basic CNN model. We then take inspiration 
+   from the literatue and apply more layers to the model to improve the performance. We then compare the performance 
+   by comparing the STOI and PESQ scores of the models. The results show that the more complex model outperforms the
+   baseline model. 
 }
 
 \maketitle
@@ -50,7 +65,7 @@ TODO: Write Abstract
 % statement you need to include. Then delete the statement that you are not using,
 % and the instructions in italics.\\
 % \textbf{Either complete and include this statement:}}\\ % DELETE THESE INSTRUCTIONS
-% %
+% %gg
 % % IF ETHICS APPROVAL WAS REQUIRED:
 % This project obtained approval from the Informatics Research Ethics committee.\\
 % Ethics application number: ???\\
@@ -70,7 +85,10 @@ from the Informatics Research Ethics committee.
 
 
 \begin{acknowledgements}
-TODO: Write Acknowledgement
+First and foremost, I would like to solemly thank my supervisor, Hao Tang for 
+his enthusiasm in guiding me through this self-proposed dissertation. I am eternally grateful for his wisdom, guidance, and patience throughout the project.
+
+And to my parents, without whose sacrifices I would not have been able to pursue this degree, let alone this project.
 \end{acknowledgements}
 
 
@@ -345,6 +363,7 @@ a audio dataset that contains useful metadata on the recording such as the envir
 This project aims to use the HEAR-DS dataset presented by \citet{Huwel2020HearDS}. According to the researchers, 
 the dataset came to fruition because existing acoustic scene classification databases are inappropriate for 
 HA processing. We will go into more detail of the dataset in Chapter X [TODO: reference correclty once done]. 
+For now it is enough to know that the dataset contains background samples 
 But it is enough to know that the dataset is classified in an environment of which it is subcategorised as 
 either containing speech only, background only or speech \& background (both). To prevent machine learning 
 models from overfitting and to increase the diversity of situations, each environment enforces a minimum of three recording situations (REC-SITs) i.e.
