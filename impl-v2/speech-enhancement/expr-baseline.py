@@ -4,6 +4,7 @@ import logging
 import os
 import torch
 import numpy as np
+import pickle
 from abc import ABC, abstractmethod
 from torch.utils.data import DataLoader
 from tqdm import tqdm
@@ -26,22 +27,40 @@ logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(
 logger = logging.getLogger(__name__)
 
 class BaseExperiment(ABC):
-    def __init__(self, heards_dir, speech_dir, batch_size, cuda=False):
+    def __init__(self, batch_size, cuda=False, train_loader=None, test_loader=None):
         self.batch_size = batch_size
         self.cuda = cuda
         self.device = torch.device('cuda' if cuda else 'cpu')
+        self.train_loader = train_loader
+        self.test_loader = test_loader
+
+    def create_experiment_dir(self, experiment_name, i):
+        base_dir = f'models/{experiment_name}/{i}'
+        os.makedirs(base_dir, exist_ok=True)
+        return base_dir
+    def initialize_result_containers(self):
+        return collections.OrderedDict(
+            {
+            'losses': [],
+            'duration': 0,
+            'learning_rates': [],
+            }
+        )
+    def setup_data_from_scratch(self, heards_dir, speech_dir):
+        """Set up data loaders from scratch without using pre-generated splits"""
         full_background_ds = BackgroundDataset(heards_dir)
         full_speech_ds = SpeechDataset(speech_dir)
 
         train_background_ds, test_background_ds, train_background_speech_ds, test_background_speech_ds = split_background_dataset(full_background_ds)
 
-        # combine train_background_ds asnd train_background_speech_ds
+        # combine train_background_ds and train_background_speech_ds
         train_background = torch.utils.data.ConcatDataset([train_background_ds, train_background_speech_ds])
         test_background = torch.utils.data.ConcatDataset([test_background_ds, test_background_speech_ds])
 
         train_speech_ds, test_speech_ds = split_speech_dataset(full_speech_ds)
         train_noisy_ds = MixedAudioDataset(train_background, train_speech_ds)
         test_noisy_ds = MixedAudioDataset(test_background, test_speech_ds)
+        
         def speech_enh_collate_fn(batch, ignore = True):
             noisy_list = []
             clean_list = []
@@ -71,19 +90,7 @@ class BaseExperiment(ABC):
         self.test_loader = DataLoader(
             test_noisy_ds, batch_size=self.batch_size, shuffle=False, collate_fn=lambda x: speech_enh_collate_fn(x, ignore=False)
         )
-
-    def create_experiment_dir(self, experiment_name, i):
-        base_dir = f'models/{experiment_name}/{i}'
-        os.makedirs(base_dir, exist_ok=True)
-        return base_dir
-    def initialize_result_containers(self):
-        return collections.OrderedDict(
-            {
-            'losses': [],
-            'duration': 0,
-            'learning_rates': [],
-            }
-        )
+        
     def test(self, base_dir, test_loader: DataLoader, model: CNNSpeechEnhancer, trainer: SpeechEnhanceAdamEarlyStopTrainer):
         model.eval()
 
@@ -245,13 +252,10 @@ class BaseExperiment(ABC):
 
         print("Results and test files information have been saved to CSV files.")
 
-
-
-
-
     @abstractmethod
     def run(self):
         pass
+
 class SpeechEnhancementExperiment(BaseExperiment):
     """
     An example experiment class that deals only with speech enhancement data:
@@ -263,12 +267,69 @@ class SpeechEnhancementExperiment(BaseExperiment):
     batch_size: int = 16,
     cuda: bool = False,
     experiment_no: int = 1,
+    use_splits: bool = True,
     ):
         self.heards_dir = '/Users/nkdem/Downloads/HEAR-DS' if not cuda else '/disk/scratch/s2203859/minf-1/HEAR-DS'
         self.speech_dir = '/Volumes/SSD/Datasets/CHiME3/CHiME3-Isolated-DEV/dt05_bth' if not cuda else '/disk/scratch/s2203859/minf-1/dt05_bth/'
         self.experiment_no = experiment_no
-        super().__init__(heards_dir=self.heards_dir, speech_dir=self.speech_dir, batch_size=batch_size, cuda=cuda)
+        self.use_splits = use_splits
+        
+        # Initialize with empty loaders first
+        super().__init__(batch_size=batch_size, cuda=cuda)
+        
+        if use_splits:
+            self._setup_data_from_splits()
+        else:
+            self.setup_data_from_scratch(self.heards_dir, self.speech_dir)
+            
         logger.info("SpeechEnhancementExperiment initialized.")
+        
+    def _setup_data_from_splits(self):
+        """Set up data loaders using pre-generated splits"""
+        split_file = f'splits/split_{self.experiment_no - 1}.pkl'  # 0-indexed
+        
+        if not os.path.exists(split_file):
+            logger.warning(f"Split file {split_file} not found. Falling back to generating splits on the fly.")
+            self.setup_data_from_scratch(self.heards_dir, self.speech_dir)
+            return
+            
+        logger.info(f"Loading splits from {split_file}")
+        with open(split_file, 'rb') as f:
+            split = pickle.load(f)
+            
+            # Extract the mixed datasets from the splits
+            train_mixed_ds = split['subsets']['train']['mixed']
+            test_mixed_ds = split['subsets']['test']['mixed']
+            
+            def speech_enh_collate_fn(batch, ignore = True):
+                noisy_list = []
+                clean_list = []
+                envs = []
+                recs = []
+                cut_ids = []
+                extras = []
+                snrs = []
+
+                for (noisy, clean, env, recsit, cut_id, extra, snr) in batch:
+                    if ignore and env in ["CocktailParty", "InterfereringSpeakers"]:
+                        # Skip these examples during training since we don't have clean audio for them
+                        continue
+                    noisy_list.append(noisy)
+                    clean_list.append(clean)
+                    envs.append(env)
+                    recs.append(recsit)
+                    cut_ids.append(cut_id)
+                    extras.append(extra)
+                    snrs.append(snr)
+
+                return noisy_list, clean_list, envs, recs, cut_ids, extras, snrs
+
+            self.train_loader = DataLoader(
+                train_mixed_ds, batch_size=self.batch_size, shuffle=True, collate_fn=speech_enh_collate_fn
+            )
+            self.test_loader = DataLoader(
+                test_mixed_ds, batch_size=self.batch_size, shuffle=False, collate_fn=lambda x: speech_enh_collate_fn(x, ignore=False)
+            )
 
     def run(self):
         """
@@ -279,7 +340,7 @@ class SpeechEnhancementExperiment(BaseExperiment):
         base_dir = self.create_experiment_dir("speech_enhance", self.experiment_no)
         adam = SpeechEnhanceAdamEarlyStopTrainer(
             base_dir=base_dir,
-            num_epochs=3,
+            num_epochs=100,
             train_loader=self.train_loader,
             batch_size=self.batch_size,
             cuda=self.cuda,
@@ -312,6 +373,8 @@ if __name__ == "__main__":
     parser = argparse.ArgumentParser()
     parser.add_argument("--experiment_no", type=int)
     parser.add_argument("--cuda", action='store_true', default=False)
+    parser.add_argument("--no_splits", action='store_true', default=False, 
+                        help="If set, don't use pre-generated splits")
     args = parser.parse_args()
 
     # if arg is not provided, default to 1
@@ -322,6 +385,7 @@ if __name__ == "__main__":
     else:
         experiment_no = args.experiment_no
     cuda = args.cuda
-    exp = SpeechEnhancementExperiment(batch_size=16, cuda=cuda, experiment_no=experiment_no)
+    use_splits = not args.no_splits
+    exp = SpeechEnhancementExperiment(batch_size=16, cuda=cuda, experiment_no=experiment_no, use_splits=use_splits)
     exp.run()
     logger.info("Done.")
