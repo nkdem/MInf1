@@ -93,23 +93,35 @@ class CNNSpeechEnhancer(nn.Module):
         return out.squeeze(2)  # Remove the height dimension
 
 class LSTMClassifier(nn.Module):
-    def __init__(self, input_size, hidden_size, num_layers, num_classes, dropout=0.3, bidirectional=False):
+    def __init__(self, input_size, hidden_size=256, num_layers=3, num_classes=10, dropout=0.4, bidirectional=True):
         """
-        Unidirectional LSTM classifier for audio classification tasks.
+        Enhanced LSTM classifier for audio classification tasks.
         
         Args:
             input_size (int): The number of expected features in the input x (feature dimension)
-            hidden_size (int): The number of features in the hidden state h
-            num_layers (int): Number of recurrent layers
+            hidden_size (int): The number of features in the hidden state h (default: 256)
+            num_layers (int): Number of recurrent layers (default: 3)
             num_classes (int): Number of classes to classify
-            dropout (float): Dropout probability (default: 0.3)
-            bidirectional (bool): If True, becomes a bidirectional LSTM (default: False for unidirectional)
+            dropout (float): Dropout probability (default: 0.4)
+            bidirectional (bool): If True, becomes a bidirectional LSTM (default: True)
         """
         super(LSTMClassifier, self).__init__()
         
-        # LSTM layer
+        # Convolutional front-end for feature extraction
+        self.conv_frontend = nn.Sequential(
+            nn.Conv1d(input_size, hidden_size // 2, kernel_size=5, stride=1, padding=2),
+            nn.BatchNorm1d(hidden_size // 2),
+            nn.ReLU(),
+            nn.Dropout(dropout),
+            nn.Conv1d(hidden_size // 2, hidden_size, kernel_size=3, stride=1, padding=1),
+            nn.BatchNorm1d(hidden_size),
+            nn.ReLU(),
+            nn.Dropout(dropout)
+        )
+        
+        # LSTM layers with batch normalization
         self.lstm = nn.LSTM(
-            input_size=input_size,
+            input_size=hidden_size,
             hidden_size=hidden_size,
             num_layers=num_layers,
             batch_first=True,
@@ -117,25 +129,36 @@ class LSTMClassifier(nn.Module):
             bidirectional=bidirectional
         )
         
-        # Define the output dimension based on whether the LSTM is bidirectional
-        lstm_output_dim = hidden_size * 2 if bidirectional else hidden_size
+        # Batch normalization for LSTM outputs
+        self.lstm_bn = nn.BatchNorm1d(hidden_size * 2 if bidirectional else hidden_size)
         
-        # Fully connected layer
+        # Self-attention mechanism
+        lstm_output_dim = hidden_size * 2 if bidirectional else hidden_size
+        self.attention = nn.Sequential(
+            nn.Linear(lstm_output_dim, lstm_output_dim // 2),
+            nn.Tanh(),
+            nn.Linear(lstm_output_dim // 2, 1)
+        )
+        
+        # Fully connected layers with batch normalization
         self.fc = nn.Sequential(
-            nn.Dropout(dropout),
-            nn.Linear(lstm_output_dim, hidden_size // 2),
+            nn.Linear(lstm_output_dim, lstm_output_dim // 2),
+            nn.BatchNorm1d(lstm_output_dim // 2),
             nn.ReLU(),
             nn.Dropout(dropout),
-            nn.Linear(hidden_size // 2, num_classes)
+            nn.Linear(lstm_output_dim // 2, lstm_output_dim // 4),
+            nn.BatchNorm1d(lstm_output_dim // 4),
+            nn.ReLU(),
+            nn.Dropout(dropout),
+            nn.Linear(lstm_output_dim // 4, num_classes)
         )
     
     def forward(self, x):
         """
-        Forward pass of the LSTM classifier.
+        Forward pass of the enhanced LSTM classifier.
         
         Args:
             x (torch.Tensor): Input tensor of shape (batch_size, sequence_length, input_size)
-                             For audio, this could be (batch_size, time_steps, features)
         
         Returns:
             torch.Tensor: Output tensor of shape (batch_size, num_classes)
@@ -143,14 +166,29 @@ class LSTMClassifier(nn.Module):
         # Move input to the same device as model parameters
         x = x.to(next(self.parameters()).device)
         
+        # Apply convolutional front-end
+        # Transpose for conv1d: (batch, seq_len, features) -> (batch, features, seq_len)
+        x = x.transpose(1, 2)
+        x = self.conv_frontend(x)
+        # Transpose back: (batch, features, seq_len) -> (batch, seq_len, features)
+        x = x.transpose(1, 2)
+        
         # LSTM forward pass
-        # output shape: (batch_size, sequence_length, hidden_size * (2 if bidirectional else 1))
         lstm_out, _ = self.lstm(x)
         
-        # We take the output of the last time step for classification
-        last_time_step = lstm_out[:, -1, :]
+        # Apply batch normalization to LSTM outputs
+        # Reshape for batch norm: (batch, seq_len, features) -> (batch, features, seq_len)
+        lstm_out_bn = self.lstm_bn(lstm_out.transpose(1, 2)).transpose(1, 2)
+        
+        # Self-attention mechanism
+        attention_weights = self.attention(lstm_out_bn)  # (batch, seq_len, 1)
+        attention_weights = torch.softmax(attention_weights, dim=1)  # (batch, seq_len, 1)
+        
+        # Apply attention weights
+        attended_out = torch.bmm(lstm_out_bn.transpose(1, 2), attention_weights)  # (batch, features, 1)
+        attended_out = attended_out.squeeze(-1)  # (batch, features)
         
         # Pass through fully connected layers
-        logits = self.fc(last_time_step)
+        logits = self.fc(attended_out)
         
         return logits

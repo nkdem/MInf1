@@ -145,7 +145,8 @@ class LSTMTrainer(BaseTrainer):
             total = 0
             
             # Training phase
-            for batch_idx, batch in enumerate(tqdm(self.train_loader, desc=f"Epoch {epoch+1}/{self.num_epochs}", unit="batch")):
+            progress_bar = tqdm(self.train_loader, desc=f"Epoch {epoch+1}/{self.num_epochs}", unit="batch")
+            for batch_idx, batch in enumerate(progress_bar):
                 noisy, clean, environments, recsits, cut_id, extra, snr = batch
                 
                 # Compute features
@@ -167,10 +168,13 @@ class LSTMTrainer(BaseTrainer):
                 total += labels.size(0)
                 correct += (predicted == labels).sum().item()
                 
-                # Log batch statistics
-                if (batch_idx + 1) % 10 == 0:
-                    logger.info(f"Epoch {epoch+1}/{self.num_epochs}, Batch {batch_idx+1}/{len(self.train_loader)}, "
-                                f"Loss: {loss.item():.4f}, Accuracy: {100 * correct / total:.2f}%")
+                # Update progress bar
+                current_loss = running_loss / (batch_idx + 1)
+                current_accuracy = 100 * correct / total if total > 0 else 0
+                progress_bar.set_postfix({
+                    'loss': f'{current_loss:.4f}',
+                    'acc': f'{current_accuracy:.2f}%'
+                })
             
             # Calculate average training loss and accuracy
             avg_train_loss = running_loss / len(self.train_loader)
@@ -189,8 +193,9 @@ class LSTMTrainer(BaseTrainer):
                 val_total = 0
                 
                 # Validation loop
+                val_progress = tqdm(self.val_loader, desc="Validation", unit="batch", leave=False)
                 with torch.no_grad():
-                    for batch in tqdm(self.val_loader, desc="Validation", unit="batch"):
+                    for batch in val_progress:
                         noisy, clean, environments, recsits, cut_id, extra, snr = batch
                         
                         # Compute features
@@ -206,6 +211,14 @@ class LSTMTrainer(BaseTrainer):
                         _, predicted = torch.max(outputs.data, 1)
                         val_total += labels.size(0)
                         val_correct += (predicted == labels).sum().item()
+                        
+                        # Update validation progress bar
+                        current_val_loss = val_loss / (val_progress.n + 1)
+                        current_val_accuracy = 100 * val_correct / val_total if val_total > 0 else 0
+                        val_progress.set_postfix({
+                            'val_loss': f'{current_val_loss:.4f}',
+                            'val_acc': f'{current_val_accuracy:.2f}%'
+                        })
                 
                 # Calculate average validation loss and accuracy
                 avg_val_loss = val_loss / len(self.val_loader)
@@ -447,6 +460,42 @@ class LSTMExperiment(BaseExperiment):
             "experiment_name": self.experiment_name
         }
 
+    def compute_logmels(self, waveforms, envs=None, recsits=None, cuts=None, snrs=None):
+        """
+        Compute log-mel spectrograms for a batch of waveforms.
+        
+        Args:
+            waveforms: Batch of audio waveforms (batch_size, channels, samples)
+            envs: Optional list of environments
+            recsits: Optional list of recording situations
+            cuts: Optional list of cut IDs
+            snrs: Optional list of SNRs
+            
+        Returns:
+            features: Batch of log-mel spectrograms (batch_size, n_frames, n_mels)
+        """
+        try:
+            # Compute log-mel spectrograms
+            features = compute_average_logmel(waveforms, self.device)
+            
+            # Check for NaN or Inf values
+            if torch.isnan(features).any() or torch.isinf(features).any():
+                logger.warning(f"NaN or Inf values detected in features! Replacing with zeros.")
+                features = torch.nan_to_num(features, nan=0.0, posinf=0.0, neginf=0.0)
+            
+            # Remove the channel dimension (dim=1)
+            features = features.squeeze(1)
+            
+            # Transpose from (batch_size, n_mels, n_frames) to (batch_size, n_frames, n_mels)
+            features = features.transpose(1, 2)
+            
+            return features
+        except Exception as e:
+            logger.error(f"Error computing log-mel spectrograms: {e}")
+            # Return a dummy tensor to avoid crashing
+            batch_size = waveforms.shape[0]
+            return torch.zeros((batch_size, 100, self.input_size), device=self.device)
+
     def collect_lstm_results(self, test_loader, model, no_classes, env_to_int):
         """
         Evaluate the LSTM model on the test set.
@@ -585,6 +634,7 @@ if __name__ == "__main__":
     parser.add_argument("--patience", type=int, default=5, help="Patience for early stopping")
     parser.add_argument("--use_validation", action="store_true", help="Use validation set")
     parser.add_argument("--validation_split", type=float, default=0.2, help="Validation split ratio")
+    parser.add_argument("--split_index", type=int, default=0, help="Index of the split to use (0-4)")
     args = parser.parse_args()
     
     # Check CUDA availability
@@ -597,15 +647,20 @@ if __name__ == "__main__":
     print(f"LSTM parameters: hidden_size={args.hidden_size}, num_layers={args.num_layers}")
     print(f"Validation: {'enabled' if args.use_validation else 'disabled'}")
     
-    # Load data
-    train_combined = os.path.join("data", "train_combined.pkl")
-    test_combined = os.path.join("data", "test_combined.pkl")
+    # Load data from splits
+    split_file = os.path.join("splits", f"split_{args.split_index}.pkl")
+    if not os.path.exists(split_file):
+        logger.error(f"Split file not found: {split_file}")
+        sys.exit(1)
     
-    # Check if data files exist
-    if not os.path.exists(train_combined) or not os.path.exists(test_combined):
-        logger.error(f"Data files not found. Please make sure the following files exist:")
-        logger.error(f"  - {train_combined}")
-        logger.error(f"  - {test_combined}")
+    logger.info(f"Loading data from split file: {split_file}")
+    try:
+        with open(split_file, 'rb') as f:
+            split_data = pickle.load(f)
+            train_combined = split_data['train']
+            test_combined = split_data['test']
+    except Exception as e:
+        logger.error(f"Error loading split file: {e}")
         sys.exit(1)
     
     # Create and run experiment
