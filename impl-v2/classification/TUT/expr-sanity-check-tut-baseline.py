@@ -13,7 +13,7 @@ from abc import ABC, abstractmethod
 sys.path.append(os.path.abspath(os.path.join('.')))
 from helpers import compute_average_logmel
 from models import AudioCNN
-from classification.train import AdamEarlyStopTrainer
+from classification.train import AdamEarlyStopTrainer, BaseTrainer
 from constants import MODELS
 
 from classification.TUT.tut_dataset import get_datasets_for_fold, get_folds
@@ -37,8 +37,25 @@ class BaseExperiment(ABC):
             'losses': {model: [] for model in MODELS.keys()},
             'duration': {model: [] for model in MODELS.keys()},
             'learning_rates': {model: [] for model in MODELS.keys()}
-            }
-        )
+            })
+    def get_results(self, trainer: BaseTrainer, base_dir: str, test_loader):
+        results = self.initialize_result_containers()
+        print(f"Collecting results from experiment run {self.exp_no}...")
+        for model in MODELS.keys():
+            cnn1_channels, cnn2_channels, fc_neurons = MODELS[model]
+            cnn = AudioCNN(trainer.num_of_classes, cnn1_channels, cnn2_channels, fc_neurons).to(self.device)
+            model_path = os.path.join(base_dir, model, 'model.pth')
+            cnn.load_state_dict(torch.load(model_path, weights_only=True, map_location=self.device)) 
+            classwise_accuracy, total_accuracy, confusion_matrix = self.collect_model_results(test_loader=test_loader, model=cnn, no_classes=trainer.num_of_classes, env_to_int=trainer.env_to_int)
+            results['losses'][model].append(trainer.losses[model])
+            results['duration'][model].append(trainer.durations[model])
+            results['learning_rates'][model].append(trainer.learning_rates_used[model])
+            results['class_accuracies'][model].append(classwise_accuracy)
+            results['total_accuracies'][model].append(total_accuracy)
+            results['confusion_matrix_raw'][model].append(confusion_matrix)
+            results['trained_models'][model].append(cnn)
+        return results
+    
     def collect_model_results(self, test_loader, model, no_classes, env_to_int):
         model.eval()
         total = 0
@@ -117,22 +134,7 @@ class TUTBaselineExperiment(BaseExperiment):
             print("\nTraining phase completed. Starting results collection and analysis...")
 
             # Initialize results containers
-            results = self.initialize_result_containers()
-
-            print(f"Collecting results from experiment run {self.exp_no}...")
-            for model in MODELS.keys():
-                cnn1_channels, cnn2_channels, fc_neurons = MODELS[model]
-                cnn = AudioCNN(adam.num_of_classes, cnn1_channels, cnn2_channels, fc_neurons).to(self.device)
-                model_path = os.path.join(base_dir, fold, model, 'model.pth')
-                cnn.load_state_dict(torch.load(model_path, weights_only=True, map_location=self.device)) 
-                classwise_accuracy, total_accuracy, confusion_matrix = self.collect_model_results(test_loader=test_loader, model=cnn, no_classes=adam.num_of_classes, env_to_int=adam.env_to_int)
-                results['losses'][model] = adam.losses[model]
-                results['duration'][model] =adam.durations[model]
-                results['learning_rates'][model] = adam.learning_rates[model]
-                results['class_accuracies'][model] = classwise_accuracy
-                results['total_accuracies'][model] = total_accuracy
-                results['confusion_matrix_raw'][model] = confusion_matrix
-                results['trained_models'][model] = cnn
+            results = self.get_results(trainer=adam, base_dir=os.path.join(base_dir, f'{fold}'), test_loader=test_loader)
 
             # save results 
             with open(os.path.join(base_dir, f'results-{fold}.pkl'), 'wb') as f:
