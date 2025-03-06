@@ -25,7 +25,7 @@ while True:
             # how many experiments to run
             num_experiments = int(input("How many experiments do you want to run? "))
             for i in range(num_experiments):
-                os.system(f"python {selected_experiment} --experiment_no {i+1} --cuda")
+                os.system(f"python {selected_experiment} --experiment_no {i+1}")
                 print(f"Experiment {i+1} completed.")
             break
         else:
