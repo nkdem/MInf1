@@ -43,8 +43,6 @@ class TUTDataset(Dataset):
                 audio_files.append((file_path, label))
         return audio_files
     def _get_labels(self):
-        # there's a file called /Users/nkdem/Downloads/TUT/TUT-acoustic-scenes-2017-development 13/meta.txt 
-        # that contains the labels for each audio file
         # audio/b020_90_100.wav	beach	b020
         with open(os.path.join(self.root_dir, 'meta.txt'), 'r') as f:
             labels = {}

@@ -113,7 +113,7 @@ class BaseTrainer:
         
         if missing_keys:
             logger.debug(f"Missing {len(missing_keys)} features. Computing...")
-            missing_audio = [waveforms[i] for i in missing_keys]
+            missing_audio = [(waveforms[0][i],waveforms[1][i]) for i in missing_keys]
             computed_logmel = compute_average_logmel(missing_audio, self.device)
             for idx, i in enumerate(missing_keys):
                 result = computed_logmel[idx].view(1, 40, -1)
@@ -154,12 +154,12 @@ class FixedLRSGDTrainer(BaseTrainer):
                     lr_chosen += 1
                     optimiser = torch.optim.SGD(model.parameters(), lr=self.learning_rates[lr_chosen])
 
-
-                for batch in tqdm(
+                pbar = tqdm(
                     self.train_loader,
                     desc=f"Training {model_name} [Epoch {epoch + 1}/{self.num_epochs}] [LR: {optimiser.param_groups[0]['lr']}]",
                     unit="batch"
-                ):
+                )
+                for batch in pbar:
                     # Determine the dataset type based on batch length
                     if len(batch) == 7:
                         # HEAR-DS
@@ -169,7 +169,6 @@ class FixedLRSGDTrainer(BaseTrainer):
                     
                     logmels = self.compute_logmels(waveforms, envs, recsits, cuts, snrs)
 
-
                     actual_labels = torch.tensor(np.array([self.env_to_int[env] for env in envs]), dtype=torch.long).to(self.device)
                     outputs = model(logmels)
                     loss = criterion(outputs, actual_labels)
@@ -178,7 +177,20 @@ class FixedLRSGDTrainer(BaseTrainer):
                     loss.backward()
                     optimiser.step()
 
+                    # Calculate accuracy
+                    _, predicted = torch.max(outputs.data, 1)
+                    correct = (predicted == actual_labels).sum().item()
+                    accuracy = 100 * correct / len(actual_labels)
+
+                    # Update running loss and progress bar
                     running_loss += loss.item()
+                    avg_loss = running_loss / (pbar.n + 1)  # Current average loss
+                    pbar.set_postfix({
+                        'loss': f'{loss.item():.4f}',
+                        'avg_loss': f'{avg_loss:.4f}',
+                        'accuracy': f'{accuracy:.2f}%'
+                    })
+
                 epoch_loss = running_loss / len(self.train_loader)
                 logger.info(f"Epoch [{epoch + 1}/{self.num_epochs}], Loss: {epoch_loss:.4f}")
                 losses.append(epoch_loss)
@@ -228,11 +240,12 @@ class AdamEarlyStopTrainer(BaseTrainer):
                 model.train()
                 running_loss = 0.0
 
-                for batch in tqdm(
+                pbar = tqdm(
                     self.train_loader,
                     desc=f"Training {model_name} [Epoch {epoch + 1}/{self.num_epochs}] [LR: {optimiser.param_groups[0]['lr']}]",
                     unit="batch"
-                ):
+                )
+                for batch in pbar:
                     # Determine the dataset type based on batch length
                     if len(batch) == 7:
                         # HEAR-DS
@@ -266,7 +279,19 @@ class AdamEarlyStopTrainer(BaseTrainer):
                     loss.backward()
                     optimiser.step()
 
+                    # Calculate accuracy
+                    _, predicted = torch.max(outputs.data, 1)
+                    correct = (predicted == actual_labels).sum().item()
+                    accuracy = 100 * correct / len(actual_labels)
+
+                    # Update running loss and progress bar
                     running_loss += loss.item()
+                    avg_loss = running_loss / (pbar.n + 1)  # Current average loss
+                    pbar.set_postfix({
+                        'loss': f'{loss.item():.4f}',
+                        'avg_loss': f'{avg_loss:.4f}',
+                        'accuracy': f'{accuracy:.2f}%'
+                    })
 
                 epoch_loss = running_loss / len(self.train_loader)
                 logger.info(f"Epoch [{epoch + 1}/{self.num_epochs}], Loss: {epoch_loss:.4f}")
