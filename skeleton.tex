@@ -22,7 +22,7 @@
 \begin{document}
 \begin{preliminary}
 
-\title{Evaluation of Machine Learning Algorithms for Speech Prioritisation in Noisy Environments}
+\title{Machine Learning Techniques for Noisy Speech}
 
 \author{Nikodem Bieniek}
 
@@ -195,6 +195,12 @@ A secondary goal is to make hearing aid research more accessible to the
 computer science community.
 The project also hopes to benefit other fields that deal with audio signal processing,
 such as mainstream wearables like headphones or microphones.
+
+\section{Contributions}
+TODO
+
+\section{Structure}
+TODO
 
 \chapter{Background}
 % We will begin by briefly giving a high level overview of hearing loss, before discussing 
@@ -375,7 +381,58 @@ because the high variability suggests that the random initialisation of weights 
 [To Hao: This is what I understood from your interpretation in the discussion of this paper last Friday, did I understand you correctly?].
 % For the recordings labeled as being in environments containing both speech and background noise, the researchers decided against recording the samples in situ.
 % Instead they took the speech data from CHiME 
-\subsection{Speech Prioritisation}
+\subsection{Speech Enhancement}
+
+
+\section{Criticism of Previous Work}
+TODO
+
+\chapter{Experimental Setup}
+\section{Datasets}
+\subsection{HEAR-DS}
+TODO
+\subsection{CHiME3}
+TODO
+\subsection{CHiME6}
+TODO
+
+\section{Baseline Models}
+
+\section{Hypotheses}
+
+\begin{enumerate}
+   \item \textbf{Using Fixed Learning Rate Stochastic Gradient Descent (SGD) will result in a longer training time than using Adam Optimiser.} The paper by \citet{Huwel2020HearDS} used the fixed learning rate SGD approach.
+   I hypothesise that using Adam Optimiser will result in a shorter training time.
+   \item \textbf{Data Augmentation will result in a higher accuracy of the model.} It is unclear from the paper whether the authors used data augmentation...
+   \item \textbf{Using an LSTM model will result in a higher accuracy of the model.}
+\end{enumerate}
+
+
+\chapter{Acoustic Scene Classification Experiments}
+\section{Data Preparation}
+TODO
+\subsection{Fixed Learning Rate SGD Approach}
+TODO
+\subsection{Adam Optimiser Approach}
+TODO
+\subsection{LSTM Model}
+TODO
+
+\chapter{Speech Enhancement Experiments}
+\section{Data Preparation}
+TODO
+\subsection{CNN Model}
+TODO
+
+\chapter{Conclusions}
+\section{Discussion}
+TODO
+\section{Future Work}
+TODO
+
+
+
+
 
 
 
