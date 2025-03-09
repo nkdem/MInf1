@@ -302,6 +302,18 @@ though typically cohlear implants are only considered if the user is experiencin
 a severe hearing loss or further. Another consideration is cost,
 the fitting of a hearing aid is a lower barrier of entry since there 
 does not need to be any surgical operations done. 
+
+Due to the proprietary nature of the devices, it is unclear what sort of 
+algorithms are used in the devices. Though, from Phonak's white paper on Spheric Speech Clarity \cite{Hasemann2024PhonakSphere}
+it gives us a clue as to what sort of algorithms are used in the devices.
+Before signal processing begins, the sound is fed into Autosense OS which 
+performs 'scene classification' so in the context of this project, this can be 
+considered as an acoustic scene analysis (ASA) algorithm. If the ASA algorithm 
+classifies it as 'Speech in Loud Noise', then the signal is fed into a 
+deep neural network which outputs a mask that seperates the speech signal from the background noise 
+which is then applied to the signal. In the context of this project, we will aim to do something similar 
+when we train a speech enhancement model on HEAR-DS.
+
 % It is enough 
 % to know for now that the devices will contain multiple microphones, and 
 % a dedicated chip which does further processing on the sound depending 
