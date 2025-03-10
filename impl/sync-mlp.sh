@@ -1,1 +1,0 @@
-git ls-files | rsync -av --files-from=- ./ mlp:"/home/s2203859/minf-1/"

@@ -470,7 +470,21 @@ as it is a promising dataset for the future of HA research.
 \section{Datasets}
 \label{sec:datasets}
 \subsection{HEAR-DS}
-TODO
+HEAR-DS is a dataset created by \citet{Huwel2020HearDS} which is specially tailored for Hearing Aid (HA) research. 
+It consists of recordings captured on a dummy head equipped with Pinnae models and three microphones per side: one In-The-Canal (ITC) and two Behind-The-Ear (BTE) microphones (front and rear).
+Each sample is recorded in either the left or right channel and decomposed into its respective microphone channels (BTE\_front, BTE\_rear, ITC), available in 48kHz/32bit format.
+In the paper, the researchers used only the ITC samples, so for the scope of this project, we will only use the ITC samples as well. 
+As the researchers were based in Germany, their recordings were situated in Germany.
+The dataset provides 7 environments:
+\begin{itemize}
+   \item \textbf{Cocktail Party} - Covers situations such as multiple speakers in a noisy environment or 'babble' noise. The paper mentions that this was mimicked by recording them in a university cafeteria or at a senior citizens' meeting.
+   \item \textbf{Wind Turbulence} - Concerns the sound that is produced when wind passes through a microphone.
+   \item \textbf{In-Traffic} - Samples where traffic noise is dominant such as bus stations or sidewalks. The researchers controlled for this environment to not be similar to the \textit{Wind Turbulence} environment by choosing 'calm' days for the recordings.
+   \item \textbf{In-Vehicle} - The sounds produced when seated inside a car. The researchers controlled for this environment to not be similar to the \textit{In-Traffic} or \textit{Wind Turbulence} environments by ensuring the windows were closed. 
+   \item Test
+\end{itemize}
+
+
 \subsection{CHiME3}
 TODO
 \subsection{CHiME6}
