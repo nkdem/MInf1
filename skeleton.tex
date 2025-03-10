@@ -369,8 +369,31 @@ common to use 16 bits as it can represent an amplitude range of 96dB.
 \subsection{Engineered Acoustic Features}
 The prevalance of engineering acoustic features in previous work relating to my project and speech processing in general,
 warrants a high level overview of this concept to better understand its usage. 
+Given some signal $x(t)$, an engineered feature $f(x(t))$ is a function that transforms the signal in some way.
+In this project we will be feeding the models the log mel spectrogram of the signal. To obtain the log mel spectrogram, 
+we first need to convert the signal (waveform) into the frequency domain (spectrogram).
+The process of converting the signal into the frequency domain is done by utilising 
+the Fourier Transform. We will technically be using the Fast Fourier Transform (FFT) 
+due to efficiency, and the main hyperparameters for the FFT are the window length $w$ 
+and the hop length $h$. The window length is the length of the window that is used to 
+split the signal into frames, and the hop length is the number of samples between the 
+start of each frame. Additionally, there is a choice of a window function and we will 
+be using the most common one, the Hann window. Once we apply the FFT, we will be 
+left with a complex valued vector of length $w$ and the magnitude of this vector 
+gives us the amplitude of the signal at different frequencies. 
+We can then apply a Mel Filterbank - a filterbank that is used to mimic the human auditory system. 
+Afterwards, we take the logarithm of the filterbank outputs and we are left with the log mel spectrogram.
 
-TODO: Will write this in more detail once I cover this in the Speech Processing course (Week 7-8).
+% In this project we wil be employing the Mel-Frequency Cepstral Coefficients (MFCCs) as our engineered feature.
+% The process of extracting MFCSS from waveforms is known as Cepstral Analysis and below are the steps:
+% \begin{enumerate}
+%    \item Pre-emphasis: Enhances high-frequency components by boosting the signal.
+%    \item Windowing: Segments the signal into frames to capture the time-varying nature of speech.
+%    \item Fast Fourier Transform (FFT): Converts the signal from the time domain to the frequency domain.
+%    \item Mel Filterbank: Applies a filterbank to the FFT output to mimic the human auditory system.
+%    \item Logarithm: Converts the filterbank outputs to a logarithmic scale to mimic human perception of hearing.
+%    \item Discrete Cosine Transform (DCT): Extracts the cepstral coefficients from the filterbank outputs.
+% \end{enumerate}
 
 % \subsection{Acoustic Scene Analysis (ASA)}
 % The first step will be 
