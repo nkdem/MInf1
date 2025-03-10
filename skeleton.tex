@@ -196,11 +196,25 @@ computer science community.
 The project also hopes to benefit other fields that deal with audio signal processing,
 such as mainstream wearables like headphones or microphones.
 
-\section{Contributions}
-TODO
+% \section{Contributions}
+
 
 \section{Structure}
-TODO
+% The paper is structured as follows:
+% \begin{itemize}  
+%    \item \textbf{Background} - This chapter will give a high level overview of hearing loss, the auditory system, and the speech processing concepts needed to understand the project.
+%    We briefly also cover the two techniques that will be used in this project: Acoustic Scene Analysis (ASA) and Speech Enhancement
+%    and some of the related work done in the field. Lastly, I mention the criticism of the paper by \citet{Huwel2020HearDS} 
+%    that I will be exploring in this project.
+%    \item \textbf{Experimental Setup} - This chapter will cover the datasets that will be used in this project, the baseline models that will be used, and the hypotheses that will be tested.
+%    \item We then move onto the results of the experiments.
+%    \begin{itemize}
+%       \item \textbf{Acoustic Scene Classification} - This section will cover the results of the experiments pertaining to the ASA task.
+%       \item \textbf{Speech Enhancement} - This section will cover the results of the experiments pertaining to the speech enhancement task.
+%    \end{itemize}
+%    \item \textbf{Discussion/Conclusion} - This chapter will discuss the results of the experiments and the implications of the results.
+% \end{itemize}
+ 
 
 \chapter{Background}
 % We will begin by briefly giving a high level overview of hearing loss, before discussing 
@@ -322,8 +336,6 @@ when we train a speech enhancement model on HEAR-DS.
 
 
 
-\subsection{}
-
 % It is enough 
 % to know for now that the devices will contain multiple microphones, and 
 % a dedicated chip which does further processing on the sound depending 
@@ -409,31 +421,54 @@ We will discuss the work that has been done and my plans for further development
 
 \subsection{Acoustic Scene Analysis (ASA)}
 Acoustic Scene Analysis is the process of classifying the scene (environment) from an audio stream. For this project 
-we will be using a supervised machine learning model for ASA. So, we need 
-a audio dataset that contains useful metadata on the recording such as the environment it is in.
+we will be using a supervised machine learning model for ASA. As such, we need
+a sufficiently large dataset that contains useful metadata on the recordings such as the environment it is in.
 This project aims to use the HEAR-DS dataset presented by \citet{Huwel2020HearDS}. According to the researchers, 
 the dataset came to fruition because existing acoustic scene classification databases are inappropriate for 
-HA processing. We will go into more detail of the dataset in Chapter X [TODO: reference correclty once done]. 
-For now it is enough to know that the dataset contains background samples 
-But it is enough to know that the dataset is classified in an environment of which it is subcategorised as 
-either containing speech only, background only or speech \& background (both). To prevent machine learning 
-models from overfitting and to increase the diversity of situations, each environment enforces a minimum of three recording situations (REC-SITs) i.e.
-there must be at least three different locations for the recordings. The researchers presented the applicability 
-of this dataset by performing a series of classification experiments using various Convolutional Neural Networks (CNN) of differing sizes.
-This is where the paper could be more clear on the design decisions of the CNN, esepcially because the accuracy of the classification of the models 
-can vary as high as 20\%. This project hopes to reproduce the results, and explain the high variability in the accuracy and how those can be circumvented,
-because the high variability suggests that the random initialisation of weights during training is the primary factor influencing the model performance.
-[To Hao: This is what I understood from your interpretation in the discussion of this paper last Friday, did I understand you correctly?].
+HA processing. We will go into more detail of the dataset in Chapter \ref{sec:datasets}.
+The paper where the dataset was first introduced, presents the applicability 
+of the dataset by showcasing the use of a Convolutional Neural Network (CNN) to classify the environment.
+In Chapter \ref{chap:acoustic-scene-classification}, we will be attempting to reproduce the results of the paper. 
+As you will see, I struggled to reproduce the results of the paper and I discuss my findings in the chapter too.
+So as a validation of the model implementation, I decided to see if the same model parameters 
+can be used to classify the DCASE 2017 Acoustic Scenes Challenge dataset \cite{DCASE2017challenge}.
+More specifically, I compare \citet{schindler_multi-temporal_2018} model to the CNN model used in the paper.
+I discuss my findings in \ref{sec:DCASE-results}.
+
+
+% But it is enough to know that the dataset is classified in an environment of which it is subcategorised as 
+% either containing speech only, background only or speech \& background (both). To prevent machine learning 
+% models from overfitting and to increase the diversity of situations, each environment enforces a minimum of three recording situations (REC-SITs) i.e.
+% there must be at least three different locations for the recordings. The researchers presented the applicability 
+% of this dataset by performing a series of classification experiments using various Convolutional Neural Networks (CNN) of differing sizes.
+% This is where the paper could be more clear on the design decisions of the CNN, esepcially because the accuracy of the classification of the models 
+% can vary as high as 20\%. This project hopes to reproduce the results, and explain the high variability in the accuracy and how those can be circumvented,
+% because the high variability suggests that the random initialisation of weights during training is the primary factor influencing the model performance.
+% [To Hao: This is what I understood from your interpretation in the discussion of this paper last Friday, did I understand you correctly?].
 % For the recordings labeled as being in environments containing both speech and background noise, the researchers decided against recording the samples in situ.
 % Instead they took the speech data from CHiME 
 \subsection{Speech Enhancement}
 
-
 \section{Criticism of Previous Work}
-TODO
+During the course of this project, I found out that the paper by \citet{Huwel2020HearDS} had some issues.
+Granted, the paper was more of an exploration of the applicability of the dataset rather than a thorough analysis of the 
+performance of the model, it is still important to point out the issues I found. First of all, the paper was not clear 
+in the details of the splitting strategy of the dataset so I had to make some assumptions. Additionally, it was not clear 
+what loss function was used for training the model. As the dataset only contains raw cuts of the background noise, and 
+the researchers opted to mix the speech signal with the background noise so that they have full control over the SNR of the signal,
+they used another dataset to mix the speech signal with the background noise. More specifically, they used the CHiMe 3 \cite{barker_third_2015} 
+and CHiMe 5 \cite{barker_fifth_2018} datasets. However, only the CHiME 3 development set was used for mixing the speech into the background noise.
+CHiME 5 was used for creating a new environment, 'Interferring Speakers', which are samples that contain speech from multiple speakers.
+I think using the CHiME 3 dataset and especially only the development set was an odd decision, as there is only roughly 10 hours of data 
+from 4 speakers. So a model trained on this dataset may not generalise well to real world scenarios, due to the rich variability of 
+speech from different speakers. Nevertheless, we continue with the paper's approach to set up a baseline. Another odd decision was 
+in the use of a fixed learning rate scheduler, and the use of a high epoch count without what appears to be no early stopping. This 
+will be discussed in more detail in Chapter \ref{chap:acoustic-scene-classification}. We still thank the authors for their work on the dataset 
+as it is a promising dataset for the future of HA research.
 
 \chapter{Experimental Setup}
 \section{Datasets}
+\label{sec:datasets}
 \subsection{HEAR-DS}
 TODO
 \subsection{CHiME3}
@@ -454,6 +489,7 @@ TODO
 
 
 \chapter{Acoustic Scene Classification Experiments}
+\label{chap:acoustic-scene-classification}
 \section{Data Preparation}
 TODO
 \subsection{Fixed Learning Rate SGD Approach}
