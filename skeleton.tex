@@ -22,7 +22,7 @@
 \begin{document}
 \begin{preliminary}
 
-\title{Machine Learning Techniques for Noisy Speech}
+\title{Investigating Machine Learning Techniques for Hearing Aids}
 
 \author{Nikodem Bieniek}
 
@@ -292,6 +292,12 @@ Hearing loss is a spectrum, and varies from mild (26-40dB loss), moderate (41-60
 Moreover, hearing loss may occur in one ear (unilateral) or in both ears (binaural). 
 
 \section{Hearing Loss Treatment}
+
+\subsection{History of Hearing Technology}
+
+
+
+
 \subsection{Hearing Technology}
 As mentioned in the Introduction, the most common treatment for hearing loss 
 is the provision of hearing technology. There are two common approaches 
@@ -305,14 +311,18 @@ does not need to be any surgical operations done.
 
 Due to the proprietary nature of the devices, it is unclear what sort of 
 algorithms are used in the devices. Though, from Phonak's white paper on Spheric Speech Clarity \cite{Hasemann2024PhonakSphere}
-it gives us a clue as to what sort of algorithms are used in the devices.
-Before signal processing begins, the sound is fed into Autosense OS which 
+we can deduce that the devices use a combination of ASA and speech enhancement techniques.
+From the paper, before signal processing begins, the sound is fed into Autosense OS which 
 performs 'scene classification' so in the context of this project, this can be 
-considered as an acoustic scene analysis (ASA) algorithm. If the ASA algorithm 
-classifies it as 'Speech in Loud Noise', then the signal is fed into a 
+considered as an acoustic scene analysis (ASA) algorithm. More specifically, if 
+the signal is classified as 'Speech in Loud Noise', then the signal is fed into a 
 deep neural network which outputs a mask that seperates the speech signal from the background noise 
 which is then applied to the signal. In the context of this project, we will aim to do something similar 
-when we train a speech enhancement model on HEAR-DS.
+when we train a speech enhancement model on HEAR-DS. 
+
+
+
+\subsection{}
 
 % It is enough 
 % to know for now that the devices will contain multiple microphones, and 
