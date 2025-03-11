@@ -457,7 +457,7 @@ in the details of the splitting strategy of the dataset so I had to make some as
 what loss function was used for training the model. As the dataset only contains raw cuts of the background noise, and 
 the researchers opted to mix the speech signal with the background noise so that they have full control over the SNR of the signal,
 they used another dataset to mix the speech signal with the background noise. More specifically, they used the CHiMe 3 \cite{barker_third_2015} 
-and CHiMe 5 \cite{barker_fifth_2018} datasets. However, only the CHiME 3 development set was used for mixing the speech into the background noise.
+and CHiMe 5 \cite{barker18_fifth_2018} datasets. However, only the CHiME 3 development set was used for mixing the speech into the background noise.
 CHiME 5 was used for creating a new environment, 'Interferring Speakers', which are samples that contain speech from multiple speakers.
 I think using the CHiME 3 dataset and especially only the development set was an odd decision, as there is only roughly 10 hours of data 
 from 4 speakers. So a model trained on this dataset may not generalise well to real world scenarios, due to the rich variability of 
@@ -481,8 +481,26 @@ The dataset provides 7 environments:
    \item \textbf{Wind Turbulence} - Concerns the sound that is produced when wind passes through a microphone.
    \item \textbf{In-Traffic} - Samples where traffic noise is dominant such as bus stations or sidewalks. The researchers controlled for this environment to not be similar to the \textit{Wind Turbulence} environment by choosing 'calm' days for the recordings.
    \item \textbf{In-Vehicle} - The sounds produced when seated inside a car. The researchers controlled for this environment to not be similar to the \textit{In-Traffic} or \textit{Wind Turbulence} environments by ensuring the windows were closed. 
-   \item Test
+   \item \textbf{Quiet Indoors} - Mimic noises produced in a typical household such as washing dishes, clock ticking, etc. The researchers controlled for variability by recording the samples in several flats (rural, city centre, etc).
+   \item \textbf{Reveberant} - Samples in highly reverberant environments such as a railway station hall, staircases or a church. 
+   \item \textbf{Music} - The data is actually taken from the GTZAN dataset \cite{tzanetakis_musical_2002} and is used to test the model's ability to classify music.
 \end{itemize}
+Additionally, the researchers artificially created a new environment, \textit{Interfering Speakers}, which are samples that contain speech from multiple speakers. 
+This is done by taking speech samples from the CHiME 5 dataset \cite{barker18_fifth_2018}. This environment is supposed to mimic the 
+typical conversational speech that occurs in a real-world scenario. We however, decided to use the CHiME 6 dataset which 
+supercedes the CHiME 5 dataset \cite{barker18_fifth_2018} by correcting the alignment of audio channels and the researchers 
+recommend the use of the CHiME 6 dataset instead of CHiME 5 for any new research so we will use that instead. This could 
+be an important factor as the methodology of creating the \textit{Interfering Speakers} environment is by finding 10s 
+segments of speech that contain multiple speakers, so if the alignment of audio channels is not correct, the recordings 
+may have a delay between the left and right channels which could have potentialy affected the results of the paper.
+
+To prevent the model from overfitting and increase the diversity of the data, the researchers provided multiple REC-SITs (Recording Situations) for each environment.
+In the case of the \textit{Music} environment, each REC-SIT represents a different genre of music. This has some potential to cause issues 
+and we discuss this in more detail once we aim to reproduce the results of the paper (Chapter \ref{chap:acoustic-scene-classification}). 
+As for the artificially created \textit{Interfering Speakers} environment, it is unclear how they define REC-SITs for this environment. 
+What I did was to extract the session ID from the CHiME 6 dataset and use that as the REC-SIT, which 
+gives us a total of 16 REC-SITs for this environment.
+% TOOD: Make sure to refer to this problem later
 
 
 \subsection{CHiME3}
