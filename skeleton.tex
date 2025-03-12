@@ -462,7 +462,7 @@ performance of the model, it is still important to point out the issues I found.
 in the details of the splitting strategy of the dataset so I had to make some assumptions. Additionally, it was not clear 
 what loss function was used for training the model. As the dataset only contains raw cuts of the background noise, and 
 the researchers opted to mix the speech signal with the background noise so that they have full control over the SNR of the signal,
-they used another dataset to mix the speech signal with the background noise. More specifically, they used the CHiMe 3 \cite{barker_third_2015} 
+they used another dataset to mix the speech signal with the background noise. More specifically, they used the CHiME 3 \cite{barker_third_2015} 
 and CHiMe 5 \cite{barker18_fifth_2018} datasets. However, only the CHiME 3 development set was used for mixing the speech into the background noise.
 CHiME 5 was used for creating a new environment, 'Interferring Speakers', which are samples that contain speech from multiple speakers.
 I think using the CHiME 3 dataset and especially only the development set was an odd decision, as there is only roughly 10 hours of data 
@@ -531,18 +531,81 @@ A better approach would of perhaps been to use the cleanm speech samples
 Nevertheless, we will continue with the paper's approach to set up a baseline. The data was already in 16KHz so we did not need to 
 resample it. 
 % TODO: Add table here
-\subsection{CHiME6}
-The CHiME 6 dataset is a newer dataset that supersedes the CHiME 5 dataset. It contains 100 hours 
+\subsection{CHiME5/CHiME6}
+The CHiME 5 dataset was originally used in the paper to create the \textit{Interfering Speakers} environment for the HEAR-DS dataset.
+However, since the CHiME 6 dataset supersedes CHiME 5 with improved audio channel alignment, we opted to use CHiME 6 for our implementation.
+CHiME 6 (and CHiME 5) was a dataset created for the Speech Seperation and Recognition Challenge in 2020. It 
+focuses on conversational speech in everyday home environments and particular emphasis was placed on 
+eliciting a 'dinner party' scenario i.e. a mixture of speech from multiple speakers. It was not 
+clear from the paper what sets were used for the creation of the \textit{Interfering Speakers} environment 
+however, they did provide a table of number of samples in each environment. From the table, we 
+were able to deduce that they must have used the training, development and evaluation sets for the creation of the \textit{Interfering Speakers} environment.
+We talk more about the creation of this environment when we discuss the baseline model in Chapter \ref{chap:acoustic-scene-classification}.
+From Table \ref{tab:chime6-stats}, we can see that the dataset contains almost 50 hours of data from 48 speakers. 
 \label{sec:chime6}
-TODO
+TODO Table
 
 \subsection{TUT Acoustic Scenes 2016}
 As mentioned in the previous chapter, I came across better results than the baseline model in the paper by \citet{Huwel2020HearDS} 
 so as a means of validation, I decided to use the TUT Acoustic Scenes 2016 dataset \cite{mesaros_tut_2016} to test the performance of the model.
-In particular, I will comparing the results by \citet{schindler_multi-temporal_2018}.
-
+In particular, I will comparing the results by \citet{schindler_multi-temporal_2018}. The paper presents a multi-temporal approach to ASA, and 
+the authors have used the development set of the TUT Acoustic Scenes 2016 dataset for their experiments. It is worth stressing 
+that this dataset contains background noise only, and the paper does not evaluate it with speech, so when we use it to validate 
+the model, we will maintain the same approach as the paper.
 
 \section{Baseline Models}
+\subsection{Acoustic Scene Classification}
+For the ASA task, the baseline model is the CNN model presented in the paper by \citet{Huwel2020HearDS}. 
+The researchers investigated the effect of differentt model parameters, where the first 
+layer has \textbf{CNN\_1} output channels  and the second layer doubles the number of output channels (\textbf{CNN\_2} = 2$\times$CNN\_1).
+While the researchers vary the number of output channels in intervals of 4, thereby training 7 different models, we will 
+only train 3 models, as we're mostly interested in seeing if we're getting similar results to the paper.
+Table \ref{tab:cnn-model-params} shows the parameters of the models we will be training. 
+So the sequence of operations for the model is as follows:
+\begin{enumerate}
+   \item First CNN block:
+      \begin{itemize}
+         \item 2D Convolution (\textbf{CNN\_1} channels, 7x7 kernel, 1x1 stride, 3x3 padding)
+         \item Batch Normalisation
+         \item ReLU
+         \item MaxPool (5x5 kernel and stride)
+         \item Dropout (0.3)
+      \end{itemize}
+   \item Second CNN block:
+      \begin{itemize}
+         \item 2D Convolution (\textbf{CNN\_2} channels, 7x7 kernel, 1x1 stride, 3x3 padding)
+         \item Batch Normalisation
+         \item ReLU
+         \item MaxPool (4x100 kernel and stride)
+         \item Dropout (0.3)
+      \end{itemize}
+   \item Fully Connected block:
+      \begin{itemize}
+         \item Flatten
+         \item ReLU
+         \item Dropout (0.3)
+         \item Linear layer (10 output classes)
+      \end{itemize}
+\end{enumerate}
+This is better visualised in Figure \ref{fig:cnn-model-architecture}.
+   
+
+\begin{table}[h]
+   \centering
+   \begin{tabular}{|c|c|c|c|}
+      \hline
+      Model & CNN\_1 & CNN\_2 & FC \\
+      \hline
+      net-8 & 8 & 16 & 25 \\
+      net-20 & 20 & 40 & 63 \\
+      net-32 & 32 & 64 & 100 \\
+      \hline
+   \end{tabular}
+   \caption{Model parameters for the net-X models.}
+   \label{tab:cnn-model-params}
+\end{table}
+
+
 
 \section{Hypotheses}
 
