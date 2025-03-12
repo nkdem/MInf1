@@ -394,7 +394,13 @@ be using the most common one, the Hann window. Once we apply the FFT, we will be
 left with a complex valued vector of length $w$ and the magnitude of this vector 
 gives us the amplitude of the signal at different frequencies. 
 We can then apply a Mel Filterbank - a filterbank that is used to mimic the human auditory system. 
-Afterwards, we take the logarithm of the filterbank outputs and we are left with the log mel spectrogram.
+Afterwards, we take the logarithm of the filterbank outputs and we are left with the log mel spectrogram 
+which mimics the human perception of loudness. Diagram \ref{fig:log-mel-spectrogram} shows the process to make it more clear.
+The reason it is worthwhile to use an engineered feature is for many reasons, but one of the main ones is that 
+it is a compact representation of the signal which reduces the amount of memory and computational resources required 
+to process the signal which is especially important for embedded devices. The other reason is that it is much 
+more clearer to distinguish between speech and background noise from this representation than from the waveform, so 
+it is easier for the model to learn.
 
 % In this project we wil be employing the Mel-Frequency Cepstral Coefficients (MFCCs) as our engineered feature.
 % The process of extracting MFCSS from waveforms is known as Cepstral Analysis and below are the steps:
@@ -492,7 +498,7 @@ supercedes the CHiME 5 dataset \cite{barker18_fifth_2018} by correcting the alig
 recommend the use of the CHiME 6 dataset instead of CHiME 5 for any new research so we will use that instead. This could 
 be an important factor as the methodology of creating the \textit{Interfering Speakers} environment is by finding 10s 
 segments of speech that contain multiple speakers, so if the alignment of audio channels is not correct, the recordings 
-may have a delay between the left and right channels which could have potentialy affected the results of the paper.
+may have a delay between the left and right channels which could have potentialy affected the results of the paper. We will discuss the dataset in more detail in section \ref{sec:chime6}.
 
 To prevent the model from overfitting and increase the diversity of the data, the researchers provided multiple REC-SITs (Recording Situations) for each environment.
 In the case of the \textit{Music} environment, each REC-SIT represents a different genre of music. This has some potential to cause issues 
@@ -500,13 +506,41 @@ and we discuss this in more detail once we aim to reproduce the results of the p
 As for the artificially created \textit{Interfering Speakers} environment, it is unclear how they define REC-SITs for this environment. 
 What I did was to extract the session ID from the CHiME 6 dataset and use that as the REC-SIT, which 
 gives us a total of 16 REC-SITs for this environment.
+
+The model presented in the paper assumed a sampling rate of 16KHz, so we resampled the HEAR-DS dataset to 16KHz. Additionally, 
+the model expected a log-mel spectrogram of 10s segments, and the HEAR-DS dataset provided longer segments. We therefore 
+split the HEAR-DS segments into 10s segments by traversing the dataset and extracting 10s segments. There is potential 
+for this to have discontinuities in the beginning and end of the segments, but from the paper it is unclear how this 
+was addressed if at all. We went with a naive approach of just cutting the segments.
+
 % TOOD: Make sure to refer to this problem later
 
 
 \subsection{CHiME3}
-TODO
+As mentioned in the previous chapter, the researchers used the CHiME 3 dataset to mix the speech signal with the background noise. 
+CHiME 3 is a dataset published in 2015 for ASR tasks, and was dedicated to improving the performance of mobile devices 
+in everyday, noisy environments. The vocabulary of the speech samples is taken from a subset of the Wall Street Journal (WSJ0) corupus \cite{TODO}.
+We won't go into the details of the environments, because while not exactly clear from 
+the paper, it is mentioned that a development set was used for the mixing. We assume that they used the isolated development set 
+recorded in a booth, as it would not make sense otherwise since the other sets contain noisy samples.
+The use of the development set for mixing is not ideal, as it is not representative of the real-world data.
+In particular, as can be seen from Table \ref{tab:chime3-stats}, it contains 10 hours of data from 4 speakers. This could be a problem in both tasks (ASA and Speech Enhancements), in the former
+we could be overfitting to the data due to the Pigeon-hole principle i.e. we have much more background samples than speech samples, 
+and in the latter, the enhancement model may not generalise well to real-world scenarios due to the small size of the dataset. 
+A better approach would of perhaps been to use the cleanm speech samples 
+Nevertheless, we will continue with the paper's approach to set up a baseline. The data was already in 16KHz so we did not need to 
+resample it. 
+% TODO: Add table here
 \subsection{CHiME6}
+The CHiME 6 dataset is a newer dataset that supersedes the CHiME 5 dataset. It contains 100 hours 
+\label{sec:chime6}
 TODO
+
+\subsection{TUT Acoustic Scenes 2016}
+As mentioned in the previous chapter, I came across better results than the baseline model in the paper by \citet{Huwel2020HearDS} 
+so as a means of validation, I decided to use the TUT Acoustic Scenes 2016 dataset \cite{mesaros_tut_2016} to test the performance of the model.
+In particular, I will comparing the results by \citet{schindler_multi-temporal_2018}.
+
 
 \section{Baseline Models}
 
