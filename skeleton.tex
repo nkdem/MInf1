@@ -308,11 +308,23 @@ Moreover, hearing loss may occur in one ear (unilateral) or in both ears (binaur
 \section{Hearing Loss Treatment}
 
 \subsection{History of Hearing Technology}
+Users were fitted with what would have been considered a HA in this day and age as early as the 18th century.
 
 
 
 
-\subsection{Hearing Technology}
+
+
+\subsection{Hearing Technology Now}
+
+Hearing aids are increasingly becoming more sophisticated and are starting to incorporate more powerful 
+algorithms to improve the quality of life for hearing aid users. From Apple's FDA approved hearing aid in 
+their Airpods, to big traditional players like Phonak, Oticon who are starting to incorporate 
+DNN and AI into their devices. There is also a trend of rechargable hearing aids, and while 
+it has a practical aspect i.e. the user does not need to change the batteries, it's also 
+specifically used because of the ability to handle higher peak power consumption, whereas 
+non-rechargable hearing aids are restricted to what's allowed by the battery. The problem
+
 As mentioned in the Introduction, the most common treatment for hearing loss 
 is the provision of hearing technology. There are two common approaches 
 to fitting of hearing technology: the equipment of a Hearing Aid (HA) 
@@ -470,7 +482,11 @@ from 4 speakers. So a model trained on this dataset may not generalise well to r
 speech from different speakers. Nevertheless, we continue with the paper's approach to set up a baseline. Another odd decision was 
 in the use of a fixed learning rate scheduler, and the use of a high epoch count without what appears to be no early stopping. This 
 will be discussed in more detail in Chapter \ref{chap:acoustic-scene-classification}. We still thank the authors for their work on the dataset 
-as it is a promising dataset for the future of HA research.
+as it is a promising dataset for the future of HA research. Additionally, given that the dataset 
+has the potential to be used for HA devices, there is not any mention on the viability of the models 
+when used in a HA device. So a significant aspect of this project is to investigate the feasibility of 
+incorporating a DNN model into a HA device. 
+
 
 \chapter{Experimental Setup}
 \section{Datasets}
@@ -588,7 +604,6 @@ So the sequence of operations for the model is as follows:
       \end{itemize}
 \end{enumerate}
 This is better visualised in Figure \ref{fig:cnn-model-architecture}.
-   
 
 \begin{table}[h]
    \centering

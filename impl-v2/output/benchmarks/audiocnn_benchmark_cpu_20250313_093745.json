@@ -1,0 +1,20 @@
+{
+    "net-8": {
+        "flops": 13549975.0,
+        "params": 7951.0,
+        "flops_readable": "13.550M",
+        "params_readable": "7.951K"
+    },
+    "net-20": {
+        "flops": 52693985.0,
+        "params": 46423.0,
+        "flops_readable": "52.694M",
+        "params_readable": "46.423K"
+    },
+    "net-32": {
+        "flops": 114420700.0,
+        "params": 116623.0,
+        "flops_readable": "114.421M",
+        "params_readable": "116.623K"
+    }
+}

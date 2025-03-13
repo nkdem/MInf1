@@ -1,0 +1,6 @@
+{
+    "flops": 32768000.0,
+    "params": 65320.0,
+    "flops_readable": "32.768M",
+    "params_readable": "65.320K"
+}

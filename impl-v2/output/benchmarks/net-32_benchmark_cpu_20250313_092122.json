@@ -1,0 +1,10 @@
+{
+    "total_params": 116522.0,
+    "trainable_params": 116522.0,
+    "non_trainable_params": 0.0,
+    "avg_time_ms": 1.1546015739440918,
+    "std_time_ms": 0.19273789897202778,
+    "ops": 99099726331.69171,
+    "flops_per_inference": 114420700.0,
+    "ops_per_parameter": 850480.8219193948
+}
