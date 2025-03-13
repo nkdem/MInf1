@@ -134,6 +134,7 @@ class ChimeProcessor:
             for i, segment in enumerate(segments):
                 try:
                     # Determine env_id based on the global counter (half samples 100, half 101)
+                    # TODO: FIx this
                     env_id = "100" if self.global_segment_count % 2 == 0 else "101"
                     
                     # REC_ID: derived from session number by stripping the 'S' and adding 200
