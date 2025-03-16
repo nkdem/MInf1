@@ -113,7 +113,9 @@ class BaseTrainer:
         
         if missing_keys:
             logger.debug(f"Missing {len(missing_keys)} features. Computing...")
-            missing_audio = [(waveforms[0][i],waveforms[1][i]) for i in missing_keys]
+            # missing_audio = [(waveforms[0][i],waveforms[1][i]) for i in missing_keys]
+            missing_audio = [waveforms[i] for i in missing_keys]
+
             computed_logmel = compute_average_logmel(missing_audio, self.device)
             for idx, i in enumerate(missing_keys):
                 result = computed_logmel[idx].view(1, 40, -1)

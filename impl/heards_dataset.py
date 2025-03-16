@@ -161,9 +161,7 @@ class SpeechDataset(Dataset):
         if len(speech) > TARGET_LENGTH:
             start = random.randint(0, len(speech) - TARGET_LENGTH)
             speech = speech[start:start + TARGET_LENGTH]
-        elif len(speech) < TARGET_LENGTH:
-            padding = TARGET_LENGTH - len(speech)
-            speech = np.pad(speech, (0, padding), mode='constant')
+        # we don't need to cover case where speech is shorter than TARGET_LENGTH as it will conflict with the mixed dataset where it assumes all speech is TARGET_LENGTH
         speaker = self._extract_speaker(speech_file)
         return speech, speaker
 
@@ -197,9 +195,18 @@ class MixedAudioDataset(Dataset):
         required_length = int(0.75 * TARGET_LENGTH)
         concatenated_speech = np.array([], dtype=np.float32)
         samples_used = []
+        speaker_used = None
         while len(concatenated_speech) < required_length:
-            idx = random.randint(0, len(self.speech_dataset) - 1)
-            speech, _ = self.speech_dataset[idx]
+            if speaker_used is None:
+                idx = random.randint(0, len(self.speech_dataset) - 1)
+                speech, speaker = self.speech_dataset[idx]
+                speaker_used = speaker
+            else:
+                idx = random.randint(0, len(self.speech_dataset) - 1)
+                speech, speaker = self.speech_dataset[idx]
+                while speaker != speaker_used:
+                    idx = random.randint(0, len(self.speech_dataset) - 1)
+                    speech, speaker = self.speech_dataset[idx]
             concatenated_speech = np.concatenate((concatenated_speech, speech))
             samples_used.append(self.speech_dataset.speech_files[idx])
         if len(concatenated_speech) > TARGET_LENGTH:
