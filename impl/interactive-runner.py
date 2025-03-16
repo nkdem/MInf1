@@ -5,7 +5,7 @@ speech_enhancement_folder = 'speech-enhancement'
 classification_folder = 'classification'
 
 # Find all experiment files in the speech enhancement folder
-experiment_files = [os.path.join('speech-enhancement', f) for f in os.listdir(speech_enhancement_folder) if f.startswith('expr-') and os.path.isfile(os.path.join(speech_enhancement_folder, f))]
+experiment_files = [os.path.join('speech-enhancement', f) for f in os.listdir(speech_enhancement_folder) if f.startswith('expr_') and os.path.isfile(os.path.join(speech_enhancement_folder, f))]
 # now in classification folder
 experiment_files += [os.path.join(classification_folder, 'HEAR-DS', f) for f in os.listdir('classification/HEAR-DS') if f.startswith('expr-') and os.path.isfile(os.path.join(classification_folder, 'HEAR-DS', f))]
 experiment_files += [os.path.join(classification_folder, 'TUT', f) for f in os.listdir('classification/TUT') if f.startswith('expr-') and os.path.isfile(os.path.join(classification_folder, 'TUT', f))]

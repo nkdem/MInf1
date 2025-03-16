@@ -18,8 +18,8 @@ from pystoi import stoi
 from train_enhance import SpeechEnhanceAdamEarlyStopTrainer
 sys.path.append(os.path.abspath(os.path.join('.')))
 from heards_dataset import BackgroundDataset, MixedAudioDataset, SpeechDataset, split_background_dataset, split_speech_dataset
-from helpers import compute_average_logmel, linear_to_waveform, logmel_to_linear
 from models import CNNSpeechEnhancer
+from helpers import compute_average_logmel, linear_to_waveform, logmel_to_linear
 
 
 # pesq and stoi imports 
@@ -46,6 +46,52 @@ class BaseExperiment(ABC):
             'learning_rates': [],
             }
         )
+    def setup_data_from_splits(self):
+        """Set up data loaders using pre-generated splits"""
+        split_file = f'splits/split_{self.experiment_no - 1}.pkl'  # 0-indexed
+        
+        if not os.path.exists(split_file):
+            logger.warning(f"Split file {split_file} not found. Falling back to generating splits on the fly.")
+            self.setup_data_from_scratch(self.heards_dir, self.speech_dir)
+            return
+            
+        logger.info(f"Loading splits from {split_file}")
+        with open(split_file, 'rb') as f:
+            split = pickle.load(f)
+            
+            # Extract the mixed datasets from the splits
+            train_mixed_ds = split['subsets']['train']['mixed']
+            test_mixed_ds = split['subsets']['test']['mixed']
+            
+            def speech_enh_collate_fn(batch, ignore = True):
+                noisy_list = []
+                clean_list = []
+                envs = []
+                recs = []
+                cut_ids = []
+                extras = []
+                snrs = []
+
+                for (noisy, clean, env, recsit, cut_id, extra, snr) in batch:
+                    if ignore and env in ["CocktailParty", "InterfereringSpeakers"]:
+                        # Skip these examples during training since we don't have clean audio for them
+                        continue
+                    noisy_list.append(noisy)
+                    clean_list.append(clean)
+                    envs.append(env)
+                    recs.append(recsit)
+                    cut_ids.append(cut_id)
+                    extras.append(extra)
+                    snrs.append(snr)
+
+                return noisy_list, clean_list, envs, recs, cut_ids, extras, snrs
+
+            self.train_loader = DataLoader(
+                train_mixed_ds, batch_size=self.batch_size, shuffle=True, collate_fn=speech_enh_collate_fn
+            )
+            self.test_loader = DataLoader(
+                test_mixed_ds, batch_size=self.batch_size, shuffle=False, collate_fn=lambda x: speech_enh_collate_fn(x, ignore=False)
+            )
     def setup_data_from_scratch(self, heards_dir, speech_dir):
         """Set up data loaders from scratch without using pre-generated splits"""
         full_background_ds = BackgroundDataset(heards_dir)
@@ -278,58 +324,12 @@ class SpeechEnhancementExperiment(BaseExperiment):
         super().__init__(batch_size=batch_size, cuda=cuda)
         
         if use_splits:
-            self._setup_data_from_splits()
+            self.setup_data_from_splits()
         else:
             self.setup_data_from_scratch(self.heards_dir, self.speech_dir)
             
         logger.info("SpeechEnhancementExperiment initialized.")
         
-    def _setup_data_from_splits(self):
-        """Set up data loaders using pre-generated splits"""
-        split_file = f'splits/split_{self.experiment_no - 1}.pkl'  # 0-indexed
-        
-        if not os.path.exists(split_file):
-            logger.warning(f"Split file {split_file} not found. Falling back to generating splits on the fly.")
-            self.setup_data_from_scratch(self.heards_dir, self.speech_dir)
-            return
-            
-        logger.info(f"Loading splits from {split_file}")
-        with open(split_file, 'rb') as f:
-            split = pickle.load(f)
-            
-            # Extract the mixed datasets from the splits
-            train_mixed_ds = split['subsets']['train']['mixed']
-            test_mixed_ds = split['subsets']['test']['mixed']
-            
-            def speech_enh_collate_fn(batch, ignore = True):
-                noisy_list = []
-                clean_list = []
-                envs = []
-                recs = []
-                cut_ids = []
-                extras = []
-                snrs = []
-
-                for (noisy, clean, env, recsit, cut_id, extra, snr) in batch:
-                    if ignore and env in ["CocktailParty", "InterfereringSpeakers"]:
-                        # Skip these examples during training since we don't have clean audio for them
-                        continue
-                    noisy_list.append(noisy)
-                    clean_list.append(clean)
-                    envs.append(env)
-                    recs.append(recsit)
-                    cut_ids.append(cut_id)
-                    extras.append(extra)
-                    snrs.append(snr)
-
-                return noisy_list, clean_list, envs, recs, cut_ids, extras, snrs
-
-            self.train_loader = DataLoader(
-                train_mixed_ds, batch_size=self.batch_size, shuffle=True, collate_fn=speech_enh_collate_fn
-            )
-            self.test_loader = DataLoader(
-                test_mixed_ds, batch_size=self.batch_size, shuffle=False, collate_fn=lambda x: speech_enh_collate_fn(x, ignore=False)
-            )
 
     def run(self):
         """
@@ -340,7 +340,7 @@ class SpeechEnhancementExperiment(BaseExperiment):
         base_dir = self.create_experiment_dir("speech_enhance", self.experiment_no)
         adam = SpeechEnhanceAdamEarlyStopTrainer(
             base_dir=base_dir,
-            num_epochs=100,
+            num_epochs=2,
             train_loader=self.train_loader,
             batch_size=self.batch_size,
             cuda=self.cuda,
