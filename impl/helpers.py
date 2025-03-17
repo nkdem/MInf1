@@ -155,18 +155,18 @@ def logmel_to_linear(logmel_spectrogram, sample_rate, n_fft, n_mels, device):
     # Remove the channel dimension
     logmel_spectrogram = logmel_spectrogram.squeeze(1)
 
-    # Exponentiate the log-mel spectrogram
-    mel_spectrogram = torch.pow(10.0, logmel_spectrogram / 20.0)
+    # Convert back from log scale with numerical stability
+    mel_spectrogram = torch.pow(10.0, logmel_spectrogram / 20.0) + 1e-10
 
     # Create the inverse mel filter bank
     mel_to_linear_transform = T.InverseMelScale(
-        n_stft=int((n_fft // 2) + 1), # due to nyquist frequency
+        n_stft=int((n_fft // 2) + 1),  # due to nyquist frequency
         n_mels=n_mels,
         sample_rate=sample_rate,
-    ).to('cpu' if device != 'cuda' else 'cuda')
+    ).to(device)
 
     # Convert mel spectrogram back to linear spectrogram
-    linear_spectrogram = mel_to_linear_transform(mel_spectrogram.to('cpu' if device != 'cuda' else 'cuda'))
+    linear_spectrogram = mel_to_linear_transform(mel_spectrogram)
 
     return linear_spectrogram.unsqueeze(1)
 

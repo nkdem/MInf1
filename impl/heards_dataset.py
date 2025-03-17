@@ -175,9 +175,10 @@ class MixedAudioDataset(Dataset):
     Uses ensure_valid_lengths_with_speech to trim/pad and mix_signals to combine.
     Returns a tuple (mixed_audio_pair, label) where label=1 indicates speech is present.
     """
-    def __init__(self, background_dataset: BackgroundDataset, speech_dataset: SpeechDataset, snr_levels: List[int] = None):
+    def __init__(self, background_dataset: BackgroundDataset, speech_dataset: SpeechDataset, snr_levels: List[int] = None, channel = None):
         self.background_dataset = background_dataset
         self.speech_dataset = speech_dataset
+        self.channel = channel
         if snr_levels is None:
             self.snr_levels = [-21, -18, -15, -12, -9, -6, -3, 0, 3, 6, 9, 12, 15, 18, 21]
         else:
@@ -265,8 +266,8 @@ class MixedAudioDataset(Dataset):
         # Return: (noisy, clean, env, recsit, cut_id, extra_info, label=1)
         # Because we intentionally added speech:
         return (
-            [mixed_l, mixed_r],                # noisy mixture
-            [clean_l, clean_r],                # clean speech
+            [mixed_l, mixed_r] if self.channel == None else [mixed_l, mixed_l] if self.channel == 'L' else [mixed_r, mixed_r],                # noisy mixture
+            [clean_l, clean_r] if self.channel == None else [clean_l, clean_l] if self.channel == 'L' else [clean_r, clean_r],                # clean speech
             environment, 
             recsit, 
             cut_id, 
