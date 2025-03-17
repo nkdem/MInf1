@@ -170,7 +170,7 @@ def logmel_to_linear(logmel_spectrogram, sample_rate, n_fft, n_mels, device):
 
     return linear_spectrogram.unsqueeze(1)
 
-def linear_to_waveform(linear_spectrogram_batch, sample_rate, n_fft, hop_length, win_length, device, num_iters=32):
+def linear_to_waveform(linear_spectrogram_batch, sample_rate, n_fft, hop_length, win_length, device, num_iters=32, momentum=0.99, power=1.0):
     """
     Convert a batch of linear spectrograms to waveforms using the Griffin-Lim algorithm.
 
@@ -182,6 +182,8 @@ def linear_to_waveform(linear_spectrogram_batch, sample_rate, n_fft, hop_length,
         win_length (int): Each frame of audio is windowed by `win_length` samples.
         device (torch.device): The device to use.
         num_iters (int): Number of iterations for the Griffin-Lim algorithm.
+        momentum (float): Momentum parameter for the Griffin-Lim algorithm.
+        power (float): Power parameter for the Griffin-Lim algorithm.
 
     Returns:
         torch.Tensor: Reconstructed waveforms with shape (batch_size, waveform_length)
@@ -197,6 +199,8 @@ def linear_to_waveform(linear_spectrogram_batch, sample_rate, n_fft, hop_length,
         win_length=win_length,
         hop_length=hop_length,
         n_iter=num_iters,
+        momentum=momentum,
+        power=power,
     ).to(device)
 
     # Reconstruct waveforms

@@ -110,8 +110,9 @@ class SpeechEnhanceAdamEarlyStopTrainer(BaseTrainer):
         self.noisy_std = None
         self.clean_mean = None
         self.clean_std = None
+        self.compute_mean_and_std()
 
-    def compute_mean_and_std(self, num_steps=100):
+    def compute_mean_and_std(self, num_steps=500):
         """
         Compute the mean and standard deviation of logmels across the dataset.
         Also, cache the logmels for later use.
@@ -224,7 +225,6 @@ class SpeechEnhanceAdamEarlyStopTrainer(BaseTrainer):
 
 
     def train(self):
-        self.compute_mean_and_std()
 
         criterion = nn.MSELoss()
         start_time = time.time()

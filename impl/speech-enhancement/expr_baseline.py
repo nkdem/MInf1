@@ -340,7 +340,7 @@ class SpeechEnhancementExperiment(BaseExperiment):
         base_dir = self.create_experiment_dir("speech_enhance", self.experiment_no)
         adam = SpeechEnhanceAdamEarlyStopTrainer(
             base_dir=base_dir,
-            num_epochs=2,
+            num_epochs=240,
             train_loader=self.train_loader,
             batch_size=self.batch_size,
             cuda=self.cuda,

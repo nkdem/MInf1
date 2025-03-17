@@ -144,7 +144,7 @@ class PerEnvironmentSpeechEnhancementExperiment(BaseExperiment):
             # Initialize trainer for this environment
             adam = SpeechEnhanceAdamEarlyStopTrainer(
                 base_dir=base_dir,
-                num_epochs=2,  # You might want to adjust this
+                num_epochs=240,  # You might want to adjust this
                 train_loader=env_train_loader,
                 batch_size=self.batch_size,
                 cuda=self.cuda,
