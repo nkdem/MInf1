@@ -16,6 +16,7 @@
 \usepackage{microtype} % recommended, but you can remove if it causes problems
 \usepackage[square,numbers]{natbib} % recommended for citations
 \usepackage{graphicx}
+\usepackage{amssymb}
 \graphicspath{ {./images/}}
 \bibliographystyle{unsrtnat}
 
@@ -434,12 +435,18 @@ it is easier for the model to learn.
 
 
 \section{Related Work}
-As this project will chain two algorithms—Acoustic Speech Analysis (ASA) and Speech Prioritization, which is also referred to as Blind Source Separation in some literature—we will cover each in separate sections.
-We will discuss the work that has been done and my plans for further development.
+As this project will chain two algorithms—Acoustic Speech Analysis (ASA) and Speech Enhancement, 
+we will cover each in separate sections.
 
 \subsection{Acoustic Scene Analysis (ASA)}
-Acoustic Scene Analysis is the process of classifying the scene (environment) from an audio stream. For this project 
-we will be using a supervised machine learning model for ASA. As such, we need
+Acoustic Scene Analysis is the process of classifying the scene (environment) from an audio stream. 
+Mathematically, ASA can be defined as follows:
+
+Given an audio signal $x \in \mathbb{R}^{T}$, where $T$ is the number of samples in the signal, 
+and a set of $N$ environments $\mathcal{E} = \{e_1, e_2, \ldots, e_N\}$. Then ASA is the process 
+of finding a mapping $f: \mathbb{R}^{T} \rightarrow \mathcal{E}$ that maps the audio signal to one of the 
+environments in $\mathcal{E}$. $f$ for the purposes of this project is a neural network. So to 
+find the mapping, we need to train the neural network on a dataset of audio signals and their corresponding environments. As such, we need
 a sufficiently large dataset that contains useful metadata on the recordings such as the environment it is in.
 This project aims to use the HEAR-DS dataset presented by \citet{Huwel2020HearDS}. According to the researchers, 
 the dataset came to fruition because existing acoustic scene classification databases are inappropriate for 
@@ -466,6 +473,15 @@ I discuss my findings in \ref{sec:DCASE-results}.
 % For the recordings labeled as being in environments containing both speech and background noise, the researchers decided against recording the samples in situ.
 % Instead they took the speech data from CHiME 
 \subsection{Speech Enhancement}
+Speech enhancement is the process of maximising the perceptual quality of a speech signal, and 
+more specifically, the process of removing 'noise' from a speech signal, this could be background noise, such 
+as a 'wind' environment, or it could be other types of noise, such as 'babble' noise from multiple speakers.
+Mathematically, speech enhancement can be defined as follows:
+Given a noisy speech signal $x \in \mathbb{R}^{T}$, and a clean speech signal $y \in \mathbb{R}^{T}$, where $T$ is the number of samples in the signal,
+then the goal of speech enhancement is to find a mapping $f: \mathbb{R}^{T} \rightarrow \mathbb{R}^{T}$ that approximates $y$ given $x$ i.e. 
+$f(x) \approx y$. $f$ is once again a neural network for the purposes of this project. And once again, we need a dataset to train the model on.
+TODO: Talk about baseline model
+
 
 \section{Criticism of Previous Work}
 During the course of this project, I found out that the paper by \citet{Huwel2020HearDS} had some issues.
@@ -486,6 +502,22 @@ as it is a promising dataset for the future of HA research. Additionally, given 
 has the potential to be used for HA devices, there is not any mention on the viability of the models 
 when used in a HA device. So a significant aspect of this project is to investigate the feasibility of 
 incorporating a DNN model into a HA device. 
+
+
+\chapter{Methodology}
+\section{Acoustic Scene Analysis}
+\subsection{Dataset}
+\subsection{Model}
+\subsection{Training}
+\subsection{Evaluation}
+
+\section{Speech Enhancement}
+\subsection{Dataset}
+\subsection{Model}
+\subsection{Training}
+\subsection{Evaluation}
+
+
 
 
 \chapter{Experimental Setup}
