@@ -23,7 +23,8 @@
 \begin{document}
 \begin{preliminary}
 
-\title{Investigating Machine Learning Techniques for Hearing Aids}
+% \title{Investigating Machine Learning Techniques for Hearing Aids}
+\title{Towards a State-Dependent Model for Speech Enhancement in Hearing Aids}
 
 \author{Nikodem Bieniek}
 
@@ -36,23 +37,42 @@
 
 \date{\today}
 
-% TOOD: Need to tidy up and expand the abstract
 \abstract{
    This dissertation takes the intersection of Machine Learning, Automatic Speech Recognition (ASR) and Hearing Aids (HA) 
-   to evaluate the effectiveness of machine learning algorithms in prioritising speech in noisy environments. 
-   The aim is to classify the environment based on the audio signal, and then apply heuristic speech enhancement techniques to 
-   prioritise speech in particular environments. The experiments are conducted on a novel dataset called HEAR-DS where 
-   we evaluate the baseline Convolutional Neural Network (CNN) classifier presented by the authors of the dataset. 
-   We then demonstrate techniques that speed up the training process of the CNN model, by using the Adam optimiser. 
-   It is also shown that the model can generalise better by applying data augmentation techniques.
-   We then compare the performance of the CNN model to a Recurrent Neural Network (RNN) model, specifically 
-   the Long Short-Term Memory (LSTM). The results show that the LSTM model outperforms the CNN model. 
+   to investigate the effectiveness of machine learning algorithms in prioritising speech in noisy environments. 
+   At its forefront, the project aims to develop machine learning models that could be 
+   used in hearing aids to prioritise speech in noisy environments. So the project 
+   has to be mindful of the models computational complexity. And so, with every model
+   we present, we not only present the performance of the model, but also 
+   argue its feasibility in a hearing aid by considering metrics such as Floating Point Operations Per Second (FLOPS) and 
+   the number of parameters in the model.
+   
+   From the market we have found that there is a trend towards incorporating deep neural networks (DNNs) 
+   into hearing aids. From a particular manufacturer, we could deduce that they use a combination of Acoustic Scene Analysis (ASA) and 
+   Speech Enhancement techniques. As such, this project will aim to mimic this behaviour by 
+   first classifying the environment using a machine learning model, and then applying
+   heuristic speech enhancement techniques to prioritise speech in particular environments.
+   
+   We conduct the experiments on a novel dataset called HEAR-DS where 
+   we evaluate the baseline Convolutional Neural Network (CNN) ASA model presented by the authors of the dataset. 
+   We demonstrate techniques that improve both the training process and generalization capability of the CNN model through data augmentation and 
+   the usage of a different optimiser. 
+   
+   We then take this dataset further by demonstrating a proof-of-concept of a speech enhancement model that could be used as a state-dependent model.
+   For Speech Enhancement, we present a shallow CNN model that works in the frequency-time domain and evaluate its performance by using artificial scores such as STOI and PESQ.
 
 
-   Moreover, we develop a baseline speech enhancement model using a basic CNN model. We then take inspiration 
-   from the literatue and apply more layers to the model to improve the performance. We then compare the performance 
-   by comparing the STOI and PESQ scores of the models. The results show that the more complex model outperforms the
-   baseline model. 
+
+   
+   % We then compare the performance of the CNN model to a Recurrent Neural Network (RNN) model, specifically 
+   % the Long Short-Term Memory (LSTM). The results show that the LSTM model outperforms the CNN model.  << MAYBE IF I HAVE TIME
+
+
+
+   %  We then take inspiration 
+   % from the literatue and apply more layers to the model to improve the performance. We then compare the performance 
+   % by comparing the STOI and PESQ scores of the models. The results show that the more complex model outperforms the
+   % baseline model. 
 }
 
 \maketitle
@@ -62,21 +82,6 @@
    {\end{frontenv}\newpage}
 
 \begin{ethics}
-% \textbf{Instructions:} \emph{Agree with your supervisor which
-% statement you need to include. Then delete the statement that you are not using,
-% and the instructions in italics.\\
-% \textbf{Either complete and include this statement:}}\\ % DELETE THESE INSTRUCTIONS
-% %gg
-% % IF ETHICS APPROVAL WAS REQUIRED:
-% This project obtained approval from the Informatics Research Ethics committee.\\
-% Ethics application number: ???\\
-% Date when approval was obtained: YYYY-MM-DD\\
-% %
-% \emph{[If the project required human participants, edit as appropriate, otherwise delete:]}\\ % DELETE THIS LINE
-% The participants' information sheet and a consent form are included in the appendix.\\
-% %
-% % IF ETHICS APPROVAL WAS NOT REQUIRED:
-% \textbf{\emph{Or include this statement:}}\\ % DELETE THIS LINE
 This project was planned in accordance with the Informatics Research
 Ethics policy. It did not involve any aspects that required approval
 from the Informatics Research Ethics committee.
@@ -88,6 +93,8 @@ from the Informatics Research Ethics committee.
 \begin{acknowledgements}
 First and foremost, I would like to solemly thank my supervisor, Hao Tang for 
 his enthusiasm in guiding me through this self-proposed dissertation. I am eternally grateful for his wisdom, guidance, and patience throughout the project.
+
+I would like to also thank my friends, for their support and encouragement throughout the project. 
 
 And to my parents, without whose sacrifices I would not have been able to pursue this degree, let alone this project.
 \end{acknowledgements}
@@ -103,7 +110,7 @@ Hearing loss is a prevalent condition affecting as much as
 430 million people - or 1 in 18 people. This is expected 
 to rise to 1 in 10 by 2050 \cite{WHO2024deafness}.
 The most common treatment for hearing loss is the 
-provision of hearing technology - such as Hearing Aid (HA) or cochlear implants.
+provision of hearing technology - such as Hearing Aids (HAs) or cochlear implants.
 There are many types of HAs, but the most common
 type is the behind-the-ear (BTE) hearing aid \cite{Kochkin2010MarkeTrak8}.
 However, HA users often report that they struggle to hear speech
@@ -132,35 +139,31 @@ modest improvements in wind noise reduction, however, it did highlight
 that ML techniques may still have utility through further research 
 and careful algorithmic choices. 
 
-This project aims to pair the proposed machine learning techniques with
-signal processing techniques to evaluate the effectiveness of 
-speech prioritisation in noisy environments. The idea is to first 
+This project aims to investigate the effectiveness of machine learning techniques 
+in prioritising speech in noisy environments. The idea is to first 
 perform acoustic scene analysis (ASA) to classify the environment
 based on the audio signal. Afterwards, speech enhancement 
 techniques will be applied to the signal to prioritise speech.
-ASA can be done using a dataset of varying environments, and 
-using machine learning techniques to classify the environment.
 
 In this project, we will be using a novel dataset proposed by \citet{Huwel2020HearDS}
 This dataset (called HEAR-DS) is unique because it is specially tailored for HA signal processing and contains
-various environments. Normally, voice activity detection (VAD) is used to
-detect speech, however, the dataset helpfully contains 
-labels which samples contain speech. This can be used 
-to implicitly train the machine learning model to classify the environment 
+various environments. Normally, voice activity detection (VAD) would be 
+used to detect speech, however, we will instead 
+mix the samples with speech and label them as so. 
+This can be used to implicitly train the machine learning model to classify the environment 
 and whether speech is present. Additionally, the paper presents an 
 elementary example of how the dataset can be used: to classify the environment -
-it showcases the use of a
-convolutional neural network (CNN) to classify the environment.
-This project will be extending the paper by actually using the dataset 
-and comparing various machine learning techniques to evaluate the
-effectiveness of the proposed machine learning techniques. 
+it showcases the use of a convolutional neural network (CNN) to classify the environment.
+This project will be extending the paper by looking at how HEAR-DS can be used 
+to train a speech enhancement model. Additionally, we will 
+be looking at techniques that improve the training process and generalization 
+capability of the model.
 
-This project will investigate how recurrent neural networks (RNN) and 
-their variants, such as LSTMs, can be used to classify the environment.
- Based on the environment classified, the system will then apply
-signal processing techniques to enhance the speech. 
-The project 
-however has to be mindful in its algorithmic choices - as the computational
+% This project will investigate how recurrent neural networks (RNN) and 
+% their variants, such as LSTMs, can be used to classify the environment.
+%  Based on the environment classified, the system will then apply
+% signal processing techniques to enhance the speech. 
+The project will also be mindful in its algorithmic choices - as the computational
 power required in HA is limited. It is difficult to pinpoint the exact computational power of a HA
 due to the proprietary nature of the devices. In August 2024,
 Phonak (Sonova Holding AG) released a new HA which is their first AI 
@@ -171,13 +174,14 @@ quotes that it `rarely exceeds 5 million instructions per second (MIPS)` \cite{G
 Moreover, Apple's release of a FDA approved hearing aid in which was previously a mainstream earphone wearable,
 Apple Airpods, also shows that there's more interest in this area.
 So suffice to say, the computational power of hearing aids is accelerating 
-and is most likely going to continue to grow. 
+and is most likely going to continue to grow given the increasing demand 
+for HAs.
 
 Delay constraints are also
 important in HA, as the user needs to hear the speech in real-time.
 For example, so long as the speech production is no higher 
 than 30 milliseconds (ms), and ideally less than 20ms, the user
-is unaffected by the delay \cite{Stone2002Delays}.
+is unaffected by the delay \cite{Stone2002Delays}. 
 
 
 % Thus, the evaluation plays a crucial role in this project. From
@@ -197,27 +201,31 @@ computer science community.
 The project also hopes to benefit other fields that deal with audio signal processing,
 such as mainstream wearables like headphones or microphones.
 
-% \section{Contributions}
-
 
 \section{Structure}
-% The paper is structured as follows:
-% \begin{itemize}  
-%    \item \textbf{Background} - This chapter will give a high level overview of hearing loss, the auditory system, and the speech processing concepts needed to understand the project.
-%    We briefly also cover the two techniques that will be used in this project: Acoustic Scene Analysis (ASA) and Speech Enhancement
-%    and some of the related work done in the field. Lastly, I mention the criticism of the paper by \citet{Huwel2020HearDS} 
-%    that I will be exploring in this project.
-%    \item \textbf{Experimental Setup} - This chapter will cover the datasets that will be used in this project, the baseline models that will be used, and the hypotheses that will be tested.
-%    \item We then move onto the results of the experiments.
-%    \begin{itemize}
-%       \item \textbf{Acoustic Scene Classification} - This section will cover the results of the experiments pertaining to the ASA task.
-%       \item \textbf{Speech Enhancement} - This section will cover the results of the experiments pertaining to the speech enhancement task.
-%    \end{itemize}
-%    \item \textbf{Discussion/Conclusion} - This chapter will discuss the results of the experiments and the implications of the results.
-% \end{itemize}
+Going forward, the dissertation will be structured as follows:
+\begin{itemize}  
+   \item \textbf{Chapter \ref{ch:background}} - This chapter will give a high level overview of hearing loss, the auditory system, and the speech processing concepts needed to understand the project.
+   We briefly also cover the two techniques that will be used in this project: Acoustic Scene Analysis (ASA) and Speech Enhancement
+   and some of the related work done in the field. Lastly, I mention the criticism of the paper by \citet{Huwel2020HearDS} 
+   that I will be exploring in this project.
+   TODO
+   % \item \label{ch:Methodology} - This chapter will give a high level overview of the 
+   % methodology used in this project. It will cover the datasets that will be used, the baseline models that will be used, and the hypotheses that will be tested.
+   % \item \label{ch:Results} - This chapter will cover the results of the experiments.
+   % \item \label{ch:Discussion} - This chapter will discuss the results of the experiments and the implications of the results.
+   % \item \textbf{Experimental Setup} - This chapter will cover the datasets that will be used in this project, the baseline models that will be used, and the hypotheses that will be tested.
+   % \item We then move onto the results of the experiments.
+   % \begin{itemize}
+   %    \item \textbf{Acoustic Scene Classification} - This section will cover the results of the experiments pertaining to the ASA task.
+   %    \item \textbf{Speech Enhancement} - This section will cover the results of the experiments pertaining to the speech enhancement task.
+   % \end{itemize}
+   % \item \textbf{Discussion/Conclusion} - This chapter will discuss the results of the experiments and the implications of the results.
+\end{itemize}
  
 
 \chapter{Background}
+\label{ch:background}
 % We will begin by briefly giving a high level overview of hearing loss, before discussing 
 % what the current treatment and future of hearing loss treatment looks like. We will 
 % end on the techniques used to enhance speechV
@@ -309,32 +317,51 @@ Moreover, hearing loss may occur in one ear (unilateral) or in both ears (binaur
 \section{Hearing Loss Treatment}
 
 \subsection{History of Hearing Technology}
+TODO: Will see how much pages I have left after doing other chapters.
+
 Users were fitted with what would have been considered a HA in this day and age as early as the 18th century.
 
 
-
-
-
-
-\subsection{Hearing Technology Now}
-
-Hearing aids are increasingly becoming more sophisticated and are starting to incorporate more powerful 
-algorithms to improve the quality of life for hearing aid users. From Apple's FDA approved hearing aid in 
-their Airpods, to big traditional players like Phonak, Oticon who are starting to incorporate 
-DNN and AI into their devices. There is also a trend of rechargable hearing aids, and while 
-it has a practical aspect i.e. the user does not need to change the batteries, it's also 
-specifically used because of the ability to handle higher peak power consumption, whereas 
-non-rechargable hearing aids are restricted to what's allowed by the battery. The problem
-
+\subsection{Hearing Technology}
 As mentioned in the Introduction, the most common treatment for hearing loss 
 is the provision of hearing technology. There are two common approaches 
 to fitting of hearing technology: the equipment of a Hearing Aid (HA) 
 or the fitting of a Cohlear Implant. There are similarities in the 
 two, and both can be used to fit users that are experiencing profound hearing loss, 
 though typically cohlear implants are only considered if the user is experiencing 
-a severe hearing loss or further. Another consideration is cost,
-the fitting of a hearing aid is a lower barrier of entry since there 
-does not need to be any surgical operations done. 
+a severe hearing loss or further. While we 
+focus on the HA, the concepts we explore can be applied to the CI.
+The components of a HA vary widely, but at the very least, 
+it contains a microphone, amplifier, receiver, and battery \cite{schuster-bruce_conventional_2025}.
+A microphone is a device that converts acoustic sound waves into electrical signals. 
+The electrical signals are then amplified by the amplifier, and the receiver converts the electrical 
+signals back into the acoustic waves. The battery is used to power the device. 
+Depending on the user, they may either be fitted with a hearing aid on each 
+ear (binaural) or a single hearing aid on one ear (unilateral). 
+Typically, the hearing aid contains multiple microphones, and the microphones 
+are placed in different locations on the device. As you will see when we discuss 
+the dataset we will be using, the samples are labelled with which microphone 
+is being used. 
+
+
+\subsection{Hearing Technology Now}
+Hearing aids are increasingly becoming more sophisticated and are starting to incorporate more powerful 
+algorithms to improve the quality of life for hearing aid users. From Apple's FDA approved hearing aid in 
+their Airpods, to big traditional players like Phonak, Oticon who are starting to incorporate 
+DNN and AI into their devices. There is also a trend of rechargable hearing aids (Lithium Ion Batteries), and while 
+it has a practical aspect i.e. the user does not need to change the batteries, it's also 
+specifically used because of the ability to handle higher peak power consumption (which allows for powerful models to be used such as DNNs).
+Whereas non-rechargable hearing aids are restricted to what's allowed by the battery. There is however, a trade-off,
+as the battery life of the device is sacrificed. Battery powered hearing aids 
+are most always using Zinc-air batteries \cite{sparkes_study_1997} \cite{mir_evaluation_2023} 
+and the most recent study by \citet{thomas_zincair_2024} shows that the average battery life 
+under high power conditions 50-80 hours. Contrast this with the average battery life of 
+rechargable hearing aids which is typically in the region of 15-30 hours. In the case of 
+Phonak's Speech Enhancer that kicks in when the user is in a loud environment, the 
+maximum battery life is under 6 hours. This goes to show that 
+using DNNs in HA can require careful design considerations but the potential benefits 
+are worth it.
+
 
 Due to the proprietary nature of the devices, it is unclear what sort of 
 algorithms are used in the devices. Though, from Phonak's white paper on Spheric Speech Clarity \cite{Hasemann2024PhonakSphere}
@@ -372,24 +399,23 @@ when we train a speech enhancement model on HEAR-DS.
 
 \section{Speech Processing Techniques}
 \subsection{Digitisation}
-To be able to perform speech processing on a device containing a chip/processor (such as a HA), requires us 
+To be able to perform speech processing on a device containing a chip/processor such as a HA, requires us 
 to have some sort of digital representation of the sound wave. A waveform is just that, a digital representation 
-of the sound we hear. Digital devices can't have infinite precision, so the signal produced by the sound will 
+of the sound we hear. A microphone is a device that converts those sound waves into a representation of the 
+waveform. Conceptually, this is done by measuring the relative air pressure at different points in time, and 
+this is represented as a waveform or a time series of amplitudes. Digital devices can't have infinite precision, so the signal produced by the sound will 
 be divided into discrete samples, and the rate at which this occurs is known as the sampling rate. Additionally,
 the precision of the amplitude of the signal will be quantized into discrete numbers, and the precision is 
 dictated by the bit depth (or the quantization rate).
 
-How do we choose these two values, you may ask? The sampling 
-rate will vary between different speech tasks, and part of the decision 
-is dictated by a theorem known as the Nyquist-Shannon Sampling Theorem, 
-which states that the sampling rate should be at least twice the 
-highest frequency range present in the signal. In other words, 
-if your speech processing task involves working with frequencies 
-of 8KHz, then the sampling rate should be at least 16KHz.
-As for the selection of an appropriate bit depth value, 
-this depends on the need of representing a wide dynamic range 
-of air pressure in a speech signal. Typically, it is 
-common to use 16 bits as it can represent an amplitude range of 96dB.
+The selection of these two parameters is determined by the nature of the speech task and the Nyquist-Shannon Sampling Theorem.
+This theorem asserts that the sampling rate should be at least twice the highest frequency present in the signal. 
+That is, for a signal containing frequencies up to 8KHz, the minimum required sampling rate would be $f_s \ge 16$KHz.
+Otherwise, aliasing will occur, which is the phenomenon where high frequency components could be misinterpreted as lower frequencies,
+which could be undesirable in both tasks we are trying to perform. Typically, datasets will have a sampling rate 
+of 44KHz, and commonly for ASA tasks, a sampling rate of 16KHz is acceptable. 
+Regarding the bit depth, it is selected based on the dynamic range required to capture speech signal variations. 
+Commonly, 16-bit depth is used, which is capable of representing an amplitude range of approximately 96dB, thereby ensuring sufficient resolution in amplitude representation.
 
 \subsection{Engineered Acoustic Features}
 The prevalance of engineering acoustic features in previous work relating to my project and speech processing in general,
@@ -409,56 +435,30 @@ gives us the amplitude of the signal at different frequencies.
 We can then apply a Mel Filterbank - a filterbank that is used to mimic the human auditory system. 
 Afterwards, we take the logarithm of the filterbank outputs and we are left with the log mel spectrogram 
 which mimics the human perception of loudness. Diagram \ref{fig:log-mel-spectrogram} shows the process to make it more clear.
+
 The reason it is worthwhile to use an engineered feature is for many reasons, but one of the main ones is that 
 it is a compact representation of the signal which reduces the amount of memory and computational resources required 
-to process the signal which is especially important for embedded devices. The other reason is that it is much 
-more clearer to distinguish between speech and background noise from this representation than from the waveform, so 
-it is easier for the model to learn.
-
-% In this project we wil be employing the Mel-Frequency Cepstral Coefficients (MFCCs) as our engineered feature.
-% The process of extracting MFCSS from waveforms is known as Cepstral Analysis and below are the steps:
-% \begin{enumerate}
-%    \item Pre-emphasis: Enhances high-frequency components by boosting the signal.
-%    \item Windowing: Segments the signal into frames to capture the time-varying nature of speech.
-%    \item Fast Fourier Transform (FFT): Converts the signal from the time domain to the frequency domain.
-%    \item Mel Filterbank: Applies a filterbank to the FFT output to mimic the human auditory system.
-%    \item Logarithm: Converts the filterbank outputs to a logarithmic scale to mimic human perception of hearing.
-%    \item Discrete Cosine Transform (DCT): Extracts the cepstral coefficients from the filterbank outputs.
-% \end{enumerate}
-
-% \subsection{Acoustic Scene Analysis (ASA)}
-% The first step will be 
-
-% \subsection{Blind Source Seperation}
-
-% Blind source seperation 
-
-
+to process the signal which is especially important for embedded devices such as HAs. 
+Additionally, the log mel spectrogram enhances the distinction between speech and background noise, which 
+may make a model more effective at ASA and speech enhancement tasks.
 \section{Related Work}
 As this project will chain two algorithms—Acoustic Speech Analysis (ASA) and Speech Enhancement, 
 we will cover each in separate sections.
 
 \subsection{Acoustic Scene Analysis (ASA)}
-Acoustic Scene Analysis is the process of classifying the scene (environment) from an audio stream. 
-Mathematically, ASA can be defined as follows:
+Acoustic Scene Analysis (ASA) refers to the task of classifying an environment based on an audio stream. Mathematically, ASA can be formalised as follows:
 
-Given an audio signal $x \in \mathbb{R}^{T}$, where $T$ is the number of samples in the signal, 
-and a set of $N$ environments $\mathcal{E} = \{e_1, e_2, \ldots, e_N\}$. Then ASA is the process 
-of finding a mapping $f: \mathbb{R}^{T} \rightarrow \mathcal{E}$ that maps the audio signal to one of the 
-environments in $\mathcal{E}$. $f$ for the purposes of this project is a neural network. So to 
-find the mapping, we need to train the neural network on a dataset of audio signals and their corresponding environments. As such, we need
-a sufficiently large dataset that contains useful metadata on the recordings such as the environment it is in.
-This project aims to use the HEAR-DS dataset presented by \citet{Huwel2020HearDS}. According to the researchers, 
-the dataset came to fruition because existing acoustic scene classification databases are inappropriate for 
-HA processing. We will go into more detail of the dataset in Chapter \ref{sec:datasets}.
-The paper where the dataset was first introduced, presents the applicability 
-of the dataset by showcasing the use of a Convolutional Neural Network (CNN) to classify the environment.
-In Chapter \ref{chap:acoustic-scene-classification}, we will be attempting to reproduce the results of the paper. 
-As you will see, I struggled to reproduce the results of the paper and I discuss my findings in the chapter too.
-So as a validation of the model implementation, I decided to see if the same model parameters 
-can be used to classify the DCASE 2017 Acoustic Scenes Challenge dataset \cite{DCASE2017challenge}.
-More specifically, I compare \citet{schindler_multi-temporal_2018} model to the CNN model used in the paper.
-I discuss my findings in \ref{sec:DCASE-results}.
+Consider an audio signal \(x \in \mathbb{R}^{T}\), where \(T\) denotes the number of samples in the signal, and let \(\mathcal{E} = \{e_1, e_2, \ldots, e_N\}\) represent a set of \(N\) distinct environments. ASA is concerned with determining a mapping 
+\[
+f: \mathbb{R}^{T} \rightarrow \mathcal{E},
+\]
+which assigns each audio signal to one of the environments in \(\mathcal{E}\). In this project, \(f\) is implemented as a neural network. Therefore, training the model requires a dataset containing audio signals along with their corresponding environmental labels and relevant recording metadata.
+
+The focus of this study is the HEAR-DS dataset introduced by \citet{Huwel2020HearDS}. This dataset was developed in response to the inadequacies of existing acoustic scene classification databases for HA processing. A more detailed description of the dataset is provided in Chapter \ref{sec:datasets}.
+
+The original paper on the HEAR-DS dataset illustrates its applicability by employing a Convolutional Neural Network (CNN) for environment classification. In Chapter \ref{chap:acoustic-scene-classification}, an attempt is made to reproduce the results presented in that study. The challenges encountered during this replication process are discussed comprehensively in the chapter. Additionally, to validate the model implementation, the same parameters were applied to the DCASE 2017 Acoustic Scenes Challenge dataset \cite{DCASE2017challenge}. In particular, a comparison is drawn between the model proposed by \citet{schindler_multi-temporal_2018} and the CNN model used in the HEAR-DS paper, with the findings detailed in Section \ref{sec:DCASE-results}.
+
+% TODO: VERY DEEP CONVOLUTIONAL NEURAL NETWORKS FOR RAW WAVEFORMS
 
 
 % But it is enough to know that the dataset is classified in an environment of which it is subcategorised as 
@@ -472,15 +472,45 @@ I discuss my findings in \ref{sec:DCASE-results}.
 % [To Hao: This is what I understood from your interpretation in the discussion of this paper last Friday, did I understand you correctly?].
 % For the recordings labeled as being in environments containing both speech and background noise, the researchers decided against recording the samples in situ.
 % Instead they took the speech data from CHiME 
+
 \subsection{Speech Enhancement}
-Speech enhancement is the process of maximising the perceptual quality of a speech signal, and 
-more specifically, the process of removing 'noise' from a speech signal, this could be background noise, such 
-as a 'wind' environment, or it could be other types of noise, such as 'babble' noise from multiple speakers.
-Mathematically, speech enhancement can be defined as follows:
-Given a noisy speech signal $x \in \mathbb{R}^{T}$, and a clean speech signal $y \in \mathbb{R}^{T}$, where $T$ is the number of samples in the signal,
-then the goal of speech enhancement is to find a mapping $f: \mathbb{R}^{T} \rightarrow \mathbb{R}^{T}$ that approximates $y$ given $x$ i.e. 
-$f(x) \approx y$. $f$ is once again a neural network for the purposes of this project. And once again, we need a dataset to train the model on.
-TODO: Talk about baseline model
+
+Speech enhancement aims to improve the perceptual quality of a speech signal that 
+has been degraded by an additive noise \cite{loizou_speech_2007}. 
+This enhancement is crucial in applications where speech intelligibility is essential, such as telecommunications, hearing aids, and speech recognition systems. Noise sources may include environmental disturbances (e.g., wind noise) as well as interference from multiple speakers (e.g., babble noise).
+Mathematically, let a noisy speech signal be represented by \(x \in \mathbb{R}^{T}\) and the corresponding clean speech signal by \(y \in \mathbb{R}^{T}\), where \(T\) denotes the total number of samples.
+Speech enhancement is therefore concerned with determining a mapping 
+\[
+f: \mathbb{R}^{T} \to \mathbb{R}^{T},
+\]
+which takes a noisy speech signal \(x\) and produces an enhanced version \(f(x)\) that is as close as possible to the clean speech signal \(y\) i.e.
+\[
+f(x) \approx y.
+\]
+There are many different approaches to speech enhancement, from more traditional methods such as spectral subtraction, or Wiener filtering
+to more modern methods that incorporate neural-networks. In this dissertation, we will be using a neural-network based approach.
+But even within the neural-network based approach, there are different techniques that can be used to enhance the speech signal. 
+Neural network-based speech enhancement algorithms can be categorised into four primary types, as described in \cite{katagiri_handbook_2000}:
+\begin{itemize}
+   \item \textbf{Time-Domain Filtering} - Trains a neural network with noisy inputs (background + speech) and clean targets (speech only). 
+   This involves working with the waveform directly, however it is not without its challenges which is still an active area of research \cite{saleem_time_2024}.
+   \item \textbf{Transform-Domain Filtering} - Trains a neural network with noisy inputs (background + speech) and clean targets (speech only). 
+   The differnece between this and the Time-Domain Filtering approach is that the input is transformed into the frequency domain 
+   (whether that be a Fourier Transform, or a Mel Spectrogram, Mel-Frequency Cepstral Coefficients (MFCCs), LPC, etc). The advantage of this 
+   is that the dimensionality of the input is usually lower, and the representation is more robust to seperation of the speech and background noise.
+   This is also a popular approach in the speech enhancement literature \cite{hou_local_2023}.
+   \item \textbf{State-Dependent Model Switching} - The two mentioned approaches assumes that the speech signal and noise source are stationary. 
+   This is too strong of an assumption, and so state-dependent model switching is a paradigm that has been explored. The main idea is 
+   to have a class of models, each specialising in handling a different type of noise and to switch between them based on the 
+   characteristics of the input signal. This in a way is the chaining of ASA and Speech Enhancement, as the ASA model will 
+   first classify the input signal into a state, and then the appropriate speech enhancement model will be selected and applied to the signal.
+   \item \textbf{Online Iterative Methods} - The focus is on incorporating adaptive techniques that do not rely on pre-existing 
+   training data. Key approaches include adaptive predictors, dual EKF algorithms, and noise-regularised adaptive filtering.
+\end{itemize}
+It is no accident I talked about Engineering Acoustic Features in the previous section, as this dissertation 
+will be focusing on the Transform-Domain Filtering approach. Part two of this dissertation will be 
+investigating how ASA and Speech Enhancement can be combined to form a state-dependent model.
+
 
 
 \section{Criticism of Previous Work}
