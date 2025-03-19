@@ -80,7 +80,6 @@ def compute_average_logmel(
 ) -> torch.Tensor:
     """
     Compute the average log-mel spectrogram for a batch of stereo waveforms.
-    This function is optimised to emulate your original processing speed.
 
     Parameters:
         audio_batch (list): A list where each element is a list/tuple containing two waveforms 
@@ -160,13 +159,13 @@ def logmel_to_linear(logmel_spectrogram, sample_rate, n_fft, n_mels, device):
 
     # Create the inverse mel filter bank
     mel_to_linear_transform = T.InverseMelScale(
-        n_stft=int((n_fft // 2) + 1),  # due to nyquist frequency
+        n_stft=n_fft // 2 + 1, 
         n_mels=n_mels,
         sample_rate=sample_rate,
     ).to(device)
 
     # Convert mel spectrogram back to linear spectrogram
-    linear_spectrogram = mel_to_linear_transform(mel_spectrogram)
+    linear_spectrogram = mel_to_linear_transform(mel_spectrogram.to(device))
 
     return linear_spectrogram.unsqueeze(1)
 

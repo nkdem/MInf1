@@ -12,8 +12,9 @@ import numpy as np
 logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
 logger = logging.getLogger(__name__)
 
-TARGET_LENGTH = 32768
-SAMPLE_RATE = 44100
+ORIGINAL_SAMPLE_RATE = 48000
+DOWN_SAMPLE_TO_SAMPLE_RATE = 16000
+TARGET_LENGTH = int((ORIGINAL_SAMPLE_RATE / 32768) * DOWN_SAMPLE_TO_SAMPLE_RATE)
 
 ROOT_DIR = '/Users/nkdem/Downloads/DS_10283_2791'
 
@@ -27,14 +28,21 @@ class VoicebankDataset(Dataset):
         self.root_dir = root_dir
         self.split = split
         self.audio_files = self._get_audio_files()
+        self.resampler = torchaudio.transforms.Resample(ORIGINAL_SAMPLE_RATE, DOWN_SAMPLE_TO_SAMPLE_RATE)
 
     def __len__(self):
         return len(self.audio_files)
     
     def __getitem__(self, idx):
+        base_name = self.audio_files[idx][0].split('/')[-1]
         noisy_file_path, clean_file_path = self.audio_files[idx]
         noisy_audio, sample_rate = torchaudio.load(noisy_file_path)
         clean_audio, sample_rate = torchaudio.load(clean_file_path)
+        
+        # Resample to 16kHz
+        noisy_audio = self.resampler(noisy_audio)
+        clean_audio = self.resampler(clean_audio)
+        
         # if number of samples is less than TARGET_LENGTH, pad with zeros
         if noisy_audio.shape[1] < TARGET_LENGTH:
             noisy_audio = torch.nn.functional.pad(noisy_audio, (0, TARGET_LENGTH - noisy_audio.shape[1]))
@@ -43,7 +51,7 @@ class VoicebankDataset(Dataset):
         elif noisy_audio.shape[1] > TARGET_LENGTH:
             noisy_audio = noisy_audio[:, :TARGET_LENGTH]
             clean_audio = clean_audio[:, :TARGET_LENGTH]
-        return noisy_audio, clean_audio
+        return (noisy_audio, noisy_audio), (clean_audio, clean_audio), base_name # my cnn model assumes averaging logmels across channels so we need to return a tuple of two tensors
     
     def _get_audio_files(self):
         audio_files = []
