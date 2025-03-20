@@ -371,3 +371,36 @@ Publisher: Multidisciplinary Digital Publishing Institute},
 	pages = {104408},
 	file = {ScienceDirect Full Text PDF:/Users/nkdem/Zotero/storage/ALQFRDBB/Saleem et al. - 2024 - Time domain speech enhancement with CNN and time-attention transformer.pdf:application/pdf;ScienceDirect Snapshot:/Users/nkdem/Zotero/storage/SX6P9BWM/S1051200424000332.html:text/html},
 }
+
+
+@misc{dai_very_2016,
+	title = {Very {Deep} {Convolutional} {Neural} {Networks} for {Raw} {Waveforms}},
+	url = {http://arxiv.org/abs/1610.00087},
+	doi = {10.48550/arXiv.1610.00087},
+	abstract = {Learning acoustic models directly from the raw waveform data with minimal processing is challenging. Current waveform-based models have generally used very few (∼2) convolutional layers, which might be insufﬁcient for building high-level discriminative features. In this work, we propose very deep convolutional neural networks (CNNs) that directly use time-domain waveforms as inputs. Our CNNs, with up to 34 weight layers, are efﬁcient to optimize over very long sequences (e.g., vector of size 32000), necessary for processing acoustic waveforms. This is achieved through batch normalization, residual learning, and a careful design of down-sampling in the initial layers. Our networks are fully convolutional, without the use of fully connected layers and dropout, to maximize representation learning. We use a large receptive ﬁeld in the ﬁrst convolutional layer to mimic bandpass ﬁlters, but very small receptive ﬁelds subsequently to control the model capacity. We demonstrate the performance gains with the deeper models. Our evaluation shows that the CNN with 18 weight layers outperform the CNN with 3 weight layers by over 15\% in absolute accuracy for an environmental sound recognition task and matches the performance of models using log-mel features.},
+	language = {en},
+	urldate = {2024-12-29},
+	publisher = {arXiv},
+	author = {Dai, Wei and Dai, Chia and Qu, Shuhui and Li, Juncheng and Das, Samarjit},
+	month = oct,
+	year = {2016},
+	note = {arXiv:1610.00087 [cs]},
+	keywords = {Computer Science - Sound, Computer Science - Machine Learning, Computer Science - Neural and Evolutionary Computing},
+	annote = {Comment: 5 pages, 2 figures, under submission to International Conference on Acoustics, Speech and Signal Processing (ICASSP) 2017},
+	file = {PDF:/Users/nkdem/Zotero/storage/7M6BXF2I/Dai et al. - 2016 - Very Deep Convolutional Neural Networks for Raw Waveforms.pdf:application/pdf},
+}
+
+@inproceedings{kumar_end_2020,
+	address = {Bangalore, India},
+	title = {End-to-end audio-scene classification from raw audio: {Multi} time-frequency resolution {CNN} architecture for efficient representation learning},
+	shorttitle = {End-to-end audio-scene classification from raw audio},
+	url = {https://ieeexplore.ieee.org/abstract/document/9179600},
+	doi = {10.1109/SPCOM50965.2020.9179600},
+	abstract = {We propose and study a novel multi-temporal CNN architecture for end-to-end audio-scene classification (ASC) from raw audio signal. Conventional CNNs use a fixed size kernel (whether for image or 1-d signal classification) which corresponds to applying a filter bank, where each filter has a fixed time-frequency resolution (i.e., fixed duration impulse response and a fixed band-width frequency response), importantly with a specific time-frequency trade-off. In contrast, in a way to allow for multiple time-frequency resolutions, we use a multi-temporal CNN architecture having multiple kernel branches (up to 12 branches) each of different lengths, thereby allowing for multiple filter banks with different time-frequency resolution to process the input raw audio signal and create feature-maps (e.g. ranging from very narrow-band to very wide-band spectrographic maps in steps of fine time-frequency resolutions) corresponding to different time-frequency trade-offs. Applying this architecture to end-to-end audio-scene classification is shown to offer consistent and significant performance enhancements (e.g. 11-15 percent absolute in accuracy for the multi-temporal case of 12 branches) over the conventional single-temporal CNN and also outperform state-of the-art results for this task.},
+	booktitle = {2020 International Conference on Signal Processing and Communications (SPCOM)},
+	publisher = {IEEE},
+	author = {Kumar, T. Vijaya and Sundar, R. Shunmuga and Purohit, Tilak and Ramasubramanian, V.},
+	month = jul,
+	year = {2020},
+	pages = {1--5}
+}

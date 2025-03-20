@@ -42,7 +42,7 @@
    through the lens of Acoustic Scene Analysis (ASA) and Speech Enhancement (SE).
    The primary objective of this dissertation is to develop machine learning models capable of prioritising 
    speech in noisy environments whilst remaining computationally feasible for implementation in hearing aids.
-   The idea is to chain the ASA and SE models together to form a state-dependent model, in essence,
+   The vision is to chain the ASA and SE models together to form a state-dependent model, in essence,
    a heuristic approach to SE that is tailored to the environment.
 
    Accordingly, each proposed model is evaluated not only in terms of performance but also on its feasibility for real-time deployment, as measured by metrics such as Floating Point Operations Per Second (FLOPS) and the number of model parameters.
@@ -425,17 +425,25 @@ As this project will chain two algorithms—Acoustic Speech Analysis (ASA) and S
 to form a state-dependent model, we will cover each task in separate sections.
 
 \subsection{Acoustic Scene Analysis (ASA)}
-Acoustic Scene Analysis (ASA) refers to the task of classifying an environment based on an audio stream. Mathematically, ASA can be formalised as follows:
+Acoustic Scene Analysis (ASA) refers to the task of classifying an environment based on an audio stream. 
+% Mathematically, ASA can be formalised as follows:
 
-Consider an audio signal \(x \in \mathbb{R}^{T}\), where \(T\) denotes the number of samples in the signal, and let \(\mathcal{E} = \{e_1, e_2, \ldots, e_N\}\) represent a set of \(N\) distinct environments. ASA is concerned with determining a mapping 
-\[
-f: \mathbb{R}^{T} \rightarrow \mathcal{E},
-\]
-which assigns each audio signal to one of the environments in \(\mathcal{E}\). In this project, \(f\) is implemented as a neural network. Therefore, training the model requires a dataset containing audio signals along with their corresponding environmental labels and relevant recording metadata.
+% Consider an audio signal \(x \in \mathbb{R}^{T}\), where \(T\) denotes the number of samples in the signal, and let \(\mathcal{E} = \{e_1, e_2, \ldots, e_N\}\) represent a set of \(N\) distinct environments. ASA is concerned with determining a mapping 
+% \[
+% f: \mathbb{R}^{T} \rightarrow \mathcal{E},
+% \]
+% which assigns each audio signal to one of the environments in \(\mathcal{E}\). In this project, \(f\) is implemented as a neural network. Therefore, training the model requires a dataset containing audio signals along with their corresponding environmental labels and relevant recording metadata.
 
-The focus of this study is the HEAR-DS dataset introduced by \citet{Huwel2020HearDS}. This dataset was developed in response to the inadequacies of existing acoustic scene classification databases for HA processing. A more detailed description of the dataset is provided in Chapter \ref{sec:datasets}.
-
+We will be using HEAR-DS dataset introduced by \citet{Huwel2020HearDS}. This dataset was developed in response to the inadequacies of existing acoustic scene classification databases for HA processing. A more detailed description of the dataset is provided in Chapter \ref{sec:datasets}.
 The original paper on the HEAR-DS dataset illustrates its applicability by employing a Convolutional Neural Network (CNN) for environment classification. In Chapter \ref{chap:acoustic-scene-classification}, an attempt is made to reproduce the results presented in that study. The challenges encountered during this replication process are discussed comprehensively in the chapter. Additionally, to validate the model implementation, the same parameters were applied to the DCASE 2017 Acoustic Scenes Challenge dataset \cite{DCASE2017challenge}. In particular, a comparison is drawn between the model proposed by \citet{schindler_multi-temporal_2018} and the CNN model used in the HEAR-DS paper, with the findings detailed in Section \ref{sec:DCASE-results}.
+The two papers mentioned above utilise engineered features, and more specifically, the log mel spectrogram. This 
+approach in some literature is called operating on the frequency domain. It is worth pointing out 
+that there is research into doing ASA on the time domain i.e. operating on the waveform directly, 
+such as the paper by \cite{dai_very_2016} - \cite{kumar_end_2020}. While not explored in this part, 
+it is something I will look into exploring in part 2 of this dissertation as there is 
+a compelling reason to possibly consider the time domain approach. Namely, 
+the overhead of the Fourier Transform and the Mel Filterbank in a hearing aid 
+is potentially too high, and so working directly with the waveform may be a more feasible approach.
 
 % TODO: VERY DEEP CONVOLUTIONAL NEURAL NETWORKS FOR RAW WAVEFORMS
 
@@ -456,15 +464,15 @@ The original paper on the HEAR-DS dataset illustrates its applicability by emplo
 On the other hand, Speech Enhancement aims to improve the perceptual quality of a speech signal that 
 has been degraded by an additive noise \cite{loizou_speech_2007}. 
 This enhancement is crucial in applications where speech intelligibility is essential, such as telecommunications, hearing aids, and speech recognition systems. Noise sources may include environmental disturbances (e.g., wind noise) as well as interference from multiple speakers (e.g., babble noise).
-Mathematically, let a noisy speech signal be represented by \(x \in \mathbb{R}^{T}\) and the corresponding clean speech signal by \(y \in \mathbb{R}^{T}\), where \(T\) denotes the total number of samples.
-Speech enhancement is therefore concerned with determining a mapping 
-\[
-f: \mathbb{R}^{T} \to \mathbb{R}^{T},
-\]
-which takes a noisy speech signal \(x\) and produces an enhanced version \(f(x)\) that is as close as possible to the clean speech signal \(y\) i.e.
-\[
-f(x) \approx y.
-\]
+% Mathematically, let a noisy speech signal be represented by \(x \in \mathbb{R}^{T}\) and the corresponding clean speech signal by \(y \in \mathbb{R}^{T}\), where \(T\) denotes the total number of samples.
+% Speech enhancement is therefore concerned with determining a mapping 
+% \[
+% f: \mathbb{R}^{T} \to \mathbb{R}^{T},
+% \]
+% which takes a noisy speech signal \(x\) and produces an enhanced version \(f(x)\) that is as close as possible to the clean speech signal \(y\) i.e.
+% \[
+% f(x) \approx y.
+% \]
 There are many different approaches to speech enhancement, from more traditional methods such as spectral subtraction, or Wiener filtering
 to more modern methods that incorporate neural-networks. In this dissertation, we will be using a neural-network based approach.
 But even within the neural-network based approach, there are different techniques that can be used to enhance the speech signal. 
@@ -488,8 +496,8 @@ Neural network-based speech enhancement algorithms can be categorised into four 
 It is no accident I talked about Engineering Acoustic Features in the previous section, as this dissertation 
 will be focusing on the Transform-Domain Filtering approach. One of the primary objects of part two of this dissertation will be 
 investigating how ASA and Speech Enhancement can be integrated to form a state-dependent model.
-
-
+Though, exploring the time domain approach is something I will be looking into for the second part of this dissertation 
+due to the potential overhead reduction of the time domain approach as mentioned in the previous section.
 
 \section{Criticism of Previous Work}
 During the course of this project, I found out that the paper by \citet{Huwel2020HearDS} had some issues.
