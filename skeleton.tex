@@ -37,25 +37,6 @@
 
 \date{\today}
 
-This dissertation explores the intersection of Machine Learning, Automatic Speech Recognition (ASR), and Hearing Aids (HA) through the lens of Acoustic Scene Analysis (ASA) and Speech Enhancement (SE).
-The primary objective is to develop machine learning models capable of prioritising speech in noisy environments while remaining computationally efficient for implementation in hearing aids.
-Accordingly, each proposed model is evaluated not only in terms of performance but also on its feasibility for real-time deployment, as measured by metrics such as Floating Point Operations Per Second (FLOPS) and the number of model parameters.
-
-
-A growing trend in the market is the incorporation of deep neural networks (DNNs) into hearing aids.
-Evidence from state-of-the-art manufacturers suggests that a combination of ASA and SE techniques is employed, informing the approach adopted in this project.
-Initially, the project classifies the acoustic environment using a robust machine learning model; subsequently, heuristic speech enhancement techniques are applied to selectively enhance speech in environments that demand it.
-
-
-Experiments are conducted using a novel dataset known as HEAR-DS.
-As a baseline, the commonly used Convolutional Neural Network (CNN) ASA model introduced by the dataset’s authors is utilised.
-The study demonstrates improvements in both the training procedure and the generalisation capability of the baseline CNN through the implementation of data augmentation strategies and the adoption of an alternative optimiser.
-
-
-Furthermore, a proof-of-concept is presented for a state-dependent speech enhancement model based on a shallow CNN operating in the frequency-time domain.
-The performance of this model is rigorously evaluated using standard artificial intelligibility and quality metrics, including the Short-Time Objective Intelligibility (STOI) and Perceptual Evaluation of Speech Quality (PESQ) scores.
-
-
 \abstract{
    This dissertation explores the intersection of Machine Learning, Automatic Speech Recognition (ASR) and Hearing Aids (HA) 
    through the lens of Acoustic Scene Analysis (ASA) and Speech Enhancement (SE).
@@ -63,6 +44,7 @@ The performance of this model is rigorously evaluated using standard artificial 
    speech in noisy environments whilst remaining computationally feasible for implementation in hearing aids.
    The idea is to chain the ASA and SE models together to form a state-dependent model, in essence,
    a heuristic approach to SE that is tailored to the environment.
+
    Accordingly, each proposed model is evaluated not only in terms of performance but also on its feasibility for real-time deployment, as measured by metrics such as Floating Point Operations Per Second (FLOPS) and the number of model parameters.
    
    A growing trend in the market is the incorporation of deep neural networks (DNNs) into hearing aids.
@@ -531,40 +513,6 @@ incorporating a DNN model into a HA device.
 
 
 \chapter{Methodology}
-\section{HEAR-DS}
-\label{sec:hear-ds}
-Given how much this dissertation revolves around the HEAR-DS dataset, we dedicate a section solely 
-to the dataset. 
-HEAR-DS is a dataset created by \citet{Huwel2020HearDS} which is specially tailored for Hearing Aid (HA) research. 
-It consists of recordings captured on a dummy head equipped with Pinnae models and three microphones per side: one In-The-Canal (ITC) [in the ear] and two Behind-The-Ear (BTE) microphones (front and rear).
-Each sample is recorded in either the left or right channel and decomposed into its respective microphone channels (BTE\_front, BTE\_rear, ITC), available in 48kHz/32bit format.
-In the paper, the researchers used only the ITC samples, so for the scope of this project, we will only use the ITC samples as well. 
-As the researchers were based in Germany, any recordings that they took were situated in Germany.
-The dataset provides 7 environments:
-\begin{itemize}
-   \item \textbf{Cocktail Party} - Covers situations such as multiple speakers in a noisy environment or 'babble' noise. The paper mentions that this was mimicked by recording them in a university cafeteria or at a senior citizens' meeting.
-   \item \textbf{Wind Turbulence} - Concerns the sound that is produced when wind passes through a microphone.
-   \item \textbf{In-Traffic} - Samples where traffic noise is dominant such as bus stations or sidewalks. The researchers controlled for this environment to not be similar to the \textit{Wind Turbulence} environment by choosing 'calm' days for the recordings.
-   \item \textbf{In-Vehicle} - The sounds produced when seated inside a car. The researchers controlled for this environment to not be similar to the \textit{In-Traffic} or \textit{Wind Turbulence} environments by ensuring the windows were closed. 
-   \item \textbf{Quiet Indoors} - Mimic noises produced in a typical household such as washing dishes, clock ticking, etc. The researchers controlled for variability by recording the samples in several flats (rural, city centre, etc).
-   \item \textbf{Reveberant} - Samples in highly reverberant environments such as a railway station hall, staircases or a church. 
-   \item \textbf{Music} - The data is actually taken from the GTZAN dataset \cite{tzanetakis_musical_2002} and is used to test the model's ability to classify music.
-\end{itemize}
-Additionally, the researchers artificially created a new environment, \textit{Interfering Speakers}, which are samples that contain speech from multiple speakers. 
-This is done by taking speech samples from the CHiME 5 dataset \cite{barker18_fifth_2018}. This environment is supposed to mimic the 
-typical conversational speech that occurs in a real-world scenario. We however, decided to use the CHiME 6 dataset which 
-supercedes the CHiME 5 dataset \cite{barker18_fifth_2018} by correcting the alignment of audio channels and the researchers 
-recommend the use of the CHiME 6 dataset instead of CHiME 5 for any new research so we will use that instead. This could 
-be an important factor as the methodology of creating the \textit{Interfering Speakers} environment is by finding 10s 
-segments of speech that contain multiple speakers, so if the alignment of audio channels is not correct, the recordings 
-may have a delay between the left and right channels which could have potentialy affected the results of the paper. We will discuss the dataset in more detail in section \ref{sec:chime6}.
-
-To prevent the model from overfitting and increase the diversity of the data, the researchers provided multiple REC-SITs (Recording Situations) for each environment.
-In the case of the \textit{Music} environment, each REC-SIT represents a different genre of music. This has some potential to cause issues 
-and we discuss this in more detail once we aim to reproduce the results of the paper (Chapter \ref{chap:acoustic-scene-classification}). 
-As for the artificially created \textit{Interfering Speakers} environment, it is unclear how they define REC-SITs for this environment. 
-What I did was to extract the session ID from the CHiME 6 dataset and use that as the REC-SIT, which 
-gives us a total of 16 REC-SITs for this environment.
 
 % The model presented in the paper assumed a sampling rate of 16KHz, so we resampled the HEAR-DS dataset to 16KHz. Additionally, 
 % the model expected a log-mel spectrogram of 10s segments, and the HEAR-DS dataset provided longer segments. We therefore 
@@ -639,6 +587,39 @@ This is better visualised in Figure \ref{fig:cnn-model-architecture}.
 \section{Datasets}
 \label{sec:datasets}
 \subsection{HEAR-DS}
+\label{sec:hear-ds}
+Given how much this dissertation revolves around the HEAR-DS dataset, we dedicate a section solely 
+to the dataset. 
+HEAR-DS is a dataset created by \citet{Huwel2020HearDS} which is specially tailored for Hearing Aid (HA) research. 
+It consists of recordings captured on a dummy head equipped with Pinnae models and three microphones per side: one In-The-Canal (ITC) [in the ear] and two Behind-The-Ear (BTE) microphones (front and rear).
+Each sample is recorded in either the left or right channel and decomposed into its respective microphone channels (BTE\_front, BTE\_rear, ITC), available in 48kHz/32bit format.
+In the paper, the researchers used only the ITC samples, so for the scope of this project, we will only use the ITC samples as well. 
+As the researchers were based in Germany, any recordings that they took were situated in Germany.
+The dataset provides 7 environments:
+\begin{itemize}
+   \item \textbf{Cocktail Party} - Covers situations such as multiple speakers in a noisy environment or 'babble' noise. The paper mentions that this was mimicked by recording them in a university cafeteria or at a senior citizens' meeting.
+   \item \textbf{Wind Turbulence} - Concerns the sound that is produced when wind passes through a microphone.
+   \item \textbf{In-Traffic} - Samples where traffic noise is dominant such as bus stations or sidewalks. The researchers controlled for this environment to not be similar to the \textit{Wind Turbulence} environment by choosing 'calm' days for the recordings.
+   \item \textbf{In-Vehicle} - The sounds produced when seated inside a car. The researchers controlled for this environment to not be similar to the \textit{In-Traffic} or \textit{Wind Turbulence} environments by ensuring the windows were closed. 
+   \item \textbf{Quiet Indoors} - Mimic noises produced in a typical household such as washing dishes, clock ticking, etc. The researchers controlled for variability by recording the samples in several flats (rural, city centre, etc).
+   \item \textbf{Reveberant} - Samples in highly reverberant environments such as a railway station hall, staircases or a church. 
+   \item \textbf{Music} - The data is actually taken from the GTZAN dataset \cite{tzanetakis_musical_2002} and is used to test the model's ability to classify music.
+\end{itemize}
+Additionally, the researchers artificially created a new environment, \textit{Interfering Speakers}, which are samples that contain speech from multiple speakers. 
+This is done by taking speech samples from the CHiME 5 dataset \cite{barker18_fifth_2018}. This environment is supposed to mimic the 
+typical conversational speech that occurs in a real-world scenario. We however, decided to use the CHiME 6 dataset which 
+supercedes the CHiME 5 dataset \cite{barker18_fifth_2018} by correcting the alignment of audio channels and the researchers 
+recommend the use of the CHiME 6 dataset instead of CHiME 5 for any new research so we will use that instead. This could 
+be an important factor as the methodology of creating the \textit{Interfering Speakers} environment is by finding 10s 
+segments of speech that contain multiple speakers, so if the alignment of audio channels is not correct, the recordings 
+may have a delay between the left and right channels which could have potentialy affected the results of the paper. We will discuss the dataset in more detail in section \ref{sec:chime6}.
+
+To prevent the model from overfitting and increase the diversity of the data, the researchers provided multiple REC-SITs (Recording Situations) for each environment.
+In the case of the \textit{Music} environment, each REC-SIT represents a different genre of music. This has some potential to cause issues 
+and we discuss this in more detail once we aim to reproduce the results of the paper (Chapter \ref{chap:acoustic-scene-classification}). 
+As for the artificially created \textit{Interfering Speakers} environment, it is unclear how they define REC-SITs for this environment. 
+What I did was to extract the session ID from the CHiME 6 dataset and use that as the REC-SIT, which 
+gives us a total of 16 REC-SITs for this environment.
 
 % TOOD: Make sure to refer to this problem later
 
@@ -680,6 +661,9 @@ the authors have used the development set of the TUT Acoustic Scenes 2016 datase
 that this dataset contains background noise only, and the paper does not evaluate it with speech, so when we use it to validate 
 the model, we will maintain the same approach as the paper.
 
+\subsection{VOICEBANK + DEMAND}
+TODO
+
 \section{Hypotheses}
 
 \begin{enumerate}
@@ -694,18 +678,21 @@ the model, we will maintain the same approach as the paper.
 \label{chap:acoustic-scene-classification}
 \section{Data Preparation}
 TODO
-\subsection{Fixed Learning Rate SGD Approach}
+\section{Fixed Learning Rate SGD Approach}
 TODO
-\subsection{Adam Optimiser Approach}
+\section{Adam Optimiser Approach}
 TODO
-\subsection{LSTM Model}
-TODO
+
+\section{Validating against TUT Acoustic Scenes 2016}
 
 \chapter{Speech Enhancement Experiments}
 \section{Data Preparation}
 TODO
-\subsection{CNN Model}
+\section{One Model Approach}
 TODO
+\section{Per Environment Model Approach}
+TODO
+\section{Validating against VOICEBANK + DEMAND}
 
 \chapter{Conclusions}
 \section{Discussion}
