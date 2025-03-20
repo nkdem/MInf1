@@ -1,6 +1,6 @@
 <mxfile host="app.diagrams.net" agent="Mozilla/5.0 (Macintosh; Intel Mac OS X 10.15; rv:136.0) Gecko/20100101 Firefox/136.0" version="26.1.1">
   <diagram name="Page-1" id="ePguY07DbxKQNEHNq613">
-    <mxGraphModel dx="42" dy="-530" grid="1" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="1" pageScale="1" pageWidth="850" pageHeight="1100" math="1" shadow="0">
+    <mxGraphModel dx="220" dy="-416" grid="1" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="1" pageScale="1" pageWidth="850" pageHeight="1100" math="1" shadow="0">
       <root>
         <mxCell id="0" />
         <mxCell id="1" parent="0" />
@@ -84,8 +84,8 @@
         <mxCell id="WS1crDEGfRY8y_DHrmk2-34" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;entryX=0;entryY=0.5;entryDx=0;entryDy=0;" edge="1" parent="1" source="WS1crDEGfRY8y_DHrmk2-16" target="WS1crDEGfRY8y_DHrmk2-27">
           <mxGeometry relative="1" as="geometry" />
         </mxCell>
-        <mxCell id="WS1crDEGfRY8y_DHrmk2-38" value="\times" style="text;strokeColor=none;align=center;fillColor=none;html=1;verticalAlign=middle;whiteSpace=wrap;rounded=0;" vertex="1" parent="1">
-          <mxGeometry x="920" y="1690" width="60" height="30" as="geometry" />
+        <mxCell id="dweGw0NUNo3ZnL5tf6Y2-1" value="`B\times 1 \times 40 \times 500`" style="text;strokeColor=none;align=center;fillColor=none;html=1;verticalAlign=middle;whiteSpace=wrap;rounded=0;" vertex="1" parent="1">
+          <mxGeometry x="865" y="1679.13" width="150" height="30" as="geometry" />
         </mxCell>
       </root>
     </mxGraphModel>
