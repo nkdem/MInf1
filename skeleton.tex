@@ -37,42 +37,50 @@
 
 \date{\today}
 
+This dissertation explores the intersection of Machine Learning, Automatic Speech Recognition (ASR), and Hearing Aids (HA) through the lens of Acoustic Scene Analysis (ASA) and Speech Enhancement (SE).
+The primary objective is to develop machine learning models capable of prioritising speech in noisy environments while remaining computationally efficient for implementation in hearing aids.
+Accordingly, each proposed model is evaluated not only in terms of performance but also on its feasibility for real-time deployment, as measured by metrics such as Floating Point Operations Per Second (FLOPS) and the number of model parameters.
+
+
+A growing trend in the market is the incorporation of deep neural networks (DNNs) into hearing aids.
+Evidence from state-of-the-art manufacturers suggests that a combination of ASA and SE techniques is employed, informing the approach adopted in this project.
+Initially, the project classifies the acoustic environment using a robust machine learning model; subsequently, heuristic speech enhancement techniques are applied to selectively enhance speech in environments that demand it.
+
+
+Experiments are conducted using a novel dataset known as HEAR-DS.
+As a baseline, the commonly used Convolutional Neural Network (CNN) ASA model introduced by the dataset’s authors is utilised.
+The study demonstrates improvements in both the training procedure and the generalisation capability of the baseline CNN through the implementation of data augmentation strategies and the adoption of an alternative optimiser.
+
+
+Furthermore, a proof-of-concept is presented for a state-dependent speech enhancement model based on a shallow CNN operating in the frequency-time domain.
+The performance of this model is rigorously evaluated using standard artificial intelligibility and quality metrics, including the Short-Time Objective Intelligibility (STOI) and Perceptual Evaluation of Speech Quality (PESQ) scores.
+
+
 \abstract{
-   This dissertation takes the intersection of Machine Learning, Automatic Speech Recognition (ASR) and Hearing Aids (HA) 
-   to investigate the effectiveness of machine learning algorithms in prioritising speech in noisy environments. 
-   At its forefront, the project aims to develop machine learning models that could be 
-   used in hearing aids to prioritise speech in noisy environments. So the project 
-   has to be mindful of the models computational complexity. And so, with every model
-   we present, we not only present the performance of the model, but also 
-   argue its feasibility in a hearing aid by considering metrics such as Floating Point Operations Per Second (FLOPS) and 
-   the number of parameters in the model.
+   This dissertation explores the intersection of Machine Learning, Automatic Speech Recognition (ASR) and Hearing Aids (HA) 
+   through the lens of Acoustic Scene Analysis (ASA) and Speech Enhancement (SE).
+   The primary objective of this dissertation is to develop machine learning models capable of prioritising 
+   speech in noisy environments whilst remaining computationally feasible for implementation in hearing aids.
+   The idea is to chain the ASA and SE models together to form a state-dependent model, in essence,
+   a heuristic approach to SE that is tailored to the environment.
+   Accordingly, each proposed model is evaluated not only in terms of performance but also on its feasibility for real-time deployment, as measured by metrics such as Floating Point Operations Per Second (FLOPS) and the number of model parameters.
    
-   From the market we have found that there is a trend towards incorporating deep neural networks (DNNs) 
-   into hearing aids. From a particular manufacturer, we could deduce that they use a combination of Acoustic Scene Analysis (ASA) and 
-   Speech Enhancement techniques. As such, this project will aim to mimic this behaviour by 
-   first classifying the environment using a machine learning model, and then applying
-   heuristic speech enhancement techniques to prioritise speech in particular environments.
+   A growing trend in the market is the incorporation of deep neural networks (DNNs) into hearing aids.
+   Evidence from state of the art manufacturers suggests that a combination of ASA and SE techniques are employed,
+   further motivating the approach adopted in this project.
+   % As such, this project will aim to mimic this behaviour by 
+   % first classifying the environment using a machine learning model, and then applying
+   % heuristic speech enhancement techniques to prioritise speech in particular environments.
    
-   We conduct the experiments on a novel dataset called HEAR-DS where 
-   we evaluate the baseline Convolutional Neural Network (CNN) ASA model presented by the authors of the dataset. 
-   We demonstrate techniques that improve both the training process and generalization capability of the CNN model through data augmentation and 
-   the usage of a different optimiser. 
+   Experiments are conducted primarily on a novel dataset called HEAR-DS.
+   As a baseline, the Convolutional Neural Network (CNN) ASA model presented by the authors of the dataset is utilised.
+   We will demonstrate improvements in both the training procedure and the generalisation capability 
+   of the baseline CNN through the implementation of data augmentation strategies and the adoption of an alternative optimiser.
    
-   We then take this dataset further by demonstrating a proof-of-concept of a speech enhancement model that could be used as a state-dependent model.
-   For Speech Enhancement, we present a shallow CNN model that works in the frequency-time domain and evaluate its performance by using artificial scores such as STOI and PESQ.
-
-
-
-   
-   % We then compare the performance of the CNN model to a Recurrent Neural Network (RNN) model, specifically 
-   % the Long Short-Term Memory (LSTM). The results show that the LSTM model outperforms the CNN model.  << MAYBE IF I HAVE TIME
-
-
-
-   %  We then take inspiration 
-   % from the literatue and apply more layers to the model to improve the performance. We then compare the performance 
-   % by comparing the STOI and PESQ scores of the models. The results show that the more complex model outperforms the
-   % baseline model. 
+   Furthermore, the dataset is extended by demonstrating a proof-of-concept of a speech enhancement model 
+   using a shallow CNN model that works in the frequency-time domain. We evaluate the performance of the model 
+   using artificial intelligibility and quality metrics such as STOI and PESQ. While the performance is not on par 
+   with the state-of-the-art, it most certainly motivates further research in the next part of the dissertation.
 }
 
 \maketitle
@@ -140,29 +148,25 @@ that ML techniques may still have utility through further research
 and careful algorithmic choices. 
 
 This project aims to investigate the effectiveness of machine learning techniques 
-in prioritising speech in noisy environments. The idea is to first 
-perform acoustic scene analysis (ASA) to classify the environment
-based on the audio signal. Afterwards, speech enhancement 
-techniques will be applied to the signal to prioritise speech.
+in prioritising speech in noisy environments. The idea is to 
+first train a deep neural network (DNN) to perform acoustic scene analysis (ASA) to classify the environment.
+Afterwards, a speech enhancement model will be trained to enhance the speech in the environment.
+From now on, we will refer to the chaining of the ASA and SE models together as a state-dependent model
+as inspired by \citet{katagiri_handbook_2000}'s categorisation of SE techniques (see \ref{sec:background:se} for more details).
 
 In this project, we will be using a novel dataset proposed by \citet{Huwel2020HearDS}
 This dataset (called HEAR-DS) is unique because it is specially tailored for HA signal processing and contains
 various environments. Normally, voice activity detection (VAD) would be 
-used to detect speech, however, we will instead 
-mix the samples with speech and label them as so. 
+used to detect speech, however, we will take inspiration from \citet{Huwel2020HearDS}
+by mixing the samples with speech and label them as so. 
 This can be used to implicitly train the machine learning model to classify the environment 
 and whether speech is present. Additionally, the paper presents an 
 elementary example of how the dataset can be used: to classify the environment -
 it showcases the use of a convolutional neural network (CNN) to classify the environment.
 This project will be extending the paper by looking at how HEAR-DS can be used 
-to train a speech enhancement model. Additionally, we will 
-be looking at techniques that improve the training process and generalization 
-capability of the model.
+to additionally train a speech enhancement model and how the training and 
+generalisation capabilities of the model can be improved.
 
-% This project will investigate how recurrent neural networks (RNN) and 
-% their variants, such as LSTMs, can be used to classify the environment.
-%  Based on the environment classified, the system will then apply
-% signal processing techniques to enhance the speech. 
 The project will also be mindful in its algorithmic choices - as the computational
 power required in HA is limited. It is difficult to pinpoint the exact computational power of a HA
 due to the proprietary nature of the devices. In August 2024,
@@ -177,21 +181,16 @@ So suffice to say, the computational power of hearing aids is accelerating
 and is most likely going to continue to grow given the increasing demand 
 for HAs.
 
-Delay constraints are also
-important in HA, as the user needs to hear the speech in real-time.
-For example, so long as the speech production is no higher 
-than 30 milliseconds (ms), and ideally less than 20ms, the user
-is unaffected by the delay \cite{Stone2002Delays}. 
+Delay constraints also play a critical role in HA performance, as real-time speech perception is essential for user satisfaction.
+Prior research suggests that a delay of up to 30 milliseconds (ms), and ideally less than 20ms, the user
+is unaffected by the delay \cite{Stone2002Delays}. Therefore, the project will be mindful in its algorithmic choices to ensure that the model
+is computationally efficient and feasible for real-time deployment.
 
-
-% Thus, the evaluation plays a crucial role in this project. From
-% objective measures such as the short-time objective intelligibility (STOI)
-% and perceptual evaluation of speech quality (PESQ), to quantitative
-% measures such as multiply-accumulate operations (MACs) and delay requirements or
-% real time factor (RTF) i.e. how fast a system can compute a speech result. 
-% The combination of these measures will provide a comprehensive evaluation
-% of the proposed machine learning techniques.
-%
+The main evaluation metrics we will consider in this part of the dissertation 
+is short-time objective intelligibility (STOI) and perceptual evaluation of speech quality (PESQ). 
+These are both artificial metrics and give an indication of the quality of the speech enhancement model. 
+Their limitations are discussed in chapter \ref{chap:discussion}, with subsequent sections outlining strategies to address these shortcomings.
+Additionally, informed by current state-of-the-art HA configurations, the project will also assess model complexity by analysing the number of weights utilised in our designs.
 
 The project is predominantly aimed at the hearing aid industry. If successful, the project
 could advance the state-of-the-art techniques in hearing aids.
@@ -209,6 +208,7 @@ Going forward, the dissertation will be structured as follows:
    We briefly also cover the two techniques that will be used in this project: Acoustic Scene Analysis (ASA) and Speech Enhancement
    and some of the related work done in the field. Lastly, I mention the criticism of the paper by \citet{Huwel2020HearDS} 
    that I will be exploring in this project.
+   \item \textbf{Chapter \ref{ch:methodology}} - lorem ipsum
    TODO
    % \item \label{ch:Methodology} - This chapter will give a high level overview of the 
    % methodology used in this project. It will cover the datasets that will be used, the baseline models that will be used, and the hypotheses that will be tested.
@@ -226,9 +226,6 @@ Going forward, the dissertation will be structured as follows:
 
 \chapter{Background}
 \label{ch:background}
-% We will begin by briefly giving a high level overview of hearing loss, before discussing 
-% what the current treatment and future of hearing loss treatment looks like. We will 
-% end on the techniques used to enhance speechV
 
 \section{Hearing Loss}
 \subsection{Auditory System}
@@ -443,7 +440,7 @@ Additionally, the log mel spectrogram enhances the distinction between speech an
 may make a model more effective at ASA and speech enhancement tasks.
 \section{Related Work}
 As this project will chain two algorithms—Acoustic Speech Analysis (ASA) and Speech Enhancement, 
-we will cover each in separate sections.
+to form a state-dependent model, we will cover each task in separate sections.
 
 \subsection{Acoustic Scene Analysis (ASA)}
 Acoustic Scene Analysis (ASA) refers to the task of classifying an environment based on an audio stream. Mathematically, ASA can be formalised as follows:
@@ -474,8 +471,7 @@ The original paper on the HEAR-DS dataset illustrates its applicability by emplo
 % Instead they took the speech data from CHiME 
 
 \subsection{Speech Enhancement}
-
-Speech enhancement aims to improve the perceptual quality of a speech signal that 
+On the other hand, Speech Enhancement aims to improve the perceptual quality of a speech signal that 
 has been degraded by an additive noise \cite{loizou_speech_2007}. 
 This enhancement is crucial in applications where speech intelligibility is essential, such as telecommunications, hearing aids, and speech recognition systems. Noise sources may include environmental disturbances (e.g., wind noise) as well as interference from multiple speakers (e.g., babble noise).
 Mathematically, let a noisy speech signal be represented by \(x \in \mathbb{R}^{T}\) and the corresponding clean speech signal by \(y \in \mathbb{R}^{T}\), where \(T\) denotes the total number of samples.
@@ -508,8 +504,8 @@ Neural network-based speech enhancement algorithms can be categorised into four 
    training data. Key approaches include adaptive predictors, dual EKF algorithms, and noise-regularised adaptive filtering.
 \end{itemize}
 It is no accident I talked about Engineering Acoustic Features in the previous section, as this dissertation 
-will be focusing on the Transform-Domain Filtering approach. Part two of this dissertation will be 
-investigating how ASA and Speech Enhancement can be combined to form a state-dependent model.
+will be focusing on the Transform-Domain Filtering approach. One of the primary objects of part two of this dissertation will be 
+investigating how ASA and Speech Enhancement can be integrated to form a state-dependent model.
 
 
 
