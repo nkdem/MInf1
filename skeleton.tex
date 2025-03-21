@@ -531,45 +531,11 @@ incorporating a DNN model into a HA device.
 
 \section{Acoustic Scene Analysis}
 \subsection{Model}
-As our baseline model, we will be using the CNN model presented in the paper by \citet{Huwel2020HearDS}. 
-The researchers investigated the effect of different model parameters, where the first 
-layer has \textbf{CNN\_1} output channels  and the second layer doubles the number of output channels (\textbf{CNN\_2} = 2$\times$CNN\_1).
-While the researchers vary the number of output channels in intervals of 4, thereby training 7 different models, we will 
-only train 3 models, as we're mostly interested in seeing if we're getting similar results to the paper.
-Table \ref{tab:cnn-model-params} shows the parameters of the models we will be training. 
-So the sequence of operations for the model is as follows:
-\begin{enumerate}
-   \item First CNN block:
-      \begin{itemize}
-         \item 2D Convolution (\textbf{CNN\_1} channels, 7x7 kernel, 1x1 stride, 3x3 padding)
-         \item Batch Normalisation
-         \item ReLU
-         \item MaxPool (5x5 kernel and stride)
-         \item Dropout (0.3)
-      \end{itemize}
-   \item Second CNN block:
-      \begin{itemize}
-         \item 2D Convolution (\textbf{CNN\_2} channels, 7x7 kernel, 1x1 stride, 3x3 padding)
-         \item Batch Normalisation
-         \item ReLU
-         \item MaxPool (4x100 kernel and stride)
-         \item Dropout (0.3)
-      \end{itemize}
-   \item Fully Connected block:
-      \begin{itemize}
-         \item Flatten
-         \item ReLU
-         \item Dropout (0.3)
-         \item Linear layer (10 output classes)
-      \end{itemize}
-\end{enumerate}
-This is better visualised in Figure \ref{fig:cnn-model-architecture}.
-
 \begin{table}[h]
    \centering
    \begin{tabular}{|c|c|c|c|}
       \hline
-      Model & CNN\_1 & CNN\_2 & FC \\
+      Model & $CNN_1$ & $CNN_2$ & $FC$ \\
       \hline
       net-8 & 8 & 16 & 25 \\
       net-20 & 20 & 40 & 63 \\
@@ -579,6 +545,40 @@ This is better visualised in Figure \ref{fig:cnn-model-architecture}.
    \caption{Model parameters for the net-X models.}
    \label{tab:cnn-model-params}
 \end{table}
+As our baseline model, we will be using the CNN model presented in the paper by \citet{Huwel2020HearDS}. 
+The model has three hyperparameters: the number of output channels for the first and second convolutional layers ($CNN_1$ and $CNN_2$),
+and the number of neurons in the fully connected layer ($FC$). The researchers investigated the effect of different model parameters, 
+and in the paper, they train the dataset on 7 different models, where they vary the number of output channels in intervals of 4, thereby training 7 different models.
+Due to the time constraints, we will be training 3 models, as we're mostly interested in seeing if we're getting similar results to the paper.
+Table \ref{tab:cnn-model-params} shows the parameters of the models we will be training.
+
+The model architecture is shown in Figure \ref{fig:cnn-model-architecture}. As 
+mentioned earlier the models operate on the frequency domain, and 
+we stuck with the paper's approach of using a Mel Spectrogram as the 
+frequency domain representation for reasons mentioned in the background section. 
+As per the paper, all the convulaotional layers use a $7 \times 7$ kernel
+with a stride of $1 \times 1$ and padding of $3 \times 3$. After the convoluational operation, 
+batch normalisation is applied which can help with the stability of forward propagation 
+and can act as a regulariser which can help prevent overfitting \cite{prince2023understanding}.
+The choice of activation function is a Rectified Linear Unit (ReLU) which is computionally 
+efficient and reduces the risk of the vanishing gradient problem \cite{prince2023understanding}.
+As the preceding operations can increase the dimensionality of the input, a form of down-sampling is applied by using a max-pooling operation which helps in achieving 
+translation invariance and reducing computational complexity for the following layers. Something worth considering for 
+part 2 of this dissertation is to explore the use of other down-sampling techniques, and in particular,
+\citet{liu_simple_2023} have proposed a family of simple pooling front-ends (SimPFs) 
+which in some cases reduce the number of FLOPs as much as 75\% in acoustic scene classification tasks. 
+Lastly, dropout of 0.3 is applied after the max-pooling operation which can help with 
+the model generalisation \cite{prince2023understanding}.
+
+\begin{figure}[h]
+   \centering
+   \includegraphics[width=0.9\textwidth]{cnn-diagram.png}
+   \caption{The baseline model architecture. $B$ is the batch size, and $C$ is the number of classes/environments.
+   After each layer we label the output shape of the tensor on the assumption that 
+   the net-32 model is used (see Table \ref{tab:cnn-model-params}).
+   }
+   \label{fig:cnn-model-architecture}
+\end{figure}
 
 \subsection{Training}
 \subsection{Evaluation}
