@@ -575,7 +575,7 @@ This is where the fully connected layer comes in, as it will output a vector of 
 The values of the vectors are logits, and so during training and inference, we use a softmax function to convert them into probabilities.
 The softmax function is defined as follows:
 \[
-\sigma(x_i) = \frac{e^{x_i}}{\sum_{j=1}^{N} e^{x_j}},
+\sigma(x_i) = \frac{\exp(x_i)}{\sum_{j=1}^{N} \exp(x_j)},
 \]
 where \(x_i\) is the \(i\)-th element of the vector.
 The environment with the highest probability is then chosen as the predicted environment 
@@ -585,10 +585,7 @@ i.e. \(\hat{e} = \arg\max_{e_i \in \mathcal{E}} \sigma(x_i)\).
 \begin{figure}[h]
    \centering
    \includegraphics[width=0.9\textwidth]{cnn-diagram.png}
-   \caption{The baseline model architecture. $B$ is the batch size, and $N$ is the number of classes/environments.
-   After each layer we label the output shape of the tensor on the assumption that 
-   the net-32 model is used (see Table \ref{tab:cnn-model-params}).
-   }
+   \caption{The baseline ASA model architecture.}
    \label{fig:cnn-model-architecture}
 \end{figure}
 
@@ -602,7 +599,7 @@ This is a problem, as the model may learn to classify all samples as the most fr
 So to combat this, when using a loss function, we apply a weight to each sample based on the number of samples in the dataset.
 The weight is defined as follows:
 \[
-w_i = \frac{n_{samples}}{n_{classes} \cdot n_i},
+w_i = \frac{n_{samples}}{n_{classes} \cdot n_i}
 \]
 where \(n_{samples}\) is the total number of samples, \(n_{classes}\) is the number of unique classes, and \(n_i\) is the number of samples in the \(i\)-th environment.
 This balanced weighting scheme ensures that the weights sum up to \(n_{samples}/n_{classes}\).
@@ -652,6 +649,12 @@ which takes a noisy speech signal \(x\) and produces an enhanced version \(f(x)\
 f(x) \approx y.
 \]
 Just as in the previous section, we will be using a Convolutional Neural Network (CNN) to implement \(f\).
+\begin{figure}[h]
+   \centering
+   \includegraphics[width=0.9\textwidth]{se-model-diagram.png}
+   \caption{The speech enhancement model architecture.}
+   \label{fig:speech-enhancement-model-architecture}
+\end{figure}
 \subsection{Model}
 As this is more of an exploration of the viability of using a DNN model for speech enhancement 
 and the establishment of a baseline which can be used to improve upon, we will start 
@@ -692,13 +695,6 @@ For the purposes of this dissertation, the Griffin-Lim approach was adopted, as 
 it is something that I will be exploring in the future.
 
 
-
-% \begin{figure}[h]
-%    \centering
-%    \includegraphics[width=0.9\textwidth]{speech-enhancement-model-architecture.png}
-%    \caption{The speech enhancement model architecture.}
-%    \label{fig:speech-enhancement-model-architecture}
-% \end{figure}
 \subsection{Training}
 We will adopt the Adam optimiser instead of SGD as one of the experiments I will be doing 
 is to validate if the claim made in \citet{Huwel2020HearDS} that a fixed learning rate SGD approach
