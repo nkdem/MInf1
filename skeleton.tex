@@ -783,11 +783,63 @@ As for the artificially created \textit{Interfering Speakers} environment, it is
 What I did was to extract the session ID from the CHiME 6 dataset and use that as the REC-SIT, which 
 gives us a total of 16 REC-SITs for this environment.
 
+At the REC-SIT level, the raw dataset comprises multiple cuts, with each cut not necessarily of uniform duration.
+In accordance with the methodology of the original study, each cut was segmented into 10s snippets.
+Table \ref{tab:hear-ds-stats} presents the distribution of samples across the various environments after segmentation.
+Overall, our statistics are largely consistent with the original report, albeit with minor discrepancies in the \textit{Interfering Speakers} and \textit{Cocktail Party} environments.
+Specifically, our version of the \textit{Interfering Speakers} environment comprises 1,364 samples compared to the 1,481 reported originally, a difference that may be attributable to the aforementioned alignment issues in the CHiME 5 dataset.
+Similarly, the \textit{Cocktail Party} environment contains 716 samples in our dataset as opposed to 667 in the original report—a discrepancy that could potentially result from a typographical error in the original document. 
+
+\begin{table}[h]
+   \centering
+   \begin{tabular}{|c|c|}
+      \hline
+      Environment & Total No of Samples \\
+      \hline
+      Cocktail Party & 716 \\
+      Wind Turbulence & 1364 \\
+      In-Traffic & 1000 \\ 
+      In-Vehicle & 1094 \\
+      Quiet Indoors & 951 \\ 
+      Reveberant & 1007 \\ 
+      Music & 2991 \\
+      Interfering Speakers & 1364 \\
+      \hline
+   \end{tabular}
+   \caption{HEAR-DS dataset statistics after cutting each environment's cuts into 10s snippets.}
+   \label{tab:hear-ds-stats}
+\end{table}
+
+As noted in the Introduction, the model can be made to act as a Voice Activity Detector (VAD) by incorporating environments with and without speech.
+The raw dataset however, only contains samples without speech, so we will be following the paper's approach to create the mixed environments.
+Although recording environments with and without speech was something the researchers did consider, the researchers prioritised full control over the signal-to-noise ratio (SNR) during the speech-background mixing process.
+One deviation from the original methodology is that, in this dissertation, the creation of mixed environments will not incorporate a head-related transfer function (HRTF) due to time constraints and the scarcity of readily usable libraries.
+Otherwise, the approach remains the same: using the CHiME 3 dataset (see Section \ref{sec:chime3}) to blend the speech signal with background noise.
+We ensure in a similar manner to the paper that each mixed 10-second snippet contains at least 7.5 seconds of speech.
+It was not clear how the researchers split the speakers for the mixed environments, so we will be splitting the speakers into two groups—one for training and one for testing.
+Table \ref{tab:chime3-stats} shows that the CHiME 3 dataset includes four speakers with an equal gender split, 
+thus we ensured for generalisability that each set contained a male and female speaker. 
+
+% As noted in the Introduction, 
+% by having environments that contain speech and those that do not. As it stands, the dataset does not contain any 
+% samples that do not contain speech, and we will follow a similar approach to the paper to create these mixed environments.
+% While the dataset could have recorded the environments with and without speech, it did not, and for good reason.
+% It was argued that the ability to have full control of the SNR in which the speech is mixed was an important consideration. 
+% There is one deviation we will take from the paper's approach, at least for this part of the dissertation, and that is 
+% to not incorporate a head-related transfer function (HRTF) in the creation of the mixed environments. This is 
+% due to constraints in the time we had and the lack of digestable libraries for me to implement this. In any case,
+% we will be using the same approach to create the mixed environments as the paper. The paper's approach was to use 
+% the CHiME 3 dataset (see Section \ref{sec:chime3} for more details about the dataset) to mix the speech signal with the background noise.
+% They ensured that each mixed environment contained at least 7.5 seconds of speech in a 10s snippet. The selection of speakers and the 
+% splitting of the speakers is unclear from the paper, so we will be doing the following:
+% Since we will have a training and test set, we will be splitting the speakers into 2 groups. We will be using the training bucket of speakers 
+% for the training set and the test bucket of speakers for the test set. As can be seen from Table \ref{tab:chime3-stats}, the CHiME 3 dataset contains 
+% 4 speakers, and conveniently enough an equal split of gender, hence we ensured for generalisability that each set contained a male and female speaker. 
 % TOOD: Make sure to refer to this problem later
 
 
 \subsection{CHiME3}
-As mentioned in the previous chapter, the researchers used the CHiME 3 dataset to mix the speech signal with the background noise. 
+ As mentioned earlier, the researchers used the CHiME 3 dataset to mix the speech signal with the background noise. 
 CHiME 3 is a dataset published in 2015 for ASR tasks, and was dedicated to improving the performance of mobile devices 
 in everyday, noisy environments. The vocabulary of the speech samples is taken from a subset of the Wall Street Journal (WSJ0) corupus \cite{TODO}.
 We won't go into the details of the environments, because while not exactly clear from 
