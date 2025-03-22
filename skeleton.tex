@@ -464,15 +464,7 @@ is potentially too high, and so working directly with the waveform may be a more
 On the other hand, Speech Enhancement aims to improve the perceptual quality of a speech signal that 
 has been degraded by an additive noise \cite{loizou_speech_2007}. 
 This enhancement is crucial in applications where speech intelligibility is essential, such as telecommunications, hearing aids, and speech recognition systems. Noise sources may include environmental disturbances (e.g., wind noise) as well as interference from multiple speakers (e.g., babble noise).
-% Mathematically, let a noisy speech signal be represented by \(x \in \mathbb{R}^{T}\) and the corresponding clean speech signal by \(y \in \mathbb{R}^{T}\), where \(T\) denotes the total number of samples.
-% Speech enhancement is therefore concerned with determining a mapping 
-% \[
-% f: \mathbb{R}^{T} \to \mathbb{R}^{T},
-% \]
-% which takes a noisy speech signal \(x\) and produces an enhanced version \(f(x)\) that is as close as possible to the clean speech signal \(y\) i.e.
-% \[
-% f(x) \approx y.
-% \]
+
 There are many different approaches to speech enhancement, from more traditional methods such as spectral subtraction, or Wiener filtering
 to more modern methods that incorporate neural-networks. In this dissertation, we will be using a neural-network based approach.
 But even within the neural-network based approach, there are different techniques that can be used to enhance the speech signal. 
@@ -530,6 +522,14 @@ incorporating a DNN model into a HA device.
 
 
 \section{Acoustic Scene Analysis}
+Mathematically, ASA can be formalised as follows:
+Consider an audio signal \(x \in \mathbb{R}^{T}\), where \(T\) denotes the number of samples in the signal, and let \(\mathcal{E} = \{e_1, e_2, \ldots, e_N\}\) represent a set of \(N\) distinct environments. ASA is concerned with determining a mapping 
+\[
+f: \mathbb{R}^{T} \rightarrow \mathcal{E},
+\]
+which assigns each audio signal to one of the environments in \(\mathcal{E}\). In this project, \(f\) is implemented as a neural network
+and in this first part of the dissertation, we will be using a Convolutional Neural Network (CNN) to implement \(f\).
+
 \subsection{Model}
 \begin{table}[h]
    \centering
@@ -569,11 +569,23 @@ part 2 of this dissertation is to explore the use of other down-sampling techniq
 which in some cases reduce the number of FLOPs as much as 75\% in acoustic scene classification tasks. 
 Lastly, dropout of 0.3 is applied after the max-pooling operation which can help with 
 the model generalisation \cite{prince2023understanding}.
+Applying convolutions is not enough for ASA, 
+as we need to have a way to compare the output of the CNN with the set of environments \(\mathcal{E}\).
+This is where the fully connected layer comes in, as it will output a vector of size \(N\), where \(N\) is the number of environments.
+The values of the vectors are logits, and so during training and inference, we use a softmax function to convert them into probabilities.
+The softmax function is defined as follows:
+\[
+\sigma(x_i) = \frac{e^{x_i}}{\sum_{j=1}^{N} e^{x_j}},
+\]
+where \(x_i\) is the \(i\)-th element of the vector.
+The environment with the highest probability is then chosen as the predicted environment 
+i.e. \(\hat{e} = \arg\max_{e_i \in \mathcal{E}} \sigma(x_i)\).
+
 
 \begin{figure}[h]
    \centering
    \includegraphics[width=0.9\textwidth]{cnn-diagram.png}
-   \caption{The baseline model architecture. $B$ is the batch size, and $C$ is the number of classes/environments.
+   \caption{The baseline model architecture. $B$ is the batch size, and $N$ is the number of classes/environments.
    After each layer we label the output shape of the tensor on the assumption that 
    the net-32 model is used (see Table \ref{tab:cnn-model-params}).
    }
@@ -581,16 +593,162 @@ the model generalisation \cite{prince2023understanding}.
 \end{figure}
 
 \subsection{Training}
+For ASA, we need to have a dataset that contains audio signals along with their corresponding environmental labels. 
+Mathematically, we need to have a dataset of the form \(\mathcal{D} = \{(x_i, y_i)\}_{i=1}^{N}\), where \(x_i \in \mathbb{R}^{T}\) is the audio signal, and \(y_i \in \mathcal{E}\) is the environmental label.
+Then a loss function is needed to steer the model towards the correct mapping.
+It is important to note that the dataset $\mathcal{D}$ is not necessarily balanced,
+meaning that some environments may have more samples than others.
+This is a problem, as the model may learn to classify all samples as the most frequent class. 
+So to combat this, when using a loss function, we apply a weight to each sample based on the number of samples in the dataset.
+The weight is defined as follows:
+\[
+w_i = \frac{n_{samples}}{n_{classes} \cdot n_i},
+\]
+where \(n_{samples}\) is the total number of samples, \(n_{classes}\) is the number of unique classes, and \(n_i\) is the number of samples in the \(i\)-th environment.
+This balanced weighting scheme ensures that the weights sum up to \(n_{samples}/n_{classes}\).
+So a vector of weights \(\mathbf{w} \in \mathbb{R}^{N}\) is created, where \(N\) is the number of environments
+So we have a vector of weights \(\mathbf{w} \in \mathbb{R}^{N}\) which we can use to weight the loss function accordingly.
+This is consistent with the paper by \citet{Huwel2020HearDS} where they did ``weighted update steps for each target environment depending on the number of samples in each environment.''
+On the topic of the loss function, the paper by \citet{Huwel2020HearDS} does 
+not explicitly mention the loss function they used, but we assume that they used the weighted cross-entropy loss function.
+The weighted cross-entropy loss function is defined as follows:
+\[
+L(y, \hat{y}) = -\sum_{i=1}^{N} w_i \cdot y_i \log(\hat{y}_i),
+\]
+where \(y_i\) is the one-hot encoded environmental label, and \(\hat{y}_i\) is the predicted probability of the model.
+
+Once we have the loss function, we can use it to train the model. There are many approaches to training a model,
+and for reproducibility, we will be using the paper's approach of using Stochastic Gradient Descent (SGD) with a fixed learning rate.
+The learning rate was decreased every 40 epochs in a quasi-logarithmic manner: [0.05, 0.01, 0.001, 0.0005, 0.0002, 0.0001].
+This leads to a total of 240 epochs of training. 
+However one of objectives of this part of the dissertation was to explore if a different approach to learning rate scheduling
+could yield better results. So we will be exploring a different approach to learning rate scheduling in the experiments.
+It will be found that the Adam optimiser converges faster than the SGD optimiser and still results in a comparable 
+performance. 
 \subsection{Evaluation}
+The evaluation of the ASA model will be done using the accuracy metric. The accuracy is defined as follows:
+\[
+Accuracy = \frac{1}{N} \sum_{i=1}^{N} \mathbb{I}(y_i = \hat{y}_i),
+\]
+where \(N\) is the total number of samples, \(y_i\) is the one-hot encoded environmental label, and \(\hat{y}_i\) is the predicted environmental label
+and \(\mathbb{I}\) is the indicator function which is a piecewise function that returns 1 if the condition is true and 0 otherwise.
+
+Evaluation from a feasibility of a hearing aid perspective will also be done. 
+This will be done by looking at the following metrics:
+\begin{itemize}
+   \item \textbf{Inference Time} - This will be done by looking at the time it takes for the model to process a sample.
+   \item \textbf{Floating Point Operations (FLOPs)}/\textbf{Multiply Accumulate (MACs)} - This will be done by looking at the number of operations the model performs.
+   \item \textbf{Number of Parameters} - This will be done by looking at the number of trainable parameters in the model.
+\end{itemize}
 
 \section{Speech Enhancement}
+Mathematically, let a noisy speech signal be represented by \(x \in \mathbb{R}^{T}\) and the corresponding clean speech signal by \(y \in \mathbb{R}^{T}\), where \(T\) denotes the total number of samples.
+Speech enhancement is therefore concerned with determining a mapping 
+\[
+f: \mathbb{R}^{T} \to \mathbb{R}^{T},
+\]
+which takes a noisy speech signal \(x\) and produces an enhanced version \(f(x)\) that is as close as possible to the clean speech signal \(y\) i.e.
+\[
+f(x) \approx y.
+\]
+Just as in the previous section, we will be using a Convolutional Neural Network (CNN) to implement \(f\).
 \subsection{Model}
+As this is more of an exploration of the viability of using a DNN model for speech enhancement 
+and the establishment of a baseline which can be used to improve upon, we will start 
+with a simple 5-layer CNN model. The model is shown in Figure \ref{fig:speech-enhancement-model-architecture}.
+As we want to preserve the dimensionality of the input, we 
+have removed batch normalisation and pooling layers.
+For similar reasons, we have set the padding to $1\times 1$ which ensures that the output has the same dimensionality as the input
+and the kernel size is set to $3\times 3$. We kept the activation function as a ReLU.
+Since this model has 5 layers, it has 5 hyperparameters: the number of output channels for each layer ($C_1, C_2, C_3, C_4, C_5$).
+Table \ref{tab:speech-enhancement-model-params} shows the parameters of the model.
+
+\begin{table}[h]
+   \centering
+   \begin{tabular}{|c|c|}
+      \hline
+      Layer & Output Channels \\
+      \hline
+      $C_1$ & 64 \\
+      $C_2$ & 128 \\
+      $C_3$ & 64 \\
+      $C_4$ & 32 \\
+      $C_5$ & 40 \\
+      \hline
+   \end{tabular}
+   \caption{Model parameters for the speech enhancement model.}
+   \label{tab:speech-enhancement-model-params}
+\end{table}
+
+It is worth noting that the output of the model is a complex spectrogram, which would 
+not be suitable for a HA device. So we need to convert the output back to the time domain. 
+There are two approaches that we have seen in the literature:
+\begin{itemize}
+   \item \textbf{Inverse Short-Time Fourier Transform (ISTFT)} - As the name suggests, this approach takes the inverse of the Short-Time Fourier Transform (STFT) of the input signal.
+   So the input is a magnitude and phase spectrogram, and the output is a time domain signal. 
+   \item \textbf{Griffin-Lim} - This is an iterative algorithm that estimates the phase of the signal just from the magnitude spectrogram alone. 
+\end{itemize}
+For the purposes of this dissertation, the Griffin-Lim approach was adopted, as the initial implementation did not track phase information however,
+it is something that I will be exploring in the future.
+
+
+
+% \begin{figure}[h]
+%    \centering
+%    \includegraphics[width=0.9\textwidth]{speech-enhancement-model-architecture.png}
+%    \caption{The speech enhancement model architecture.}
+%    \label{fig:speech-enhancement-model-architecture}
+% \end{figure}
 \subsection{Training}
+We will adopt the Adam optimiser instead of SGD as one of the experiments I will be doing 
+is to validate if the claim made in \citet{Huwel2020HearDS} that a fixed learning rate SGD approach
+is better than an Adam optimiser approach. As will be discussed in Chapter \ref{} 
+we found that the Adam optimiser converged faster than the SGD optimiser and still resulted in a comparable 
+performance. Additionally, from the ASA experiments, we also found that adopting an early stopping criterion 
+once the training loss plateaued, sped up the training process at no loss of performance. So we will be adopting 
+this approach for the speech enhancement experiments as well. More specifically, we will be using a learning rate of $0.001$
+and early stopping once the training loss stops improving after 5 epochs.
+
+The way the model is trained is by comparing the ground truth speech signal with the enhanced speech signal. 
+As such, we have used the Mean Squared Error (MSE) loss function to train the model. The loss function is defined as follows:
+\[
+L(y, \hat{y}) = \frac{1}{T} \sum_{t=1}^{T} (y_t - \hat{y}_t)^2,
+\]
+where \(y_t\) is the ground truth speech signal and \(\hat{y}_t\) is the enhanced speech signal.
+
 \subsection{Evaluation}
+The evaluation of the speech enhancement model in this part of the dissertation will be 
+done by assessing two artificial metrics.
+Firstly, the Short-Time Objective Intelligibility (STOI) metric will be used to assess the intelligibility of the enhanced speech signal.
+Mathematically, the STOI metric is defined as follows:
+\[
+STOI = \frac{\sum_{t=1}^{T} \mathbb{I}(y_t = \hat{y}_t)}{\sum_{t=1}^{T} \mathbb{I}(y_t \neq 0)},
+\]
+where \(y_t\) is the ground truth speech signal and \(\hat{y}_t\) is the enhanced speech signal.
+TODO: Verify this formula
+Secondly, the Perceptual Evaluation of Speech Quality (PESQ) metric will be used to assess the perceptual quality of the enhanced speech signal.
+Mathematically, the PESQ metric is defined as follows:
+\[
+PESQ = \frac{1}{T} \sum_{t=1}^{T} \frac{y_t \hat{y}_t}{\|y_t\|_2 \|\hat{y}_t\|_2},
+\]
+where \(y_t\) is the ground truth speech signal and \(\hat{y}_t\) is the enhanced speech signal.
+TODO: Verify this formula
 
 
+\section{Laying the Groundwork for State-Dependent Models}
+In the preceding sections, we have established the groundwork for the two tasks that we will be doing in this part of the dissertation.
+The reason we are devising these two tasks in the first place is to set the groundwork for the next part of the dissertation which 
+will be focused on the implementation of a state-dependent model. We hypothesise that a feasible state-dependent model can be created 
+by chaining the two models together. Figure \ref{fig:state-dependent-model} shows the vision we have for the state-dependent model 
+of which we aim to implement in the next part of the dissertation.
+TODO: Explain the diagram
+We thought that adding this section would give you the reader a better understanding of the motivation of this part of the dissertation. 
 
-
+% \begin{figure}[h] \centering
+%    \includegraphics[width=0.9\textwidth]{state-dependent-model.png}
+%    \caption{The vision we have for the state-dependent model.}
+%    \label{fig:state-dependent-model}
+% \end{figure}
 \chapter{Experimental Setup}
 \section{Datasets}
 \label{sec:datasets}
