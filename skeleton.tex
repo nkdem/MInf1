@@ -818,8 +818,6 @@ Once that's done, the reader will be in a position to now analyse the results of
 
 \section{Datasets}
 \label{sec:datasets}
-% Big table of all the statistics of the datasets
-% DATASET | ENVIRONMENTS (if applicable) | number of samples | number of speakers (if applicable) | max duration of samples | min duration of samples | mean duration of samples | std duration of samples
 
 \begin{table}[h]
    \centering
@@ -915,24 +913,6 @@ It was not clear how the researchers split the speakers for the mixed environmen
 Table \ref{tab:dataset-stats} shows that the CHiME 3 dataset contains 4 speakers, and conveniently enough an equal split of gender,
 thus we ensured for generalisability that each set contained a male and female speaker. 
 
-% As noted in the Introduction, 
-% by having environments that contain speech and those that do not. As it stands, the dataset does not contain any 
-% samples that do not contain speech, and we will follow a similar approach to the paper to create these mixed environments.
-% While the dataset could have recorded the environments with and without speech, it did not, and for good reason.
-% It was argued that the ability to have full control of the SNR in which the speech is mixed was an important consideration. 
-% There is one deviation we will take from the paper's approach, at least for this part of the dissertation, and that is 
-% to not incorporate a head-related transfer function (HRTF) in the creation of the mixed environments. This is 
-% due to constraints in the time we had and the lack of digestable libraries for me to implement this. In any case,
-% we will be using the same approach to create the mixed environments as the paper. The paper's approach was to use 
-% the CHiME 3 dataset (see Section \ref{sec:chime3} for more details about the dataset) to mix the speech signal with the background noise.
-% They ensured that each mixed environment contained at least 7.5 seconds of speech in a 10s snippet. The selection of speakers and the 
-% splitting of the speakers is unclear from the paper, so we will be doing the following:
-% Since we will have a training and test set, we will be splitting the speakers into 2 groups. We will be using the training bucket of speakers 
-% for the training set and the test bucket of speakers for the test set. As can be seen from Table \ref{tab:chime3-stats}, the CHiME 3 dataset contains 
-% 4 speakers, and conveniently enough an equal split of gender, hence we ensured for generalisability that each set contained a male and female speaker. 
-% TOOD: Make sure to refer to this problem later
-
-
 \subsection{CHiME3}
  As mentioned earlier, the researchers used the CHiME 3 \cite{barker_third_2015} dataset to mix the speech signal with the background noise. 
 CHiME 3 is a dataset published in 2015 for ASR tasks, and was dedicated to improving the performance of mobile devices 
@@ -983,16 +963,6 @@ The reason is two-fold. Besides the paper also using the VOICEBANK + DEMAND data
 `SpecMix' that was found to improve the performance of the model on ASA and SE tasks. This will be something I will be exploring in the 
 second part of the dissertation so I thought it would be apt to use the dataset for validation.
 Table \ref{tab:dataset-stats} shows that the dataset contains X hours of data from X speakers.
-
-The hypothesis \ref{hyp:optimiser} 
-
-% \begin{enumerate}
-%    \item \textbf{Using Fixed Learning Rate Stochastic Gradient Descent (SGD) will result in a longer training time than using Adam Optimiser.} The paper by \citet{Huwel2020HearDS} used the fixed learning rate SGD approach.
-%    I hypothesise that using Adam Optimiser will result in a shorter training time.
-%    \item \textbf{Data Augmentation will result in a higher accuracy of the model.} It is unclear from the paper whether the authors used data augmentation...
-%    \item \textbf{Using an LSTM model will result in a higher accuracy of the model.}
-% \end{enumerate}
-
 
 \chapter{Acoustic Scene Classification Experiments}
 \label{chap:acoustic-scene-classification}
