@@ -17,6 +17,7 @@
 \usepackage[square,numbers]{natbib} % recommended for citations
 \usepackage{graphicx}
 \usepackage{amssymb}
+\usepackage{amsmath}
 \graphicspath{ {./images/}}
 \bibliographystyle{unsrtnat}
 
@@ -735,8 +736,10 @@ Mathematically, the PESQ metric is defined as follows:
 PESQ = \frac{1}{T} \sum_{t=1}^{T} \frac{y_t \hat{y}_t}{\|y_t\|_2 \|\hat{y}_t\|_2},
 \]
 where \(y_t\) is the ground truth speech signal and \(\hat{y}_t\) is the enhanced speech signal.
-TODO: Verify this formula
+TODO: Verify this formula and add more explanations and citations maybe
 
+Similarly, just as in the ASA evaluation methodology, we will be testing the feasibility of the model 
+from a HA perspective. We will be looking at the inference time, the number of FLOPs and the number of parameters.
 
 \section{Laying the Groundwork for State-Dependent Models}
 In the preceding sections, we have established the groundwork for the two tasks that we will be doing in this part of the dissertation.
@@ -744,8 +747,25 @@ The reason we are devising these two tasks in the first place is to set the grou
 will be focused on the implementation of a state-dependent model. We hypothesise that a feasible state-dependent model can be created 
 by chaining the two models together. Figure \ref{fig:state-dependent-model} shows the vision we have for the state-dependent model 
 of which we aim to implement in the next part of the dissertation.
-TODO: Explain the diagram
-We thought that adding this section would give you the reader a better understanding of the motivation of this part of the dissertation. 
+Mathematically, the state-dependent model can be represented as follows:
+\[
+f: \mathbb{R}^{T} \to \mathbb{R}^{T},
+\]
+where \(T\) denotes the total number of samples. 
+Then, given a ASA model $g : \mathbb{R}^{T} \to \mathcal{E}$ and a family of SE models $h_{\epsilon} : \mathbb{R}^{T} \to \mathbb{R}^{T}$ for all $\epsilon \in \mathcal{E}$, 
+$f$ can be represented as a piecewise function:
+\begin{equation}
+   f(x) = 
+   \begin{cases} 
+      h_{\epsilon}(x) & \text{if } g(x) = \epsilon \\
+      x & \text{otherwise}
+   \end{cases}
+\end{equation}
+In other words, the state-dependent model $f$ will apply the SE model $h_{\epsilon}$ to the input $x$ if the ASA model $g$ maps $x$ to $\epsilon$.
+For example, if a HA user is situated in anenvironment characterised as `Wind Turbulence and Speech',
+the state-dependent model will invoke the SE model that has been trained on this scenario to enhance the input signal $x$.
+The state-dependant model is inspired by the unveiling of the Spheric Clarity DNN model by Phonak \cite{Hasemann2024PhonakSphere} in late 2024
+in which if the HA user is faced in a 'Speech in Loud Noise' environment, the input signal $x$ will be passed through their Spheric Clarity DNN model.
 
 % \begin{figure}[h] \centering
 %    \includegraphics[width=0.9\textwidth]{state-dependent-model.png}
@@ -780,17 +800,20 @@ Once that's done, the reader will be in a position to now analyse the results of
    Once again validating this hypothesis will speed up the development process going forward, 
    since if true, there will be less samples per epoch and thus less training time. 
    \item \textbf{Capability of the Speech Enhancement Model}.
-   TODO
+   We hypothesise that the methodological approach detailed in Section \ref{sec:se-model} to 
+   create a speech enhancement model will be able to enhance the speech signal by 
+   cutting out the background noise. 
    \item \textbf{Superiority of State-Specific Training}
-   TODO
+   As the end-goal of this dissertation is to create a state-dependent model, we hypothesise that
+   training a model on each environment will result in a better performing model than training on all environments.
+   We believe this could be due to the fact that with a shallower model, the parameters of the models 
+   are less likely to be able to be fitted in such a way that all environments are catered for. 
    \item \textbf{Feasibility of Deployment on Hearing Aid Devices}.
    With the evaluation of the models with respect to the number of FLOPs and the size of the models,
    we aim to show that the models we implement are able to be deployed on HA devices. 
-   Our baseline values are taken from Phonak's ... 
    This is a really important hypothesis to validate, otherwise any work 
    we do would not allow us to create a state-dependent model if the dependant models 
    are not able to be deployed on HA devices. (implication)
-   TODO
 \end{enumerate}
 
 \section{Datasets}
@@ -804,7 +827,7 @@ Once that's done, the reader will be in a position to now analyse the results of
       \hline
       Dataset & \rotatebox{90}{Environments} & \rotatebox{90}{No. of Speakers} & \rotatebox{90}{Hours of Data} \\
       \hline
-      HEAR-DS \cite{Huwel2020HearDS} & 6 & - & 21 hours \\
+   HEAR-DS \cite{Huwel2020HearDS} & 6 & - & 21 hours \\ % TODO: The hours is wrong, find the correct number
       CHiME 3 (booth dev. set) \cite{barker_third_2015} & - & 4 & 10 hours \\
       CHiME 6 (train + dev + eval) \cite{barker18_fifth_2018} & - & 48 & 50 hours \\
       TUT Acoustic Scenes 2016 \cite{mesaros_tut_2016} & 10 & - & 10 hours \\
