@@ -299,8 +299,8 @@ Moreover, hearing loss may occur in one ear (unilateral) or in both ears (binaur
 
 \section{Hearing Loss Treatment}
 
-\subsection{History of Hearing Technology}
-TODO: Will see how much pages I have left after doing other chapters.
+% \subsection{History of Hearing Technology}
+% TODO: Will see how much pages I have left after doing other chapters.
 
 Users were fitted with what would have been considered a HA in this day and age as early as the 18th century.
 
@@ -464,6 +464,7 @@ is potentially too high, and so working directly with the waveform may be a more
 % For the recordings labeled as being in environments containing both speech and background noise, the researchers decided against recording the samples in situ.
 % Instead they took the speech data from CHiME 
 
+\newpage
 \subsection{Speech Enhancement}
 On the other hand, Speech Enhancement aims to improve the perceptual quality of a speech signal that 
 has been degraded by an additive noise \cite{loizou_speech_2007}. 
@@ -967,7 +968,47 @@ Table \ref{tab:dataset-stats} shows that the dataset contains X hours of data fr
 \chapter{Acoustic Scene Classification Experiments}
 \label{chap:acoustic-scene-classification}
 \section{Data Preparation}
-TODO
+\label{sec:data-preparation}
+As one of our hypotheses is to be able to replicate the results of the paper by \citet{Huwel2020HearDS}, 
+we will be following the same approach to prepare the data for the ASA task. 
+Before we can begin training, we need to prepare the data for the ASA task.
+
+To prevent overfitting, we will be splitting the data into a training and test set just as the paper did.
+The samples being identified by REC-SITs allow us to do this easily. The paper mentions that they randomly 
+assigned each REC-SIT to either the training or test set. It is unclear if 
+that means that theoretically there could be more than one REC-SIT in the test set, which 
+leads to a split that's more skewed towards the test set. We instead, opted to randomly pick 
+one REC-SIT for the test set and the rest for the training set, this gives a more 
+skewed split towards the training set which is more common in the literature.
+We will be doing 5 experiments, unlike the paper's 50 due to time constraints. So 
+we have 5 different splits of the data for the training and test set that we will be using 
+for all experiments (including SE).
+
+Secondly, it is unclear if the paper used any data augmentation techniques, and we 
+hypothesised that they perhaps did due to the high epoch count of 240 - to perhaps 
+account for needing to train the model for a longer time to converge. However,
+as one of our hypotheses is to validate the effectiveness of utterance-level data 
+augmentation which we investigate in \ref{sec:data-augmentation}, we will 
+for the sake of consistency, not use any data augmentation techniques in the 
+initial experiments. This means that each mixed speech sample will have 15
+SNR levels that will be trained and tested for [-21, -18, -15, -12, -9, -6, -3, 0, 3, 6, 9, 12, 15, 18, 21].
+
+Thirdly, as the CNN model excepts a logmel spectrogram as input, we need to convert the waveform
+to a logmel spectrogram. The paper decides to only use the ITC channel for the input, so we 
+will follow suit.
+As for the transformation, the logmel was calculated as follows:
+\[
+\text{logmel} = \frac{20\log_{10}\left(M|x_{ITC-L, f_n}|\right) + 20\log_{10}\left(M|x_{ITC-R, f_n}|\right)}{2}
+\]
+which is the arithmetic mean of the logmel spectrogram of the left and right channels of the ITC microphone.
+$M$ is the mel filter bank matrix, and $x_{ITC-L, f_n}$ and $x_{ITC-R, f_n}$ are
+the STFT Coefficients of the left and right channels of the ITC microphone respectively.
+In terms of how STFT was computed, we adopt the same approach as the paper. Namely, 
+a FFT window length of 1024 samples with a window length of 40ms and a hop length of 20ms. It is 
+unclear which window function was used, but we will be using a Hann window as is standard in the literature.
+After computing the STFT, we then do a mel filter bank transformation to get the mel filter bank coefficients. 
+Of which we extract 40 mel bands. For a 10s snippet of audio, the resulting tensor is of shape $40 \times 500$.
+
 \section{Fixed Learning Rate SGD Approach}
 TODO
 \section{Adam Optimiser Approach}
@@ -977,7 +1018,7 @@ TODO
 
 \chapter{Speech Enhancement Experiments}
 \section{Data Preparation}
-TODO
+We incorporated the same data preparation approach as the ASA task, so consult Section \ref{sec:data-preparation} for more details.
 \section{One Model Approach}
 TODO
 \section{Per Environment Model Approach}
