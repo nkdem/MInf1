@@ -63,6 +63,9 @@
    using a shallow CNN model that works in the frequency-time domain. We evaluate the performance of the model 
    using artificial intelligibility and quality metrics such as STOI and PESQ. While the performance is not on par 
    with the state-of-the-art, it most certainly motivates further research in the next part of the dissertation.
+
+   Keywords: Acoustic Scene Analysis, Speech Enhancement, Hearing Aids, Machine Learning, Deep Neural Networks, Convolutional Neural Networks, 
+   State-Dependent Model, STOI, PESQ, FLOPs
 }
 
 \maketitle
@@ -522,6 +525,7 @@ incorporating a DNN model into a HA device.
 
 
 \section{Acoustic Scene Analysis}
+\label{sec:methodology-asa}
 Mathematically, ASA can be formalised as follows:
 Consider an audio signal \(x \in \mathbb{R}^{T}\), where \(T\) denotes the number of samples in the signal, and let \(\mathcal{E} = \{e_1, e_2, \ldots, e_N\}\) represent a set of \(N\) distinct environments. ASA is concerned with determining a mapping 
 \[
@@ -531,6 +535,7 @@ which assigns each audio signal to one of the environments in \(\mathcal{E}\). I
 and in this first part of the dissertation, we will be using a Convolutional Neural Network (CNN) to implement \(f\).
 
 \subsection{Model}
+\label{sec:asa-model}
 \begin{table}[h]
    \centering
    \begin{tabular}{|c|c|c|c|}
@@ -639,6 +644,7 @@ This will be done by looking at the following metrics:
 \end{itemize}
 
 \section{Speech Enhancement}
+\label{sec:methodology-se}
 Mathematically, let a noisy speech signal be represented by \(x \in \mathbb{R}^{T}\) and the corresponding clean speech signal by \(y \in \mathbb{R}^{T}\), where \(T\) denotes the total number of samples.
 Speech enhancement is therefore concerned with determining a mapping 
 \[
@@ -656,6 +662,7 @@ Just as in the previous section, we will be using a Convolutional Neural Network
    \label{fig:speech-enhancement-model-architecture}
 \end{figure}
 \subsection{Model}
+\label{sec:se-model}
 As this is more of an exploration of the viability of using a DNN model for speech enhancement 
 and the establishment of a baseline which can be used to improve upon, we will start 
 with a simple 5-layer CNN model. The model is shown in Figure \ref{fig:speech-enhancement-model-architecture}.
@@ -745,13 +752,45 @@ We thought that adding this section would give you the reader a better understan
 %    \caption{The vision we have for the state-dependent model.}
 %    \label{fig:state-dependent-model}
 % \end{figure}
+
 \chapter{Experimental Setup}
-This chapter will be dedicated to explaining the hypotheses we aim to validate in this part of the dissertation.
-Firstly, we will outline the hypotheses, and then explain the datasets we will be using to validate the hypotheses.
+\label{chap:experimental_setup}
+With the methodological foundation laid out in the preceding chapters, we can now outline the hypotheses we aim to validate.
+While we hinted at some of those hypotheses in the preceding chapters and sections, as a means of clarity, 
+we will be outlining the hypotheses again here and in more detail so that the reader can have a comprehensive understanding of 
+both the objectives and the rationale behind the experiments we will be doing.
+Once we outline the hypotheses, another section is dedicated towards the datasets that will be used to validate the hypotheses.
+Once that's done, the reader will be in a position to now analyse the results of the experiments which will be presented in Chapters \ref{} and \ref{}.
 \section{Hypotheses}
 \label{sec:hypotheses}
 \begin{enumerate}
-   \item \textbf{}
+   \item \textbf{Replication of ASA Results.} 
+   We hypothesise that the results reported by \citet{Huwel2020HearDS} for the ASA task can be replicated using the methodological approach detailed in Section \ref{sec:methodology-asa}.
+   Achieving replication is crucial as it brings us a step closer to our vision of creating a state-dependent model in the next part of the dissertation.
+   \item \textbf{Comparative Performance of the Adam Optimiser.}
+   It is hypothesised that using the Adam optimiser will result in a faster convergence with comparable performance to that of using a fixed learning rate Stochastic Gradient Descent (SGD) method, as employed in \citet{Huwel2020HearDS}.
+   Validating this hypothesis will speed up the development process going forward, 
+   enabling uniformity across subsequent experimental iterations. Additionally,
+   it will allow us to reach the objective of creating a state-dependent model faster due to acceleration of the development process.
+   % TODO: Ask Hao if I should rephrase this to reject Huwel's claim that SGD is better than Adam due to weight initialisation issues?
+   \item \textbf{Effectiveness of Utterance-Level Data Augmentation}. We hypothesise 
+   that if we mix the speech signal with SNR at an utterance level, we will be able 
+   to reduce the training time of the model and have similar performance to that of using 
+   every SNR level per epoch. 
+   Once again validating this hypothesis will speed up the development process going forward, 
+   since if true, there will be less samples per epoch and thus less training time. 
+   \item \textbf{Capability of the Speech Enhancement Model}.
+   TODO
+   \item \textbf{Superiority of State-Specific Training}
+   TODO
+   \item \textbf{Feasibility of Deployment on Hearing Aid Devices}.
+   With the evaluation of the models with respect to the number of FLOPs and the size of the models,
+   we aim to show that the models we implement are able to be deployed on HA devices. 
+   Our baseline values are taken from Phonak's ... 
+   This is a really important hypothesis to validate, otherwise any work 
+   we do would not allow us to create a state-dependent model if the dependant models 
+   are not able to be deployed on HA devices. (implication)
+   TODO
 \end{enumerate}
 
 \section{Datasets}
@@ -901,9 +940,6 @@ As mentioned in Section \ref{sec:hear-ds}, there is a slight discrepancy in the 
 that we obtained and the number of samples reported in the paper. We hypothesise that this is due to the aforementioned alignment issues in the CHiME 5 dataset.
 From Table \ref{tab:dataset-stats}, we can see that the dataset contains almost 50 hours of data from 48 speakers. 
 
-
-
-
 \subsection{TUT Acoustic Scenes 2016}
 As mentioned in the previous chapter, I came across better results than the baseline model in the paper by \citet{Huwel2020HearDS} 
 so as a means of validation, I decided to use the TUT Acoustic Scenes 2016 dataset \cite{mesaros_tut_2016} to test the performance of the model.
@@ -913,16 +949,26 @@ that this dataset contains background noise only, and the paper does not evaluat
 the model, we will maintain the same approach as the paper.
 Table \ref{tab:dataset-stats} shows that the TUT Acoustic Scenes 2016 dataset contains 10 hours of data from 10 environments.
 For brevity, we skip the details of the environments, and focus on the results we obtained, though consult the paper for more details.
+
 \subsection{VOICEBANK + DEMAND}
-TODO
+Just as with the motivation of using TUT Acoustic Scenes 2016 for validating the model's performance in ASA,
+we will be doing model validaton of speech enhancement. 
+For this, we have chosen a dataset collated here at Edinburgh University by \citet{valentini-botinhao_speech_2016}. 
+As the name of the dataset suggests, it is a culimination of the VOICEBANK \cite{TODO} (clean speech) and DEMAND \cite{TODO} (noisy background) datasets.
+We have chosen in particular to use the paper by \citet{kim_specmix_2021} to validate the model's performance.
+The reason is two-fold. Besides the paper also using the VOICEBANK + DEMAND dataset, the paper proposes a novel data augmentation technique
+`SpecMix' that was found to improve the performance of the model on ASA and SE tasks. This will be something I will be exploring in the 
+second part of the dissertation so I thought it would be apt to use the dataset for validation.
+Table \ref{tab:dataset-stats} shows that the dataset contains X hours of data from X speakers.
 
+The hypothesis \ref{hyp:optimiser} 
 
-\begin{enumerate}
-   \item \textbf{Using Fixed Learning Rate Stochastic Gradient Descent (SGD) will result in a longer training time than using Adam Optimiser.} The paper by \citet{Huwel2020HearDS} used the fixed learning rate SGD approach.
-   I hypothesise that using Adam Optimiser will result in a shorter training time.
-   \item \textbf{Data Augmentation will result in a higher accuracy of the model.} It is unclear from the paper whether the authors used data augmentation...
-   \item \textbf{Using an LSTM model will result in a higher accuracy of the model.}
-\end{enumerate}
+% \begin{enumerate}
+%    \item \textbf{Using Fixed Learning Rate Stochastic Gradient Descent (SGD) will result in a longer training time than using Adam Optimiser.} The paper by \citet{Huwel2020HearDS} used the fixed learning rate SGD approach.
+%    I hypothesise that using Adam Optimiser will result in a shorter training time.
+%    \item \textbf{Data Augmentation will result in a higher accuracy of the model.} It is unclear from the paper whether the authors used data augmentation...
+%    \item \textbf{Using an LSTM model will result in a higher accuracy of the model.}
+% \end{enumerate}
 
 
 \chapter{Acoustic Scene Classification Experiments}
