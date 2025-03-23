@@ -746,8 +746,35 @@ We thought that adding this section would give you the reader a better understan
 %    \label{fig:state-dependent-model}
 % \end{figure}
 \chapter{Experimental Setup}
+This chapter will be dedicated to explaining the hypotheses we aim to validate in this part of the dissertation.
+Firstly, we will outline the hypotheses, and then explain the datasets we will be using to validate the hypotheses.
+\section{Hypotheses}
+\label{sec:hypotheses}
+\begin{enumerate}
+   \item \textbf{}
+\end{enumerate}
+
 \section{Datasets}
 \label{sec:datasets}
+% Big table of all the statistics of the datasets
+% DATASET | ENVIRONMENTS (if applicable) | number of samples | number of speakers (if applicable) | max duration of samples | min duration of samples | mean duration of samples | std duration of samples
+
+\begin{table}[h]
+   \centering
+   \begin{tabular}{|c|c|c|c|}
+      \hline
+      Dataset & \rotatebox{90}{Environments} & \rotatebox{90}{No. of Speakers} & \rotatebox{90}{Hours of Data} \\
+      \hline
+      HEAR-DS \cite{Huwel2020HearDS} & 6 & - & 21 hours \\
+      CHiME 3 (booth dev. set) \cite{barker_third_2015} & - & 4 & 10 hours \\
+      CHiME 6 (train + dev + eval) \cite{barker18_fifth_2018} & - & 48 & 50 hours \\
+      TUT Acoustic Scenes 2016 \cite{mesaros_tut_2016} & 10 & - & 10 hours \\
+      \hline
+   \end{tabular}
+   \caption{Dataset statistics.}
+   \label{tab:dataset-stats}
+\end{table}
+
 \subsection{HEAR-DS}
 \label{sec:hear-ds}
 Given how much this dissertation revolves around the HEAR-DS dataset, we dedicate a section solely 
@@ -774,11 +801,16 @@ supercedes the CHiME 5 dataset \cite{barker18_fifth_2018} by correcting the alig
 recommend the use of the CHiME 6 dataset instead of CHiME 5 for any new research so we will use that instead. This could 
 be an important factor as the methodology of creating the \textit{Interfering Speakers} environment is by finding 10s 
 segments of speech that contain multiple speakers, so if the alignment of audio channels is not correct, the recordings 
-may have a delay between the left and right channels which could have potentialy affected the results of the paper. We will discuss the dataset in more detail in section \ref{sec:chime6}.
+may have a delay between the left and right channels which could have potentialy affected the results of the paper. We will discuss the dataset in more detail in section \ref{}.
+In any case, the way this environment was created is unclear from the paper, but we do the following approach to create the environment:
+\begin{enumerate}
+   \item The code processes CHiME6 sessions to find 10-second segments containing overlapping speech from multiple speakers.
+   \item For each segment, it extracts audio from the reference speaker's microphone and saves both left and right channels.
+\end{enumerate}
 
 To prevent the model from overfitting and increase the diversity of the data, the researchers provided multiple REC-SITs (Recording Situations) for each environment.
 In the case of the \textit{Music} environment, each REC-SIT represents a different genre of music. This has some potential to cause issues 
-and we discuss this in more detail once we aim to reproduce the results of the paper (Chapter \ref{chap:acoustic-scene-classification}). 
+and we discuss this in more detail once we aim to reproduce the results of the paper (Chapter \ref{chap:acoustic-scene-classification}).  % TODO: Explain the issue later
 As for the artificially created \textit{Interfering Speakers} environment, it is unclear how they define REC-SITs for this environment. 
 What I did was to extract the session ID from the CHiME 6 dataset and use that as the REC-SIT, which 
 gives us a total of 16 REC-SITs for this environment.
@@ -814,10 +846,11 @@ As noted in the Introduction, the model can be made to act as a Voice Activity D
 The raw dataset however, only contains samples without speech, so we will be following the paper's approach to create the mixed environments.
 Although recording environments with and without speech was something the researchers did consider, the researchers prioritised full control over the signal-to-noise ratio (SNR) during the speech-background mixing process.
 One deviation from the original methodology is that, in this dissertation, the creation of mixed environments will not incorporate a head-related transfer function (HRTF) due to time constraints and the scarcity of readily usable libraries.
-Otherwise, the approach remains the same: using the CHiME 3 dataset (see Section \ref{sec:chime3}) to blend the speech signal with background noise.
+Otherwise, the approach remains the same: using the CHiME 3 dataset (see Section \ref{}) to blend the speech signal with background noise.
 We ensure in a similar manner to the paper that each mixed 10-second snippet contains at least 7.5 seconds of speech.
+Given that we will be training and testing the model, the need for a training and test is imperative. 
 It was not clear how the researchers split the speakers for the mixed environments, so we will be splitting the speakers into two groups—one for training and one for testing.
-Table \ref{tab:chime3-stats} shows that the CHiME 3 dataset includes four speakers with an equal gender split, 
+Table \ref{tab:dataset-stats} shows that the CHiME 3 dataset contains 4 speakers, and conveniently enough an equal split of gender,
 thus we ensured for generalisability that each set contained a male and female speaker. 
 
 % As noted in the Introduction, 
@@ -839,22 +872,24 @@ thus we ensured for generalisability that each set contained a male and female s
 
 
 \subsection{CHiME3}
- As mentioned earlier, the researchers used the CHiME 3 dataset to mix the speech signal with the background noise. 
+ As mentioned earlier, the researchers used the CHiME 3 \cite{barker_third_2015} dataset to mix the speech signal with the background noise. 
 CHiME 3 is a dataset published in 2015 for ASR tasks, and was dedicated to improving the performance of mobile devices 
 in everyday, noisy environments. The vocabulary of the speech samples is taken from a subset of the Wall Street Journal (WSJ0) corupus \cite{TODO}.
-We won't go into the details of the environments, because while not exactly clear from 
-the paper, it is mentioned that a development set was used for the mixing. We assume that they used the isolated development set 
-recorded in a booth, as it would not make sense otherwise since the other sets contain noisy samples.
-The use of the development set for mixing is not ideal, as it is not representative of the real-world data.
-In particular, as can be seen from Table \ref{tab:chime3-stats}, it contains 10 hours of data from 4 speakers. This could be a problem in both tasks (ASA and Speech Enhancements), in the former
+For brevity, we won't go into the details of the environments, as we 
+are only interested in the speech samples. 
+From the paper, we know that the researchers used a development set for the mixing 
+and we assume that they meant the development set in the BOOTH environment, as it would not make sense otherwise since the other sets contain noisy samples.
+
+As can be seen from Table \ref{tab:dataset-stats}, it contains 10 hours of data from 4 speakers. This could be a problem in both tasks (ASA and Speech Enhancements), in the former
 we could be overfitting to the data due to the Pigeon-hole principle i.e. we have much more background samples than speech samples, 
 and in the latter, the enhancement model may not generalise well to real-world scenarios due to the small size of the dataset. 
-A better approach would of perhaps been to use the cleanm speech samples 
+A better approach would of perhaps been to to use the ORG environment which is a clean set of speech samples from the WSJ0 corpus 
+which has 15.15 hours of data from 83 speakers \cite{barker_third_2015}.
 Nevertheless, we will continue with the paper's approach to set up a baseline. The data was already in 16KHz so we did not need to 
 resample it. 
-% TODO: Add table here
+
 \subsection{CHiME5/CHiME6}
-The CHiME 5 dataset was originally used in the paper to create the \textit{Interfering Speakers} environment for the HEAR-DS dataset.
+In the paper by \citet{Huwel2020HearDS}, the authors used the CHiME 5 dataset to create the \textit{Interfering Speakers} environment for the HEAR-DS dataset.
 However, since the CHiME 6 dataset supersedes CHiME 5 with improved audio channel alignment, we opted to use CHiME 6 for our implementation.
 CHiME 6 (and CHiME 5) was a dataset created for the Speech Seperation and Recognition Challenge in 2020. It 
 focuses on conversational speech in everyday home environments and particular emphasis was placed on 
@@ -862,10 +897,12 @@ eliciting a 'dinner party' scenario i.e. a mixture of speech from multiple speak
 clear from the paper what sets were used for the creation of the \textit{Interfering Speakers} environment 
 however, they did provide a table of number of samples in each environment. From the table, we 
 were able to deduce that they must have used the training, development and evaluation sets for the creation of the \textit{Interfering Speakers} environment.
-We talk more about the creation of this environment when we discuss the baseline model in Chapter \ref{chap:acoustic-scene-classification}.
-From Table \ref{tab:chime6-stats}, we can see that the dataset contains almost 50 hours of data from 48 speakers. 
-\label{sec:chime6}
-TODO Table
+As mentioned in Section \ref{sec:hear-ds}, there is a slight discrepancy in the number of samples in the \textit{Interfering Speakers} environment, 
+that we obtained and the number of samples reported in the paper. We hypothesise that this is due to the aforementioned alignment issues in the CHiME 5 dataset.
+From Table \ref{tab:dataset-stats}, we can see that the dataset contains almost 50 hours of data from 48 speakers. 
+
+
+
 
 \subsection{TUT Acoustic Scenes 2016}
 As mentioned in the previous chapter, I came across better results than the baseline model in the paper by \citet{Huwel2020HearDS} 
@@ -874,11 +911,11 @@ In particular, I will comparing the results by \citet{schindler_multi-temporal_2
 the authors have used the development set of the TUT Acoustic Scenes 2016 dataset for their experiments. It is worth stressing 
 that this dataset contains background noise only, and the paper does not evaluate it with speech, so when we use it to validate 
 the model, we will maintain the same approach as the paper.
-
+Table \ref{tab:dataset-stats} shows that the TUT Acoustic Scenes 2016 dataset contains 10 hours of data from 10 environments.
+For brevity, we skip the details of the environments, and focus on the results we obtained, though consult the paper for more details.
 \subsection{VOICEBANK + DEMAND}
 TODO
 
-\section{Hypotheses}
 
 \begin{enumerate}
    \item \textbf{Using Fixed Learning Rate Stochastic Gradient Descent (SGD) will result in a longer training time than using Adam Optimiser.} The paper by \citet{Huwel2020HearDS} used the fixed learning rate SGD approach.
