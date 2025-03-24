@@ -1,3 +1,4 @@
+from itertools import groupby
 import os
 import logging
 import soundfile as sf
@@ -7,6 +8,7 @@ import torch
 from torch.utils.data import Dataset, DataLoader
 import torchaudio
 import numpy as np
+import tqdm
 
 from helpers import mix_signals  # assumes mix_signals(signal, background, snr) is provided
 
@@ -76,9 +78,20 @@ class BackgroundDataset(Dataset):
                 environment = os.path.basename(os.path.dirname(os.path.dirname(file_pair[0])))
                 recsit = splits[1]
                 cut_id = splits[2]
-                self.audio_files.append((file_pair, environment, recsit, cut_id))
+                snip_id = splits[3]
+                self.audio_files.append((file_pair, environment, recsit, cut_id, snip_id))
 
-    def _get_all_audio_files(self, max_samples_per_env: int) -> List[Tuple[List[str], str, str, str]]:
+    def __len__(self):
+        return len(self.audio_files)
+
+    def __getitem__(self, idx: int):
+        file_pair, environment, recsit, cut_id, snip_id = self.audio_files[idx]
+        waveform_l, _ = torchaudio.load(file_pair[0])
+        waveform_r, _ = torchaudio.load(file_pair[1])
+        basename = base_name(os.path.basename(file_pair[0]))
+        return file_pair, [], environment, recsit, cut_id, snip_id, (basename, None), None # last element is SNR level, which is not used for background samples
+
+    def _get_all_audio_files(self, max_samples_per_env: int) -> List[Tuple[List[str], str, str, str, str]]:
         """
         Walk root_dir and collect a list of (file_pair, recsit) tuples. The recsit is assumed to be the name of the
         immediate parent directory.
@@ -101,24 +114,15 @@ class BackgroundDataset(Dataset):
                             environment = os.path.basename(os.path.dirname(root))
                             recsit = splits[1]
                             cut_id = splits[2]
+                            snip_id = splits[3]
                             count = recsit_file_count.get(recsit, 0)
                             if count >= max_samples_per_env:
                                 continue
-                            audio_files.append(([file_path, pair_file_path], environment, recsit, cut_id))
-                            recsit_file_count[recsit] = count + 1
+                            audio_files.append(([file_path, pair_file_path], environment, recsit, cut_id, snip_id))
+                            recsit_file_count[recsit] = count
 
         logger.info(f"Loaded {len(audio_files)} background file pairs from {self.root_dir}")
         return audio_files
-
-    def __len__(self):
-        return len(self.audio_files)
-
-    def __getitem__(self, idx: int):
-        file_pair, environment, recsit, cut_id = self.audio_files[idx]
-        waveform_l, _ = torchaudio.load(file_pair[0])
-        waveform_r, _ = torchaudio.load(file_pair[1])
-        basename = base_name(os.path.basename(file_pair[0]))
-        return file_pair, [], environment, recsit, cut_id, (basename, None), None # last element is SNR level, which is not used for background samples
 
 
 ###############################################################################
@@ -175,27 +179,68 @@ class MixedAudioDataset(Dataset):
     Uses ensure_valid_lengths_with_speech to trim/pad and mix_signals to combine.
     Returns a tuple (mixed_audio_pair, label) where label=1 indicates speech is present.
     """
-    def __init__(self, background_dataset: BackgroundDataset, speech_dataset: SpeechDataset, snr_levels: List[int] = None, channel = None):
+    def __init__(self, background_dataset: BackgroundDataset, speech_dataset: SpeechDataset, snr_levels: List[int] = None, channel = None, fixed_snr: bool = False, speech_cache: Dict = None):
         self.background_dataset = background_dataset
         self.speech_dataset = speech_dataset
         self.channel = channel
+        self.fixed_snr = fixed_snr
         if snr_levels is None:
             self.snr_levels = [-21, -18, -15, -12, -9, -6, -3, 0, 3, 6, 9, 12, 15, 18, 21]
         else:
             self.snr_levels = snr_levels
+        # Cache for speech metadata (speaker and file indices), keyed by (background_idx, snr)
+        self.speech_cache = {}
+        if speech_cache is None:
+            self._prepopulate_speech_cache()
+        else:
+            self.speech_cache = speech_cache
 
-    def __len__(self):
-        return len(self.background_dataset)
+    def _prepopulate_speech_cache(self):
+        """
+        Pre-populates the speech cache for all possible (background_idx, snr) combinations.
+        This ensures deterministic behavior across different runs.
+        """
+        logger.info("Pre-populating speech cache...")
+        
+        for snr in tqdm.tqdm(self.snr_levels):
+            for background_idx in tqdm.tqdm(range(len(self.background_dataset))):
+                cache_key = (background_idx, snr)
+                if cache_key not in self.speech_cache:
+                    # This will automatically populate the cache for this key
+                    self._get_combined_speech(cache_key)
+        
+        logger.info(f"Speech cache populated with {len(self.speech_cache)} combinations")
 
-    def _get_combined_speech(self) -> np.ndarray:
+    def _get_combined_speech(self, cache_key: Tuple[int, int]) -> Tuple[np.ndarray, List[str]]:
         """
-        Concatenates randomly selected speech samples from self.speech_dataset until 
-        the accumulated speech reaches at least 75% of TARGET_LENGTH.
-        If the concatenated speech ends up longer than TARGET_LENGTH, then it is truncated.
+        Concatenates speech samples from self.speech_dataset until the accumulated speech 
+        reaches at least 75% of TARGET_LENGTH. If cached metadata exists for this (background_idx, snr),
+        uses the same files and speaker as before.
+        
+        Args:
+            cache_key: Tuple of (background_idx, snr)
         """
+        # Check if we have cached metadata for this (background_idx, snr) combination
+        if cache_key in self.speech_cache:
+            speech_indices = self.speech_cache[cache_key]
+            concatenated_speech = np.array([], dtype=np.float32)
+            samples_used = []
+            for idx in speech_indices:
+                speech, _ = self.speech_dataset[idx]
+                concatenated_speech = np.concatenate((concatenated_speech, speech))
+                samples_used.append(self.speech_dataset.speech_files[idx])
+            
+            if len(concatenated_speech) > TARGET_LENGTH:
+                concatenated_speech = concatenated_speech[:TARGET_LENGTH]
+            elif len(concatenated_speech) < TARGET_LENGTH:
+                padding = TARGET_LENGTH - len(concatenated_speech)
+                concatenated_speech = np.pad(concatenated_speech, (0, padding), mode='constant')
+            return concatenated_speech, samples_used
+
         required_length = int(0.75 * TARGET_LENGTH)
         concatenated_speech = np.array([], dtype=np.float32)
         samples_used = []
+        speech_indices = []  # Store indices for caching
         speaker_used = None
         while len(concatenated_speech) < required_length:
             if speaker_used is None:
@@ -210,12 +255,22 @@ class MixedAudioDataset(Dataset):
                     speech, speaker = self.speech_dataset[idx]
             concatenated_speech = np.concatenate((concatenated_speech, speech))
             samples_used.append(self.speech_dataset.speech_files[idx])
+            speech_indices.append(idx)
+        
         if len(concatenated_speech) > TARGET_LENGTH:
             concatenated_speech = concatenated_speech[:TARGET_LENGTH]
         elif len(concatenated_speech) < TARGET_LENGTH:
             padding = TARGET_LENGTH - len(concatenated_speech)
             concatenated_speech = np.pad(concatenated_speech, (0, padding), mode='constant')
+        
+        # Cache the indices used for this (background_idx, snr) combination
+        self.speech_cache[cache_key] = speech_indices
         return concatenated_speech, samples_used
+
+    def __len__(self):
+        if self.fixed_snr:
+            return len(self.background_dataset) * len(self.snr_levels)
+        return len(self.background_dataset)
 
     def __getitem__(self, idx: int):
         """
@@ -224,7 +279,20 @@ class MixedAudioDataset(Dataset):
         - clean_waveforms (list of length 2, e.g. [clean_left, clean_right])
         - environment, recsit, cut_id, (basename, speech_used), snr
         """
-        file_pair, _, environment, recsit, cut_id, _, _ = self.background_dataset[idx]
+        if self.fixed_snr:
+            # In fixed SNR mode, map the idx to the correct background sample and SNR level
+            background_idx = idx // len(self.snr_levels)
+            snr_idx = idx % len(self.snr_levels)
+            snr = self.snr_levels[snr_idx]
+            
+            if background_idx >= len(self.background_dataset):
+                raise IndexError(f"Index {idx} is out of bounds for dataset of size {len(self)}")
+        else:
+            # In random SNR mode, idx represents background_idx directly
+            background_idx = idx
+            snr = random.choice(self.snr_levels)
+
+        file_pair, environment, recsit, cut_id, snip_id = self.background_dataset.audio_files[background_idx]
 
         # Load background channels
         background_l, _sr1 = sf.read(file_pair[0])
@@ -238,23 +306,17 @@ class MixedAudioDataset(Dataset):
         # If environment already has speech, skip mixing and treat as background-only.
         # e.g. "CocktailParty", "InterfereringSpeakers"
         if environment in ["CocktailParty", "InterfereringSpeakers"]:
-            # We return the background as if "no speech" => label 0 or 1 — up to your pipeline
-            # For consistency, let's keep it "0 = no speech" or "1 = has speech".
-            # But you originally used "return [bgL, bgR], environment, recsit, ... label=1"
-            # We'll assume label=0 means background-only, label=1 means speech present
-            # so maybe we do label=0 here, or preserve your earlier usage.
-            # We'll do label=0 to indicate no added speech.
-            return [background_l, background_r], None, environment, recsit, cut_id, (basename, None), 0
+            return [background_l, background_r], None, environment, recsit, cut_id, snip_id, (basename, None), 0
 
-        # Otherwise, we do the usual mixing
-        snr = random.choice(self.snr_levels)
-        combined_speech, speech_used = self._get_combined_speech()
+        # Create cache key from background_idx and snr
+        cache_key = (background_idx, snr)
+        combined_speech, speech_used = self._get_combined_speech(cache_key)
 
         # For stereo "clean", you might replicate the same speech on both channels if desired:
         speech_l, bg_chunk_l = ensure_valid_lengths_with_speech(combined_speech, background_l)
         speech_r, bg_chunk_r = ensure_valid_lengths_with_speech(combined_speech, background_r)
 
-        # The “clean” waveforms are what we’d feed to the MSE as the target
+        # The "clean" waveforms are what we'd feed to the MSE as the target
         clean_l, clean_r = speech_l.copy(), speech_r.copy()
 
         # Now mix them at the chosen snr
@@ -263,17 +325,34 @@ class MixedAudioDataset(Dataset):
 
         environment = f"SpeechIn_{environment}"
 
-        # Return: (noisy, clean, env, recsit, cut_id, extra_info, label=1)
-        # Because we intentionally added speech:
+        # Return: (noisy, clean, env, recsit, cut_id, snip_id, extra_info, snr)
         return (
             [mixed_l, mixed_r] if self.channel == None else [mixed_l, mixed_l] if self.channel == 'L' else [mixed_r, mixed_r],                # noisy mixture
             [clean_l, clean_r] if self.channel == None else [clean_l, clean_l] if self.channel == 'L' else [clean_r, clean_r],                # clean speech
             environment, 
             recsit, 
-            cut_id, 
+            cut_id,
+            snip_id,
             (basename, speech_used),
             snr
         )
+
+class DuplicatedMixedAudioDataset(Dataset):
+    """
+    Wrapper around MixedAudioDataset that duplicates each sample for each SNR level.
+    This ensures that in fixed SNR mode, we have the same number of background-only samples
+    as we have mixed samples (one for each SNR level).
+    """
+    def __init__(self, mixed_audio_dataset: MixedAudioDataset):
+        self.mixed_audio_dataset = mixed_audio_dataset
+
+    def __len__(self):
+        return len(self.mixed_audio_dataset)
+
+    def __getitem__(self, idx):
+        # Map the expanded index back to the original mixed audio dataset index
+        original_idx = idx // len(self.mixed_audio_dataset.snr_levels)
+        return self.mixed_audio_dataset[original_idx]
 
 ###############################################################################
 # Helper functions for splitting datasets based on recsit and speaker.
@@ -291,7 +370,7 @@ def split_background_dataset(background_ds: BackgroundDataset) -> Tuple[Backgrou
     # Group files first. Here, groups is organized as:
     # { environment: { recsit: { cut_id: file_pair_list } } }
     groups: Dict[str, Dict[str, Dict[str, List[List[str]]]]] = {}
-    for file_pair, environment, recsit, cut_id in background_ds.audio_files:
+    for file_pair, environment, recsit, cut_id, _ in background_ds.audio_files:
         groups.setdefault(environment, {}).setdefault(recsit, {}).setdefault(cut_id, []).append(file_pair)
 
     all_environments = list(groups.keys())
@@ -383,49 +462,62 @@ def split_speech_dataset(speech_ds: SpeechDataset) -> Tuple[SpeechDataset, Speec
     return SpeechDataset(speech_ds.chime_dir, files_list=train_files), SpeechDataset(speech_ds.chime_dir, files_list=test_files)
 
 
-###############################################################################
-# Main function that performs splitting and creates DataLoaders.
-###############################################################################
-def main():
-    # Replace these paths with your actual directories.
-    ROOT_DIR = '/Users/nkdem/Downloads/HEAR-DS'
-    CHIME_DIR = '/Volumes/SSD/Datasets/CHiME3/CHiME3-Isolated-DEV/dt05_bth'
+# ###############################################################################
+# # Main function that performs splitting and creates DataLoaders.
+# ###############################################################################
+# def main():
+#     # Replace these paths with your actual directories.
+#     ROOT_DIR = '/Users/nkdem/Downloads/HEAR-DS'
+#     CHIME_DIR = '/Volumes/SSD/Datasets/CHiME3/CHiME3-Isolated-DEV/dt05_bth'
+#     CACHE_DIR = 'cache'  # Directory to store speech caches
     
-    # Create the full datasets.
-    full_background_ds = BackgroundDataset(ROOT_DIR)
-    full_speech_ds = SpeechDataset(CHIME_DIR)
+#     # Create the full datasets.
+#     full_background_ds = BackgroundDataset(ROOT_DIR)
+#     full_speech_ds = SpeechDataset(CHIME_DIR)
     
-    # Split the background dataset based on recsit.
-    train_background_ds, test_background_ds, train_background_speech_ds, test_background_speech_ds = split_background_dataset(full_background_ds)
+#     # Split the background dataset based on recsit.
+#     train_background_ds, test_background_ds, train_background_speech_ds, test_background_speech_ds = split_background_dataset(full_background_ds)
     
-    # Split the speech dataset based on speaker.
-    train_speech_ds, test_speech_ds = split_speech_dataset(full_speech_ds)
+#     # Split the speech dataset based on speaker.
+#     train_speech_ds, test_speech_ds = split_speech_dataset(full_speech_ds)
     
-    logger.info(f"Train background samples: {len(train_background_ds)}; Test background samples: {len(test_background_ds)}")
-    logger.info(f"Train speech samples: {len(train_speech_ds)}; Test speech samples: {len(test_speech_ds)}")
+#     logger.info(f"Train background samples: {len(train_background_ds)}; Test background samples: {len(test_background_ds)}")
+#     logger.info(f"Train speech samples: {len(train_speech_ds)}; Test speech samples: {len(test_speech_ds)}")
     
-    # Create Mixed Audio Datasets for training and test sets.
-    train_mixed_ds = MixedAudioDataset(train_background_speech_ds, train_speech_ds)
-    test_mixed_ds = MixedAudioDataset(test_background_speech_ds, test_speech_ds)
+#     # Create Mixed Audio Datasets for training and test sets with caching
+#     os.makedirs(CACHE_DIR, exist_ok=True)
+#     train_cache_path = os.path.join(CACHE_DIR, 'train_speech_cache.pkl')
+#     test_cache_path = os.path.join(CACHE_DIR, 'test_speech_cache.pkl')
     
-    train_combined = torch.utils.data.ConcatDataset([train_background_ds, train_mixed_ds])
-    test_combined = torch.utils.data.ConcatDataset([test_background_ds, test_mixed_ds])
+#     train_mixed_ds = MixedAudioDataset(
+#         train_background_speech_ds, 
+#         train_speech_ds,
+#         cache_path=train_cache_path
+#     )
+#     test_mixed_ds = MixedAudioDataset(
+#         test_background_speech_ds, 
+#         test_speech_ds,
+#         cache_path=test_cache_path
+#     )
+    
+#     train_combined = torch.utils.data.ConcatDataset([train_background_ds, train_mixed_ds])
+#     test_combined = torch.utils.data.ConcatDataset([test_background_ds, test_mixed_ds])
 
-    def collate_fn(batch):
-        mixed_audios, environments, recsits, cut_ids, labels = zip(*batch)
-        mixed_audios = [[sf.read(mixed_audios[i][0]), sf.read(mixed_audios[i][1])] if labels[i] == 0 else mixed_audios[i] for i in range(len(mixed_audios))]
-        return mixed_audios, environments, recsits, cut_ids, labels
-    train_loader = DataLoader(train_combined, batch_size=32, shuffle=True, collate_fn=collate_fn)
-    test_loader = DataLoader(test_combined, batch_size=32, shuffle=True, collate_fn=collate_fn)
+#     def collate_fn(batch):
+#         mixed_audios, environments, recsits, cut_ids, labels = zip(*batch)
+#         mixed_audios = [[sf.read(mixed_audios[i][0]), sf.read(mixed_audios[i][1])] if labels[i] == 0 else mixed_audios[i] for i in range(len(mixed_audios))]
+#         return mixed_audios, environments, recsits, cut_ids, labels
+#     train_loader = DataLoader(train_combined, batch_size=32, shuffle=True, collate_fn=collate_fn)
+#     test_loader = DataLoader(test_combined, batch_size=32, shuffle=True, collate_fn=collate_fn)
     
-    # Demonstrate by iterating over one batch from each loader.
-    count = 0
-    for batch in train_loader:
-        mixed_audios, environment, recsit, cut_id, labels = batch
-        logger.info(f"Train Mixed Audio Batch Labels: {labels}")
-    for batch in test_loader:
-        mixed_audios, environment, recsit, cut_id, labels = batch
-        logger.info(f"Test Mixed Audio Batch Labels: {labels}")
+#     # Demonstrate by iterating over one batch from each loader.
+#     count = 0
+#     for batch in train_loader:
+#         mixed_audios, environment, recsit, cut_id, labels = batch
+#         logger.info(f"Train Mixed Audio Batch Labels: {labels}")
+#     for batch in test_loader:
+#         mixed_audios, environment, recsit, cut_id, labels = batch
+#         logger.info(f"Test Mixed Audio Batch Labels: {labels}")
 
-if __name__ == '__main__':
-    main()
+# if __name__ == '__main__':
+#     main()

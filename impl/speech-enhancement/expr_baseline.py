@@ -60,8 +60,8 @@ class BaseExperiment(ABC):
             split = pickle.load(f)
             
             # Extract the mixed datasets from the splits
-            train_mixed_ds = split['subsets']['train']['mixed']
-            test_mixed_ds = split['subsets']['test']['mixed']
+            train_mixed_ds = split['random_snr']['subsets']['train']['mixed']
+            test_mixed_ds = split['random_snr']['subsets']['test']['mixed']
             
             def speech_enh_collate_fn(batch, ignore = True):
                 noisy_list = []
@@ -69,10 +69,11 @@ class BaseExperiment(ABC):
                 envs = []
                 recs = []
                 cut_ids = []
+                snip_ids = []
                 extras = []
                 snrs = []
 
-                for (noisy, clean, env, recsit, cut_id, extra, snr) in batch:
+                for (noisy, clean, env, recsit, cut_id, snip_id, extra, snr) in batch:
                     if ignore and env in ["CocktailParty", "InterfereringSpeakers"]:
                         # Skip these examples during training since we don't have clean audio for them
                         continue
@@ -81,10 +82,11 @@ class BaseExperiment(ABC):
                     envs.append(env)
                     recs.append(recsit)
                     cut_ids.append(cut_id)
+                    snip_ids.append(snip_id)
                     extras.append(extra)
                     snrs.append(snr)
 
-                return noisy_list, clean_list, envs, recs, cut_ids, extras, snrs
+                return noisy_list, clean_list, envs, recs, cut_ids, snip_ids, extras, snrs
 
             self.train_loader = DataLoader(
                 train_mixed_ds, batch_size=self.batch_size, shuffle=True, collate_fn=speech_enh_collate_fn
@@ -113,10 +115,11 @@ class BaseExperiment(ABC):
             envs = []
             recs = []
             cut_ids = []
+            snip_ids = []
             extras = []
             snrs = []
 
-            for (noisy, clean, env, recsit, cut_id, extra, snr) in batch:
+            for (noisy, clean, env, recsit, cut_id, snip_id, extra, snr) in batch:
                 if ignore and env in ["CocktailParty", "InterfereringSpeakers"]:
                     # Skip these examples during training since we don't have clean audio for them
                     continue
@@ -125,10 +128,11 @@ class BaseExperiment(ABC):
                 envs.append(env)
                 recs.append(recsit)
                 cut_ids.append(cut_id)
+                snip_ids.append(snip_id)
                 extras.append(extra)
                 snrs.append(snr)
 
-            return noisy_list, clean_list, envs, recs, cut_ids, extras, snrs
+            return noisy_list, clean_list, envs, recs, cut_ids, snip_ids, extras, snrs
 
         self.train_loader = DataLoader(
             train_noisy_ds, batch_size=self.batch_size, shuffle=True, collate_fn=speech_enh_collate_fn
@@ -152,7 +156,7 @@ class BaseExperiment(ABC):
 
         with torch.no_grad():
             for batch in tqdm(test_loader, desc="Testing", unit="batch"):
-                noisy, clean, envs, recs, cut_ids, extras, snrs = batch
+                noisy, clean, envs, recs, cut_ids, snip_ids, extras, snrs = batch
                 if len(noisy) == 0:
                     continue
                 noisy_computed_logmel = compute_average_logmel(noisy, self.device)
@@ -340,7 +344,7 @@ class SpeechEnhancementExperiment(BaseExperiment):
         base_dir = self.create_experiment_dir("speech_enhance", self.experiment_no)
         adam = SpeechEnhanceAdamEarlyStopTrainer(
             base_dir=base_dir,
-            num_epochs=240,
+            num_epochs=60,
             train_loader=self.train_loader,
             batch_size=self.batch_size,
             cuda=self.cuda,

@@ -57,11 +57,10 @@ class BaseTrainer:
         logger.info(f"Random seed: {self.seed_val}")
 
         # iterate over the dataset to get the number of classes
-        with open(os.path.join(self.base_dir, "train_files.csv"), "w") as f:
-            for (noisy_batch, clean_batch, envs, recsits, cuts, extras, snrs) in tqdm(self.train_loader):
-                pass
-                for base, speech_used in extras:
-                    f.write(f"{base},{speech_used}\n")
+        # with open(os.path.join(self.base_dir, "train_files.csv"), "w") as f:
+        #     for (noisy_batch, clean_batch, envs, recsits, cuts, extras, snrs) in tqdm(self.train_loader):
+        #         for base, speech_used in extras:
+        #             f.write(f"{base},{speech_used}\n")
         self.metadata = {}
         self.losses = []
         self.learning_rates = []
@@ -120,12 +119,12 @@ class SpeechEnhanceAdamEarlyStopTrainer(BaseTrainer):
         all_noisy_logmels = []
         all_clean_logmels = []
         for batch in tqdm(self.train_loader, desc="Computing mean and std", unit="batch"):
-            (noisy_batch, clean_batch, envs, recsits, cuts, extras, snrs) = batch
+            (noisy_batch, clean_batch, envs, recsits, cuts, snippets, extras, snrs) = batch
 
             if len(noisy_batch) == 0:
                 continue
 
-            keys = [f"{env}_{recsit}_{cut}_{snr}" for env, recsit, cut, snr in zip(envs, recsits, cuts, snrs)]
+            keys = [f"{env}_{recsit}_{cut}_{snippet}_{snr}" for env, recsit, cut, snippet, snr in zip(envs, recsits, cuts, snippets, snrs)]
 
             for i, key in enumerate(keys):
                 if key not in self.feature_cache:
@@ -222,10 +221,47 @@ class SpeechEnhanceAdamEarlyStopTrainer(BaseTrainer):
 
         return (normalized_logmels * std) + mean
 
-
+    def compute_logmels(self, noisy_waveforms, clean_waveforms, envs, recsits, cuts, snippets, snrs):
+        """
+        Compute logmels for both noisy and clean waveforms, with caching.
+        """
+        keys = [f"{env}_{recsit}_{cut}_{snippet}_{snr}" for env, recsit, cut, snippet, snr in zip(envs, recsits, cuts, snippets, snrs)]
+        
+        cached_noisy = {}
+        cached_clean = {}
+        missing_keys = []
+        
+        for i, key in enumerate(keys):
+            if key in self.feature_cache:
+                cached_noisy[key] = self.feature_cache[key][0]
+                cached_clean[key] = self.feature_cache[key][1]
+            else:
+                missing_keys.append(i)
+        
+        if missing_keys:
+            logger.debug(f"Missing {len(missing_keys)} features. Computing...")
+            # Build lists of audio pairs from the missing keys
+            noisy_missing_audio = [noisy_waveforms[i] for i in missing_keys]
+            clean_missing_audio = [clean_waveforms[i] for i in missing_keys]
+            
+            # Compute logmels for missing audio
+            noisy_computed_logmel = compute_average_logmel(noisy_missing_audio, self.device)
+            clean_computed_logmel = compute_average_logmel(clean_missing_audio, self.device)
+            
+            for idx, i in enumerate(missing_keys):
+                noisy = noisy_computed_logmel[idx].view(1, 40, -1)
+                clean = clean_computed_logmel[idx].view(1, 40, -1)
+                cached_noisy[keys[i]] = noisy
+                cached_clean[keys[i]] = clean
+                self.feature_cache[keys[i]] = (noisy, clean)
+        
+        # Reorder results to match original order
+        noisy_logmels = [cached_noisy[key] for key in keys]
+        clean_logmels = [cached_clean[key] for key in keys]
+        
+        return torch.cat(noisy_logmels, dim=0), torch.cat(clean_logmels, dim=0)
 
     def train(self):
-
         criterion = nn.MSELoss()
         start_time = time.time()
 
@@ -238,50 +274,20 @@ class SpeechEnhanceAdamEarlyStopTrainer(BaseTrainer):
         for epoch in range(self.num_epochs):
             running_loss = 0.0
 
-
             for batch in tqdm(
                 self.train_loader,
                 desc=f"[Epoch {epoch + 1}/{self.num_epochs}] [LR: {optimiser.param_groups[0]['lr']}]",
                 unit="batch"
             ):
-                (noisy_batch, clean_batch, envs, recsits, cuts, extras, snrs) = batch
+                (noisy_batch, clean_batch, envs, recsits, cuts, snippets, extras, snrs) = batch
 
                 if len(noisy_batch) == 0:
                     continue
 
-                keys = [f"{env}_{recsit}_{cut}_{snr}" for env, recsit, cut, snr in zip(envs, recsits, cuts, snrs)]
-
-                cached_noisy = {}
-                cached_clean = {}
-                missing_keys = []
-                for i, key in enumerate(keys):
-                    if key in self.feature_cache:
-                        cached_noisy[key] = self.feature_cache[key][0]
-                        cached_clean[key] = self.feature_cache[key][1]
-                    else:
-                        missing_keys.append(i)
-                
-                if missing_keys:
-                    logger.debug(f"Missing {len(missing_keys)} features. Computing...")
-                    # Build a list of audio pairs from the missing keys.
-                    noisy_missing_audio = [noisy_batch[i] for i in missing_keys]
-                    noisy_computed_logmel = compute_average_logmel(noisy_missing_audio, self.device)
-                    clean_missing_audio = [clean_batch[i] for i in missing_keys]
-                    clean_computed_logmel = compute_average_logmel(clean_missing_audio, self.device)
-
-                    for idx, i in enumerate(missing_keys):
-                        noisy = noisy_computed_logmel[idx].view(1, 40, -1)  # Shape: (1, 40, n_frames)
-                        cached_noisy[keys[i]] = noisy  
-                        clean = clean_computed_logmel[idx].view(1, 40, -1)  # Shape: (1, 40, n_frames)
-                        cached_clean[keys[i]] = clean 
-
-                        self.feature_cache[keys[i]] = (noisy, clean)
-
-                noisy_logmels = [cached_noisy[key] for key in keys] # Reorder the results to match the original order
-                noisy_logmels = torch.cat(noisy_logmels, dim=0)
-
-                clean_logmels = [cached_clean[key] for key in keys] # Reorder the results to match the original order
-                clean_logmels = torch.cat(clean_logmels, dim=0)
+                # Compute logmels using the new method
+                noisy_logmels, clean_logmels = self.compute_logmels(
+                    noisy_batch, clean_batch, envs, recsits, cuts, snippets, snrs
+                )
                 
                 # Normalize the logmels
                 normalised_noisy_logmels = self.normalize_logmels(noisy_logmels)
@@ -292,7 +298,7 @@ class SpeechEnhanceAdamEarlyStopTrainer(BaseTrainer):
 
                 # Reshape the input to match the expected 4D format
                 batch_size, channels, time_frames = normalised_noisy_logmels.shape
-                reshaped_input = normalised_noisy_logmels.view(batch_size, channels, 1, time_frames)  # Add a height dimension of 1
+                reshaped_input = normalised_noisy_logmels.view(batch_size, channels, 1, time_frames)
 
                 outputs = model(reshaped_input)
                 loss = criterion(outputs, normalised_clean_logmels)
@@ -302,6 +308,9 @@ class SpeechEnhanceAdamEarlyStopTrainer(BaseTrainer):
                 optimiser.step()
 
                 running_loss += loss.item()
+
+                # Clear some memory
+                del noisy_logmels, clean_logmels, normalised_noisy_logmels, normalised_clean_logmels
 
             epoch_loss = running_loss / len(self.train_loader)
             logger.info(f"Epoch [{epoch + 1}/{self.num_epochs}], Loss: {epoch_loss:.4f}")

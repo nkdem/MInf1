@@ -17,7 +17,7 @@ from helpers import compute_average_logmel
 class BaseExperiment(ABC):
     def __init__(self, train_combined: ConcatDataset, test_combined: ConcatDataset, batch_size=16, cuda=False):
         def collate_fn(batch):
-            audios, clean, environments, recsits, cut_ids, extra, snrs= zip(*batch)
+            audios, clean, environments, recsits, cut_ids, snippets, extra, snrs= zip(*batch)
             audios = []
             for i in range(len(batch)):
                 if snrs[i] is None:
@@ -26,7 +26,7 @@ class BaseExperiment(ABC):
                     audios.append([waveform_l, waveform_r])
                 else:
                     audios.append([batch[i][0][0], batch[i][0][1]])
-            return audios, clean, environments, recsits, cut_ids, extra, snrs
+            return audios, clean, environments, recsits, cut_ids, snippets, extra, snrs
         self.train_loader = DataLoader(train_combined, batch_size=batch_size, shuffle=True, collate_fn=collate_fn)
         self.test_loader = DataLoader(test_combined, batch_size=batch_size, shuffle=True, collate_fn=collate_fn)
         self.cuda = cuda
@@ -81,7 +81,7 @@ class BaseExperiment(ABC):
         confusion_matrix = np.zeros((no_classes, no_classes))
         with torch.no_grad():
             for batch in tqdm(test_loader, desc="Testing", unit="batch"):
-                noisy, clean, environments, recsits, cut_id, extra, snr = batch
+                noisy, clean, environments, recsits, cut_ids, snippets, extra, snrs = batch
                 logmels = compute_average_logmel(noisy, self.device)
                 labels = torch.tensor([env_to_int[env] for env in environments], dtype=torch.long).to(self.device)
                 outputs = model(logmels)

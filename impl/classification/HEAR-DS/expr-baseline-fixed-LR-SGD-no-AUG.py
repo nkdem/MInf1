@@ -11,42 +11,46 @@ import torch
 from base_experiment import BaseExperiment
 sys.path.append(os.path.abspath(os.path.join('.')))
 from models import AudioCNN
-from classification.train import AdamEarlyStopTrainer
+from classification.train import FixedLRSGDTrainer
 from constants import MODELS
 
 logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
 logger = logging.getLogger(__name__)
 
-class FullAdam(BaseExperiment):
-    def __init__(self, train_combined, test_combined, num_epochs=1, batch_size=16,
+class FixedLR_SGD(BaseExperiment):
+    def __init__(self, train_combined, test_combined, learning_rates: list,num_epochs=1, batch_size=16,
                  experiment_no=1, cuda=False, classes_train=None, classes_test=None):
         super().__init__(batch_size=32, cuda=cuda, 
                          train_combined=train_combined, test_combined=test_combined)
         self.num_epochs = num_epochs
         self.batch_size = batch_size
         self.exp_no = experiment_no
-        self.experiment_name = f"adam-early-stop-{experiment_no}"
+        self.learning_rates = learning_rates
+        self.experiment_name = f"fixed-lr-sgd-{experiment_no}"
         self.classes_train = classes_train
         self.classes_test = classes_test
 
     def run(self):
         print(f"Starting experiment: {self.experiment_name}")
         print(f"Parameters: epochs={self.num_epochs}, batch_size={self.batch_size}")
+        print(f"Learning rates: {self.learning_rates}")
 
         print(f"\nStarting experiment run {self.exp_no}...")
         base_dir = self.create_experiment_dir(self.experiment_name, self.exp_no)
-        adam = AdamEarlyStopTrainer(
+        trainer = FixedLRSGDTrainer(
             cuda=self.cuda,
             base_dir=base_dir,
             train_loader=self.train_loader,
             num_epochs=self.num_epochs,
-            classes_train=self.classes_train,
+            learning_rates=self.learning_rates,
+            change_lr_at_epoch=40,
+            classes_train=self.classes_train
         )
-        adam.train()
+        trainer.train()
 
         print("\nTraining phase completed. Starting results collection and analysis...")
 
-        results = self.get_results(trainer=adam, base_dir=base_dir)
+        results = self.get_results(trainer=trainer, base_dir=base_dir)
 
         # save results 
         with open(os.path.join(base_dir, 'results.pkl'), 'wb') as f:
@@ -83,8 +87,8 @@ if __name__ == '__main__':
     parser.add_argument("--cuda", action='store_true', default=False)
     args = parser.parse_args()
 
-    cuda = args.cuda
     experiment_no = 1
+    cuda = args.cuda
     split_file = f'splits/split_{experiment_no - 1}.pkl' # 0-indexed
     with open(split_file, 'rb') as f:
         split = pickle.load(f)
@@ -92,14 +96,14 @@ if __name__ == '__main__':
         test_combined = split['fixed_snr']['test']
         classes_train = split['classes']['train']['fixed_snr']
         classes_test = split['classes']['test']['fixed_snr']
-
-        experiment = FullAdam(
+        experiment = FixedLR_SGD(
             train_combined=train_combined,
             test_combined=test_combined,
             num_epochs=1, 
             batch_size=32, 
             experiment_no=experiment_no,
             cuda=cuda,
+            learning_rates=[0.05, 0.01, 0.001, 0.0005, 0.0002, 0.0001],
             classes_train=classes_train,
             classes_test=classes_test
         )

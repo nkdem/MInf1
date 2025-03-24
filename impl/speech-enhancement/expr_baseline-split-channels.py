@@ -78,10 +78,11 @@ class BaseExperiment(ABC):
                 envs = []
                 recs = []
                 cut_ids = []
+                snip_ids = []
                 extras = []
                 snrs = []
 
-                for (noisy, clean, env, recsit, cut_id, extra, snr) in batch:
+                for (noisy, clean, env, recsit, cut_id, snip_id, extra, snr) in batch:
                     if ignore and env in ["CocktailParty", "InterfereringSpeakers"]:
                         # Skip these examples during training since we don't have clean audio for them
                         continue
@@ -90,10 +91,11 @@ class BaseExperiment(ABC):
                     envs.append(env)
                     recs.append(recsit)
                     cut_ids.append(cut_id)
+                    snip_ids.append(snip_id)
                     extras.append(extra)
                     snrs.append(snr)
 
-                return noisy_list, clean_list, envs, recs, cut_ids, extras, snrs
+                return noisy_list, clean_list, envs, recs, cut_ids, snip_ids, extras, snrs
 
             self.train_loader_L = DataLoader(
                 train_mixed_ds_L, batch_size=self.batch_size, shuffle=True, collate_fn=speech_enh_collate_fn
@@ -132,10 +134,11 @@ class BaseExperiment(ABC):
             envs = []
             recs = []
             cut_ids = []
+            snip_ids = []
             extras = []
             snrs = []
 
-            for (noisy, clean, env, recsit, cut_id, extra, snr) in batch:
+            for (noisy, clean, env, recsit, cut_id, snip_id, extra, snr) in batch:
                 if ignore and env in ["CocktailParty", "InterfereringSpeakers"]:
                     # Skip these examples during training since we don't have clean audio for them
                     continue
@@ -144,10 +147,11 @@ class BaseExperiment(ABC):
                 envs.append(env)
                 recs.append(recsit)
                 cut_ids.append(cut_id)
+                snip_ids.append(snip_id)
                 extras.append(extra)
                 snrs.append(snr)
 
-            return noisy_list, clean_list, envs, recs, cut_ids, extras, snrs
+            return noisy_list, clean_list, envs, recs, cut_ids, snip_ids, extras, snrs
 
         self.train_loader_L = DataLoader(
             train_noisy_ds_L, batch_size=self.batch_size, shuffle=True, collate_fn=speech_enh_collate_fn
@@ -180,7 +184,7 @@ class BaseExperiment(ABC):
 
         with torch.no_grad():
             for batch in tqdm(test_loader, desc="Testing", unit="batch"):
-                noisy, clean, envs, recs, cut_ids, extras, snrs = batch
+                noisy, clean, envs, recs, cut_ids, snip_ids, extras, snrs = batch
                 if len(noisy) == 0:
                     continue
                 noisy_computed_logmel = compute_average_logmel(noisy, self.device)

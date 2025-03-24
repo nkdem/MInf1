@@ -26,7 +26,7 @@ logger = logging.getLogger(__name__)
 
 
 class BaseTrainer:
-    def __init__(self, base_dir: str, num_epochs:int, batch_size:int, train_loader: DataLoader, cuda=False):
+    def __init__(self, base_dir: str, num_epochs:int, batch_size:int, train_loader: DataLoader, cuda=False, classes_train=None):
         self.base_dir = base_dir
         self.train_loader = train_loader
         self.num_epochs = num_epochs
@@ -42,23 +42,20 @@ class BaseTrainer:
 
         # iterate over the dataset to get the number of classes
         self.envs = {}
-        logger.info("Counting number of classes...")
-        # with open(os.path.join(self.base_dir, "train_files.csv"), "w") as f:
-            # for _, env, _, _, base, snr in self.train_loader:
-        for batch in tqdm(self.train_loader, desc="Counting number of classes", unit="batch"):
-            if len(batch) == 7:
-                # hear-ds
-                _, _, env, _, _, base, snr = batch
-            elif len(batch) == 3:
-                # tut-ds
-                pair, env, base = batch
+        if classes_train is None:
+            logger.info("Counting number of classes...")
+            for batch in tqdm(self.train_loader, desc="Counting number of classes", unit="batch"):
+                if len(batch) == 3:
+                    # tut-ds
+                    pair, env, base = batch
 
-            for e, b in zip(env, base):
-                if e not in self.envs:
-                    self.envs[e] = 0
-                else:
-                    self.envs[e] += 1
-                    # f.write(f'{b[0]}, {e}{", " + " ".join(b[1]) if b[1] is not None else ""}\n')
+                for e, b in zip(env, base):
+                    if e not in self.envs:
+                        self.envs[e] = 0
+                    else:
+                        self.envs[e] += 1
+        else:
+            self.envs = classes_train
         self.num_of_classes = len(self.envs)
         logger.info(f"Number of classes: {self.num_of_classes}")
         self.env_to_int = {env: i for i, env in enumerate(self.envs.keys())}
@@ -97,10 +94,10 @@ class BaseTrainer:
             os.makedirs(model_dir)
         # self.save_file_lists(model_dir)
         return model_dir
-    def compute_logmels(self, waveforms, envs, recsits, cuts, snrs): 
+    def compute_logmels(self, waveforms, envs, recsits, cuts, snippets, snrs): 
         keys = []
-        for env, recsit, cut, snr in zip(envs, recsits, cuts, snrs):
-            key = f"{env}_{recsit}_{cut}_{snr}"
+        for env, recsit, cut, snippet, snr in zip(envs, recsits, cuts, snippets, snrs):
+            key = f"{env}_{recsit}_{cut}_{snippet}_{snr}"
             keys.append(key)
         
         cached_results = {}
@@ -130,8 +127,8 @@ class BaseTrainer:
     
 
 class FixedLRSGDTrainer(BaseTrainer):
-    def __init__(self, base_dir, num_epochs, train_loader: DataLoader, learning_rates: list, change_lr_at_epoch: list, batch_size=32, cuda=False):
-        super().__init__(base_dir=base_dir, num_epochs=num_epochs, batch_size=batch_size, cuda=cuda, train_loader=train_loader)
+    def __init__(self, base_dir, num_epochs, train_loader: DataLoader, learning_rates: list, change_lr_at_epoch: list, batch_size=32, cuda=False, classes_train=None):
+        super().__init__(base_dir=base_dir, num_epochs=num_epochs, batch_size=batch_size, cuda=cuda, train_loader=train_loader, classes_train=classes_train)
         self.learning_rates = learning_rates
         self.change_lr_at_epoch = change_lr_at_epoch
 
@@ -163,13 +160,13 @@ class FixedLRSGDTrainer(BaseTrainer):
                 )
                 for batch in pbar:
                     # Determine the dataset type based on batch length
-                    if len(batch) == 7:
+                    if len(batch) == 8:
                         # HEAR-DS
-                        waveforms, _ , envs, recsits, cuts, _, snrs = batch
+                        waveforms, _ , envs, recsits, cuts, snippets, _, snrs = batch
                     else:
                         raise ValueError(f"Fixed LR SGD only supports HEAR-DS for now. Received batch length: {len(batch)}")
                     
-                    logmels = self.compute_logmels(waveforms, envs, recsits, cuts, snrs)
+                    logmels = self.compute_logmels(waveforms, envs, recsits, cuts, snippets, snrs)
 
                     actual_labels = torch.tensor(np.array([self.env_to_int[env] for env in envs]), dtype=torch.long).to(self.device)
                     outputs = model(logmels)
@@ -217,8 +214,8 @@ class FixedLRSGDTrainer(BaseTrainer):
 
 class AdamEarlyStopTrainer(BaseTrainer):
     def __init__(self, base_dir, num_epochs, train_loader: DataLoader, batch_size=32, cuda=False,
-                 initial_lr=1e-3,  early_stop_threshold=1e-4, patience=5):
-        super().__init__(base_dir=base_dir,num_epochs=num_epochs, batch_size=batch_size, cuda=cuda, train_loader=train_loader)
+                 initial_lr=1e-3,  early_stop_threshold=1e-4, patience=5, classes_train=None):
+        super().__init__(base_dir=base_dir,num_epochs=num_epochs, batch_size=batch_size, cuda=cuda, train_loader=train_loader, classes_train=classes_train)
         self.initial_lr = initial_lr
         self.early_stop_threshold = early_stop_threshold
         self.patience = patience
@@ -249,9 +246,9 @@ class AdamEarlyStopTrainer(BaseTrainer):
                 )
                 for batch in pbar:
                     # Determine the dataset type based on batch length
-                    if len(batch) == 7:
+                    if len(batch) == 8:
                         # HEAR-DS
-                        waveforms, _ , envs, recsits, cuts, _, snrs = batch
+                        waveforms, _ , envs, recsits, cuts, snippets, _, snrs = batch
                     elif len(batch) == 3:
                         # TUT-DS
                         pair, envs, base = batch
@@ -271,7 +268,7 @@ class AdamEarlyStopTrainer(BaseTrainer):
                     else:
                         raise ValueError(f"Unexpected batch length: {len(batch)}. Expected 3 or 6.")
 
-                    logmels = self.compute_logmels(waveforms, envs, recsits, cuts, snrs)
+                    logmels = self.compute_logmels(waveforms, envs, recsits, cuts, snippets, snrs)
 
                     actual_labels = torch.tensor(np.array([self.env_to_int[env] for env in envs]), dtype=torch.long).to(self.device)
                     outputs = model(logmels)
