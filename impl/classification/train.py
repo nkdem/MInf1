@@ -12,7 +12,7 @@ import torch
 import torch.nn as nn
 import torch.optim
 import torch.optim.sgd
-from torch.utils.data import DataLoader
+from torch.utils.data import DataLoader, Dataset
 from tqdm import tqdm
 
 from sklearn.utils.class_weight import compute_class_weight
@@ -24,6 +24,51 @@ from models import AudioCNN
 logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
 logger = logging.getLogger(__name__)
 
+
+class CachedFeaturesDataset(Dataset):
+    def __init__(self, feature_cache, env_to_int):
+        self.features = []
+        self.labels = []
+        # Group features by environment to ensure we handle speech and non-speech correctly
+        grouped_features = {}
+        for key, feature in feature_cache.items():
+            # key format is either:
+            # "env_recsit_cut_snippet_snr" or
+            # "SpeechIn_env_recsit_cut_snippet_snr"
+            parts = key.split('_')
+            if parts[0] == 'SpeechIn':
+                env = f"SpeechIn_{parts[1]}"
+                recsit, cut, snippet, snr = parts[2:]
+            else:
+                env, recsit, cut, snippet, snr = parts
+
+            if env not in grouped_features:
+                grouped_features[env] = []
+            # For non-speech environments, SNR might be None
+            snr_val = int(snr) if snr != 'None' else None
+            grouped_features[env].append((snr_val, feature))
+        
+        # For each environment, add features appropriately
+        for env, snr_features in grouped_features.items():
+            # If it's a speech environment, add one feature per SNR
+            if env.startswith('SpeechIn_'):
+                # Sort by SNR to ensure consistent ordering
+                # Filter out None SNRs just in case
+                valid_snr_features = [(s, f) for s, f in snr_features if s is not None]
+                valid_snr_features.sort(key=lambda x: x[0])
+                for _, feature in valid_snr_features:
+                    self.features.append(feature)
+                    self.labels.append(env_to_int[env])
+            else:
+                # For non-speech environments, just add one feature (SNR doesn't matter)
+                self.features.append(snr_features[0][1])
+                self.labels.append(env_to_int[env])
+    
+    def __len__(self):
+        return len(self.features)
+    
+    def __getitem__(self, idx):
+        return self.features[idx], self.labels[idx]
 
 class BaseTrainer:
     def __init__(self, base_dir: str, num_epochs:int, batch_size:int, train_loader: DataLoader, cuda=False, classes_train=None, augment = True):
@@ -99,32 +144,35 @@ class BaseTrainer:
                 continue
                 
     def precompute_logmels(self):
-        snrs = []
         self.snr_levels = [-21, -18, -15, -12, -9, -6, -3, 0, 3, 6, 9, 12, 15, 18, 21]
-        if not self.augment:
-            # assumes that the loader passed in is the 'fixed_snr' dataset which has all the snrs anyway so we only need to load the waveforms
-            for batch in tqdm(self.train_loader, desc="Precomputing logmels", unit="batch"):
+        
+        # Always use random_snr approach for precomputation
+        for snr in self.snr_levels:
+            self.set_snr(snr)
+            # counter = 0
+            for batch in tqdm(self.train_loader, desc=f"Precomputing logmels for SNR {snr}", unit="batch"):
                 if len(batch) == 8:
                     # HEAR-DS
                     waveforms, _ , envs, recsits, cuts, snippets, _, snrs = batch
                 else:
                     raise ValueError(f"Unexpected batch length: {len(batch)}. Expected 8.")
                 logmels = self.compute_logmels(waveforms, envs, recsits, cuts, snippets, snrs)
-        else:
-            # TODO: there's a more efficient way to do this by finding the mixed samples and only computing the logmels for those 2nd iteration onwards
-            # since the background samples have already been computed in the first iteration (and they have a fixed SNR)
-            for snr in self.snr_levels:
-                self.set_snr(snr)
-                for batch in tqdm(self.train_loader, desc="Precomputing logmels", unit="batch"):
-                    if len(batch) == 8:
-                        # HEAR-DS
-                        waveforms, _ , envs, recsits, cuts, snippets, _, snrs = batch
-                    else:
-                        raise ValueError(f"Unexpected batch length: {len(batch)}. Expected 8.")
-                    logmels = self.compute_logmels(waveforms, envs, recsits, cuts, snippets, snrs)
+                # counter += 1
+                # if counter > 100:
+                #     break
+         
         self.set_load_waveforms(False)
         self.set_snr(None)
-                    
+        
+        # If not augmenting, create a new dataset with cached features
+        if not self.augment:
+            cached_dataset = CachedFeaturesDataset(self.feature_cache, self.env_to_int)
+            self.train_loader = DataLoader(
+                cached_dataset,
+                batch_size=self.batch_size,
+                shuffle=True
+            )
+
     def save_metadata(self, model, losses, start_time, end_time, learning_rates, extra_meta: dict):
         self.losses[model] = losses
         self.learning_rates_used[model] = learning_rates
@@ -208,16 +256,15 @@ class FixedLRSGDTrainer(BaseTrainer):
                     unit="batch"
                 )
                 for batch in pbar:
-                    # Determine the dataset type based on batch length
-                    if len(batch) == 8:
-                        # HEAR-DS
-                        waveforms, _ , envs, recsits, cuts, snippets, _, snrs = batch
-                    else:
-                        raise ValueError(f"Fixed LR SGD only supports HEAR-DS for now. Received batch length: {len(batch)}")
-                    
-                    logmels = self.compute_logmels(waveforms, envs, recsits, cuts, snippets, snrs)
+                    if len(batch) == 2:  # cached features case
+                        logmels, actual_labels = batch
+                        logmels = logmels.to(self.device)
+                        actual_labels = actual_labels.to(self.device)
+                    else:  # augment case
+                        waveforms, _, envs, recsits, cuts, snippets, _, snrs = batch
+                        logmels = self.compute_logmels(waveforms, envs, recsits, cuts, snippets, snrs)
+                        actual_labels = torch.tensor([self.env_to_int[env] for env in envs], dtype=torch.long).to(self.device)
 
-                    actual_labels = torch.tensor(np.array([self.env_to_int[env] for env in envs]), dtype=torch.long).to(self.device)
                     outputs = model(logmels)
                     loss = criterion(outputs, actual_labels)
 
@@ -258,8 +305,8 @@ class FixedLRSGDTrainer(BaseTrainer):
             print(f"Model {model_name} saved with fixed LR SGD.")
             
         self.feature_cache = {}
-        self.set_load_waveforms(True)
-        self.set_snr(None)
+        # self.set_load_waveforms(True)
+        # self.set_snr(None)
 
 
 

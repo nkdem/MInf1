@@ -93,14 +93,14 @@ if __name__ == '__main__':
     split_file = f'splits/split_{experiment_no - 1}.pkl' # 0-indexed
     with open(split_file, 'rb') as f:
         split = pickle.load(f)
-        train_combined = split['fixed_snr']['train']
-        test_combined = split['fixed_snr']['test']
-        classes_train = split['classes']['train']['fixed_snr']
-        classes_test = split['classes']['test']['fixed_snr']
+        train_combined = split['random_snr']['train']
+        test_combined = split['random_snr']['test']
+        classes_train = split['classes']['train']['random_snr']
+        classes_test = split['classes']['test']['random_snr']
         experiment = FixedLR_SGD(
             train_combined=train_combined,
             test_combined=test_combined,
-            num_epochs=120, 
+            num_epochs=1, 
             batch_size=32, 
             experiment_no=experiment_no,
             cuda=cuda,
