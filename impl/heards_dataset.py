@@ -67,6 +67,7 @@ class BackgroundDataset(Dataset):
     """
     def __init__(self, root_dir: str, max_samples_per_env: int = 10000, files_to_use: List[Tuple[List[str]]] = None):
         self.root_dir = root_dir
+        self.load_waveforms = True
         if files_to_use is None:
             self.audio_files = self._get_all_audio_files(max_samples_per_env)
         else:
@@ -86,10 +87,13 @@ class BackgroundDataset(Dataset):
 
     def __getitem__(self, idx: int):
         file_pair, environment, recsit, cut_id, snip_id = self.audio_files[idx]
-        waveform_l, _ = torchaudio.load(file_pair[0])
-        waveform_r, _ = torchaudio.load(file_pair[1])
         basename = base_name(os.path.basename(file_pair[0]))
-        return file_pair, [], environment, recsit, cut_id, snip_id, (basename, None), None # last element is SNR level, which is not used for background samples
+        if self.load_waveforms:
+            waveform_l, _ = sf.read(file_pair[0])
+            waveform_r, _ = sf.read(file_pair[1])
+        else:
+            return None, None, environment, recsit, cut_id, snip_id, (basename, None), None # last element is SNR level, which is not used for background samples
+        return [waveform_l, waveform_r], [], environment, recsit, cut_id, snip_id, (basename, None), None # last element is SNR level, which is not used for background samples
 
     def _get_all_audio_files(self, max_samples_per_env: int) -> List[Tuple[List[str], str, str, str, str]]:
         """
@@ -184,6 +188,8 @@ class MixedAudioDataset(Dataset):
         self.speech_dataset = speech_dataset
         self.channel = channel
         self.fixed_snr = fixed_snr
+        self.load_waveforms = True
+        self.snr = None
         if snr_levels is None:
             self.snr_levels = [-21, -18, -15, -12, -9, -6, -3, 0, 3, 6, 9, 12, 15, 18, 21]
         else:
@@ -277,7 +283,7 @@ class MixedAudioDataset(Dataset):
         Returns:
         - mixed_waveforms (list of length 2, e.g. [mixed_left, mixed_right])
         - clean_waveforms (list of length 2, e.g. [clean_left, clean_right])
-        - environment, recsit, cut_id, (basename, speech_used), snr
+        - environment, recsit, cut_jkid, (basename, speech_used), snr
         """
         if self.fixed_snr:
             # In fixed SNR mode, map the idx to the correct background sample and SNR level
@@ -290,9 +296,12 @@ class MixedAudioDataset(Dataset):
         else:
             # In random SNR mode, idx represents background_idx directly
             background_idx = idx
-            snr = random.choice(self.snr_levels)
+            snr = random.choice(self.snr_levels) if self.snr is None else self.snr
 
         file_pair, environment, recsit, cut_id, snip_id = self.background_dataset.audio_files[background_idx]
+        basename = base_name(os.path.basename(file_pair[0]))
+        if not self.load_waveforms:
+            return (None, None, f"SpeechIn_{environment}", recsit, cut_id, snip_id, (basename, None), snr)
 
         # Load background channels
         background_l, _sr1 = sf.read(file_pair[0])
@@ -302,7 +311,6 @@ class MixedAudioDataset(Dataset):
         if background_r.ndim > 1:
             background_r = background_r[:, 0]
 
-        basename = base_name(os.path.basename(file_pair[0]))
         # If environment already has speech, skip mixing and treat as background-only.
         # e.g. "CocktailParty", "InterfereringSpeakers"
         if environment in ["CocktailParty", "InterfereringSpeakers"]:
@@ -345,6 +353,12 @@ class DuplicatedMixedAudioDataset(Dataset):
     """
     def __init__(self, mixed_audio_dataset: MixedAudioDataset):
         self.mixed_audio_dataset = mixed_audio_dataset
+    
+    def set_snr(self, snr: int):
+        self.mixed_audio_dataset.snr = snr
+    
+    def set_load_waveforms(self, load_waveforms: bool):
+        self.mixed_audio_dataset.load_waveforms = load_waveforms
 
     def __len__(self):
         return len(self.mixed_audio_dataset)

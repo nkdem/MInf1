@@ -18,12 +18,12 @@ class BaseExperiment(ABC):
     def __init__(self, train_combined: ConcatDataset, test_combined: ConcatDataset, batch_size=16, cuda=False):
         def collate_fn(batch):
             audios, clean, environments, recsits, cut_ids, snippets, extra, snrs= zip(*batch)
+            if audios[0] is None:
+                return None, None, environments, recsits, cut_ids, snippets, extra, snrs
             audios = []
             for i in range(len(batch)):
                 if snrs[i] is None:
-                    waveform_l, sr = sf.read(batch[i][0][0])
-                    waveform_r, sr = sf.read(batch[i][0][1]) 
-                    audios.append([waveform_l, waveform_r])
+                    audios.append([batch[i][0][0], batch[i][0][1]])
                 else:
                     audios.append([batch[i][0][0], batch[i][0][1]])
             return audios, clean, environments, recsits, cut_ids, snippets, extra, snrs

@@ -19,14 +19,16 @@ logger = logging.getLogger(__name__)
 
 class FixedLR_SGD(BaseExperiment):
     def __init__(self, train_combined, test_combined, learning_rates: list,num_epochs=1, batch_size=16,
-                 experiment_no=1, cuda=False):
+                 experiment_no=1, cuda=False, classes_train=None, classes_test=None):
         super().__init__(batch_size=32, cuda=cuda, 
                          train_combined=train_combined, test_combined=test_combined)
         self.num_epochs = num_epochs
         self.batch_size = batch_size
         self.exp_no = experiment_no
         self.learning_rates = learning_rates
-        self.experiment_name = f"fixed-lr-sgd-{experiment_no}"
+        self.experiment_name = f"fixed-lr-sgd-AUG-{experiment_no}"
+        self.classes_train = classes_train
+        self.classes_test = classes_test
 
     def run(self):
         print(f"Starting experiment: {self.experiment_name}")
@@ -41,7 +43,9 @@ class FixedLR_SGD(BaseExperiment):
             train_loader=self.train_loader,
             num_epochs=self.num_epochs,
             learning_rates=self.learning_rates,
-            change_lr_at_epoch=40
+            change_lr_at_epoch=20,
+            augment=True,   
+            classes_train=self.classes_train
         )
         trainer.train()
 
@@ -89,15 +93,19 @@ if __name__ == '__main__':
     split_file = f'splits/split_{experiment_no - 1}.pkl' # 0-indexed
     with open(split_file, 'rb') as f:
         split = pickle.load(f)
-        train_combined = split['train']
-        test_combined = split['test']
+        train_combined = split['random_snr']['train']
+        test_combined = split['random_snr']['test']
+        classes_train = split['classes']['train']['random_snr']
+        classes_test = split['classes']['test']['random_snr']
         experiment = FixedLR_SGD(
             train_combined=train_combined,
             test_combined=test_combined,
-            num_epochs=240, 
+            num_epochs=120, 
             batch_size=32, 
             experiment_no=experiment_no,
             cuda=cuda,
-            learning_rates=[0.05, 0.01, 0.001, 0.0005, 0.0002, 0.0001]
+            learning_rates=[0.05, 0.01, 0.001, 0.0005, 0.0002, 0.0001],
+            classes_train=classes_train,
+            classes_test=classes_test
         )
         experiment.run()

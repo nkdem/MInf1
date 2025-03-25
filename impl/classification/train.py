@@ -26,7 +26,8 @@ logger = logging.getLogger(__name__)
 
 
 class BaseTrainer:
-    def __init__(self, base_dir: str, num_epochs:int, batch_size:int, train_loader: DataLoader, cuda=False, classes_train=None):
+    def __init__(self, base_dir: str, num_epochs:int, batch_size:int, train_loader: DataLoader, cuda=False, classes_train=None, augment = True):
+        self.augment = augment
         self.base_dir = base_dir
         self.train_loader = train_loader
         self.num_epochs = num_epochs
@@ -63,7 +64,6 @@ class BaseTrainer:
         for env, weight in zip(self.env_to_int.keys(), class_weights):
             logger.info(f"Class {env} has weight {weight:.4f}")
         self.weights = torch.tensor(class_weights, dtype=torch.float32).to(self.device)
-        # TODO: MAybe need to account for different SNR levels of speech in the class weights but for now let's just omit it
         
         self.models_to_train = MODELS
 
@@ -75,7 +75,56 @@ class BaseTrainer:
         with open(os.path.join(self.base_dir, "int_to_label.txt"), "w") as f:
             for int_label, label in self.env_to_int.items():
                 f.write(f"{int_label} {label}\n")
+        
 
+        # lets precompute the logmels for the train loader
+        self.precompute_logmels()
+    
+    def set_load_waveforms(self, load_waveforms: bool):
+        for dataset in self.train_loader.dataset.datasets:
+            if hasattr(dataset, 'load_waveforms'):
+                dataset.load_waveforms = load_waveforms
+            else:
+                method = getattr(dataset, 'set_load_waveforms', None)
+                if method is not None and callable(method):
+                    method(load_waveforms)
+    def set_snr(self, snr: int):
+        for dataset in self.train_loader.dataset.datasets:
+            if hasattr(dataset, 'snr'):
+                dataset.snr = snr
+            else:
+                method = getattr(dataset, 'set_snr', None)
+                if method is not None and callable(method):
+                    method(snr)
+                continue
+                
+    def precompute_logmels(self):
+        snrs = []
+        self.snr_levels = [-21, -18, -15, -12, -9, -6, -3, 0, 3, 6, 9, 12, 15, 18, 21]
+        if not self.augment:
+            # assumes that the loader passed in is the 'fixed_snr' dataset which has all the snrs anyway so we only need to load the waveforms
+            for batch in tqdm(self.train_loader, desc="Precomputing logmels", unit="batch"):
+                if len(batch) == 8:
+                    # HEAR-DS
+                    waveforms, _ , envs, recsits, cuts, snippets, _, snrs = batch
+                else:
+                    raise ValueError(f"Unexpected batch length: {len(batch)}. Expected 8.")
+                logmels = self.compute_logmels(waveforms, envs, recsits, cuts, snippets, snrs)
+        else:
+            # TODO: there's a more efficient way to do this by finding the mixed samples and only computing the logmels for those 2nd iteration onwards
+            # since the background samples have already been computed in the first iteration (and they have a fixed SNR)
+            for snr in self.snr_levels:
+                self.set_snr(snr)
+                for batch in tqdm(self.train_loader, desc="Precomputing logmels", unit="batch"):
+                    if len(batch) == 8:
+                        # HEAR-DS
+                        waveforms, _ , envs, recsits, cuts, snippets, _, snrs = batch
+                    else:
+                        raise ValueError(f"Unexpected batch length: {len(batch)}. Expected 8.")
+                    logmels = self.compute_logmels(waveforms, envs, recsits, cuts, snippets, snrs)
+        self.set_load_waveforms(False)
+        self.set_snr(None)
+                    
     def save_metadata(self, model, losses, start_time, end_time, learning_rates, extra_meta: dict):
         self.losses[model] = losses
         self.learning_rates_used[model] = learning_rates
@@ -127,8 +176,8 @@ class BaseTrainer:
     
 
 class FixedLRSGDTrainer(BaseTrainer):
-    def __init__(self, base_dir, num_epochs, train_loader: DataLoader, learning_rates: list, change_lr_at_epoch: list, batch_size=32, cuda=False, classes_train=None):
-        super().__init__(base_dir=base_dir, num_epochs=num_epochs, batch_size=batch_size, cuda=cuda, train_loader=train_loader, classes_train=classes_train)
+    def __init__(self, base_dir, num_epochs, train_loader: DataLoader, learning_rates: list, change_lr_at_epoch: list, batch_size=32, cuda=False, classes_train=None, augment=True):
+        super().__init__(base_dir=base_dir, num_epochs=num_epochs, batch_size=batch_size, cuda=cuda, train_loader=train_loader, classes_train=classes_train, augment=augment)
         self.learning_rates = learning_rates
         self.change_lr_at_epoch = change_lr_at_epoch
 
@@ -209,6 +258,8 @@ class FixedLRSGDTrainer(BaseTrainer):
             print(f"Model {model_name} saved with fixed LR SGD.")
             
         self.feature_cache = {}
+        self.set_load_waveforms(True)
+        self.set_snr(None)
 
 
 

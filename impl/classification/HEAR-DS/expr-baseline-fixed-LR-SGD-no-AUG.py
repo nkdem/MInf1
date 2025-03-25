@@ -43,8 +43,9 @@ class FixedLR_SGD(BaseExperiment):
             train_loader=self.train_loader,
             num_epochs=self.num_epochs,
             learning_rates=self.learning_rates,
-            change_lr_at_epoch=40,
-            classes_train=self.classes_train
+            change_lr_at_epoch=20,
+            classes_train=self.classes_train,
+            augment=False
         )
         trainer.train()
 
@@ -87,7 +88,7 @@ if __name__ == '__main__':
     parser.add_argument("--cuda", action='store_true', default=False)
     args = parser.parse_args()
 
-    experiment_no = 1
+    experiment_no = args.experiment_no if args.experiment_no is not None else 1
     cuda = args.cuda
     split_file = f'splits/split_{experiment_no - 1}.pkl' # 0-indexed
     with open(split_file, 'rb') as f:
@@ -99,7 +100,7 @@ if __name__ == '__main__':
         experiment = FixedLR_SGD(
             train_combined=train_combined,
             test_combined=test_combined,
-            num_epochs=1, 
+            num_epochs=120, 
             batch_size=32, 
             experiment_no=experiment_no,
             cuda=cuda,
