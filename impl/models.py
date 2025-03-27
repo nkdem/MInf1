@@ -41,7 +41,7 @@ class CNNSpeechEnhancer(nn.Module):
         super(CNNSpeechEnhancer, self).__init__()
 
         self.conv_block = nn.Sequential(
-            nn.Conv2d(in_channels=40, out_channels=64, kernel_size=3, padding="same"),
+            nn.Conv2d(in_channels=1, out_channels=64, kernel_size=3, padding="same"),
             nn.BatchNorm2d(64),
             nn.ReLU(inplace=True),
 
@@ -54,9 +54,10 @@ class CNNSpeechEnhancer(nn.Module):
             nn.ReLU(inplace=True),
         )
 
-        self.conv_final = nn.Conv2d(in_channels=64, out_channels=40, kernel_size=3, padding="same")
+        self.conv_final = nn.Conv2d(in_channels=64, out_channels=1, kernel_size=3, padding="same")
 
     def forward(self, x):
+        # x is of shape (batch_size, 1, 40, n_frames)
         feats = self.conv_block(x)
         out = self.conv_final(feats)
         return out.squeeze(2)

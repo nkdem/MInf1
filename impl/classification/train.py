@@ -303,6 +303,7 @@ class FixedLRSGDTrainer(BaseTrainer):
             with open(os.path.join(model_dir, "metadata.json"), "w") as f:
                 json.dump(self.meta_data, f, indent=4)
             print(f"Model {model_name} saved with fixed LR SGD.")
+            torch.mps.empty_cache()
             
         self.feature_cache = {}
         # self.set_load_waveforms(True)
@@ -312,8 +313,8 @@ class FixedLRSGDTrainer(BaseTrainer):
 
 class AdamEarlyStopTrainer(BaseTrainer):
     def __init__(self, base_dir, num_epochs, train_loader: DataLoader, batch_size=32, cuda=False,
-                 initial_lr=1e-3,  early_stop_threshold=1e-4, patience=5, classes_train=None):
-        super().__init__(base_dir=base_dir,num_epochs=num_epochs, batch_size=batch_size, cuda=cuda, train_loader=train_loader, classes_train=classes_train)
+                 initial_lr=1e-3,  early_stop_threshold=1e-4, patience=5, classes_train=None, augment=True):
+        super().__init__(base_dir=base_dir,num_epochs=num_epochs, batch_size=batch_size, cuda=cuda, train_loader=train_loader, classes_train=classes_train, augment=augment)
         self.initial_lr = initial_lr
         self.early_stop_threshold = early_stop_threshold
         self.patience = patience
@@ -420,5 +421,6 @@ class AdamEarlyStopTrainer(BaseTrainer):
             with open(os.path.join(model_dir, "metadata.json"), "w") as f:
                 json.dump(self.meta_data, f, indent=4)
             print(f"Model {model_name} saved with Adam optimiser and early stopping.")
+            torch.mps.empty_cache()
 
         self.feature_cache = {}

@@ -46,7 +46,7 @@ class FullAdam(BaseExperiment):
 
         print("\nTraining phase completed. Starting results collection and analysis...")
 
-        results = self.get_results(trainer=adam, base_dir=base_dir)
+        results = self.get_results(trainer=adam, base_dir=base_dir, test_loader=self.test_loader)
 
         # save results 
         with open(os.path.join(base_dir, 'results.pkl'), 'wb') as f:
@@ -84,19 +84,19 @@ if __name__ == '__main__':
     args = parser.parse_args()
 
     cuda = args.cuda
-    experiment_no = 1
+    experiment_no = args.experiment_no
     split_file = f'splits/split_{experiment_no - 1}.pkl' # 0-indexed
     with open(split_file, 'rb') as f:
         split = pickle.load(f)
-        train_combined = split['fixed_snr']['train']
-        test_combined = split['fixed_snr']['test']
-        classes_train = split['classes']['train']['fixed_snr']
-        classes_test = split['classes']['test']['fixed_snr']
+        train_combined = split['random_snr']['train']
+        test_combined = split['random_snr']['test']
+        classes_train = split['classes']['train']['random_snr']
+        classes_test = split['classes']['test']['random_snr']
 
         experiment = FullAdam(
             train_combined=train_combined,
             test_combined=test_combined,
-            num_epochs=1, 
+            num_epochs=120, 
             batch_size=32, 
             experiment_no=experiment_no,
             cuda=cuda,

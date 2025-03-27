@@ -56,7 +56,7 @@ class BaseExperiment(ABC):
             assert testing_data[j] == testing_data[j + 1], 'Testing data is not the same across models'
 
     
-    def get_results(self, trainer: BaseTrainer, base_dir: str):
+    def get_results(self, trainer: BaseTrainer, base_dir: str, test_loader):
         results = self.initialize_result_containers()
         print(f"Collecting results from experiment run {self.exp_no}...")
         for model in MODELS.keys():
@@ -64,7 +64,7 @@ class BaseExperiment(ABC):
             cnn = AudioCNN(trainer.num_of_classes, cnn1_channels, cnn2_channels, fc_neurons).to(self.device)
             model_path = os.path.join(base_dir, model, 'model.pth')
             cnn.load_state_dict(torch.load(model_path, weights_only=True, map_location=self.device)) 
-            classwise_accuracy, total_accuracy, confusion_matrix = self.collect_model_results(test_loader=self.test_loader, model=cnn, no_classes=trainer.num_of_classes, env_to_int=trainer.env_to_int)
+            classwise_accuracy, total_accuracy, confusion_matrix = self.collect_model_results(test_loader=test_loader, model=cnn, no_classes=trainer.num_of_classes, env_to_int=trainer.env_to_int)
             results['losses'][model].append(trainer.losses[model])
             results['duration'][model].append(trainer.durations[model])
             results['learning_rates'][model].append(trainer.learning_rates_used[model])
@@ -73,6 +73,19 @@ class BaseExperiment(ABC):
             results['confusion_matrix_raw'][model].append(confusion_matrix)
             results['trained_models'][model].append(cnn)
         return results
+    
+    # def get_accuracy_for_all_models(self, test_loader, env_to_int, base_dir):
+    #     for model in MODELS.keys():
+    #         num_of_classes = len(env_to_int)
+    #         cnn1_channels, cnn2_channels, fc_neurons = MODELS[model]
+    #         cnn = AudioCNN(num_of_classes, cnn1_channels, cnn2_channels, fc_neurons).to(self.device)
+    #         model_path = os.path.join(base_dir, model, 'model.pth')
+    #         cnn.load_state_dict(torch.load(model_path, weights_only=True, map_location=self.device)) 
+    #         classwise_accuracy, total_accuracy, confusion_matrix = self.collect_model_results(test_loader=test_loader or self.test_loader, model=cnn, no_classes=num_of_classes, env_to_int=env_to_int)
+    #         print(f"Model: {model}")
+    #         print(f"Classwise accuracy: {classwise_accuracy}")
+    #         print(f"Total accuracy: {total_accuracy}")
+    #         print(f"Confusion matrix: {confusion_matrix}")
 
     def collect_model_results(self, test_loader, model, no_classes, env_to_int):
         model.eval()
@@ -81,9 +94,13 @@ class BaseExperiment(ABC):
         confusion_matrix = np.zeros((no_classes, no_classes))
         with torch.no_grad():
             for batch in tqdm(test_loader, desc="Testing", unit="batch"):
-                noisy, clean, environments, recsits, cut_ids, snippets, extra, snrs = batch
-                logmels = compute_average_logmel(noisy, self.device)
-                labels = torch.tensor([env_to_int[env] for env in environments], dtype=torch.long).to(self.device)
+                if len(batch) == 2:
+                    logmels, labels = batch
+                    labels = labels.to(self.device)
+                else:
+                    noisy, clean, environments, recsits, cut_ids, snippets, extra, snrs = batch
+                    logmels = compute_average_logmel(noisy, self.device)
+                    labels = torch.tensor([env_to_int[env] for env in environments], dtype=torch.long).to(self.device)
                 outputs = model(logmels)
                 _, predicted = torch.max(outputs.data, 1)
                 total += len(predicted)

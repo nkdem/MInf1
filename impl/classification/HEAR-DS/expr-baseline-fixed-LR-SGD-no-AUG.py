@@ -1,18 +1,18 @@
 import os
 import pickle
 import sys
-
 import torch
+from torch.utils.data import DataLoader
 import logging
-import os
 import numpy as np
-import torch
+from tqdm import tqdm
 
 from base_experiment import BaseExperiment
 sys.path.append(os.path.abspath(os.path.join('.')))
 from models import AudioCNN
-from classification.train import FixedLRSGDTrainer
+from classification.train import FixedLRSGDTrainer, CachedFeaturesDataset
 from constants import MODELS
+from helpers import compute_average_logmel
 
 logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
 logger = logging.getLogger(__name__)
@@ -29,6 +29,45 @@ class FixedLR_SGD(BaseExperiment):
         self.experiment_name = f"fixed-lr-sgd-{experiment_no}"
         self.classes_train = classes_train
         self.classes_test = classes_test
+        self.device = torch.device("mps" if not cuda else "cuda")
+        self.feature_cache = {}
+
+    def precompute_test_logmels(self, test_loader, env_to_int):
+        """Precompute logmels for test data and create a CachedFeaturesDataset"""
+        logger.info("Precomputing logmels for test data...")
+        self.snr_levels = [-21, -18, -15, -12, -9, -6, -3, 0, 3, 6, 9, 12, 15, 18, 21]
+        
+        # Precompute logmels for each SNR level
+        for snr in self.snr_levels:
+            # Set SNR for the dataset
+            for dataset in test_loader.dataset.datasets:
+                if hasattr(dataset, 'snr'):
+                    dataset.snr = snr
+                else:
+                    method = getattr(dataset, 'set_snr', None)
+                    if method is not None and callable(method):
+                        method(snr)
+
+            # Compute logmels for this SNR level
+            for batch in tqdm(test_loader, desc=f"Precomputing logmels for SNR {snr}", unit="batch"):
+                waveforms, _, envs, recsits, cuts, snippets, _, snrs = batch
+                logmels = compute_average_logmel(waveforms, self.device)
+
+                # delete from memory
+                
+                # Cache the features
+                for env, recsit, cut, snippet, snr_val, logmel in zip(envs, recsits, cuts, snippets, snrs, logmels):
+                    key = f"{env}_{recsit}_{cut}_{snippet}_{snr_val}"
+                    self.feature_cache[key] = logmel
+            torch.mps.empty_cache()
+
+        # Create a new dataset with cached features
+        cached_dataset = CachedFeaturesDataset(self.feature_cache, env_to_int)
+        return DataLoader(
+            cached_dataset,
+            batch_size=self.batch_size,
+            shuffle=False  # No shuffling for test data
+        )
 
     def run(self):
         print(f"Starting experiment: {self.experiment_name}")
@@ -51,17 +90,17 @@ class FixedLR_SGD(BaseExperiment):
 
         print("\nTraining phase completed. Starting results collection and analysis...")
 
-        results = self.get_results(trainer=trainer, base_dir=base_dir)
+        # Precompute test logmels and create cached test dataset
+        env_to_int = {env: i for i, env in enumerate(self.classes_train.keys())}
+        cached_test_loader = self.precompute_test_logmels(self.test_loader, env_to_int)
+        
+        # Use the cached test loader for results collection
+        results = self.get_results(trainer=trainer, base_dir=base_dir, test_loader=cached_test_loader)
 
         # save results 
         with open(os.path.join(base_dir, 'results.pkl'), 'wb') as f:
             pickle.dump(results, f)
         print(f"Results saved in {base_dir}")
-
-        # print accuracy
-        for model in MODELS.keys():
-            print(f"\nModel: {model}")
-            print(f"Average total accuracy: {np.mean(results['total_accuracies'][model])}")
 
     def __str__(self):
         """String representation of the experiment configuration"""
@@ -88,7 +127,7 @@ if __name__ == '__main__':
     parser.add_argument("--cuda", action='store_true', default=False)
     args = parser.parse_args()
 
-    experiment_no = args.experiment_no if args.experiment_no is not None else 1
+    experiment_no = args.experiment_no
     cuda = args.cuda
     split_file = f'splits/split_{experiment_no - 1}.pkl' # 0-indexed
     with open(split_file, 'rb') as f:
@@ -100,7 +139,7 @@ if __name__ == '__main__':
         experiment = FixedLR_SGD(
             train_combined=train_combined,
             test_combined=test_combined,
-            num_epochs=1, 
+            num_epochs=120, 
             batch_size=32, 
             experiment_no=experiment_no,
             cuda=cuda,

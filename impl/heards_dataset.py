@@ -319,6 +319,7 @@ class MixedAudioDataset(Dataset):
         # Create cache key from background_idx and snr
         cache_key = (background_idx, snr)
         combined_speech, speech_used = self._get_combined_speech(cache_key)
+        # TOOD: The speech uses all channels possible when itg should be using only one channel to select
 
         # For stereo "clean", you might replicate the same speech on both channels if desired:
         speech_l, bg_chunk_l = ensure_valid_lengths_with_speech(combined_speech, background_l)
