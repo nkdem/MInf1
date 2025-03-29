@@ -107,7 +107,7 @@ class BaseExperiment(ABC):
                 train_mixed_ds, batch_size=self.batch_size, shuffle=True, collate_fn=speech_enh_collate_fn
             )
             self.test_loader = DataLoader(
-                test_mixed_ds, batch_size=self.batch_size, shuffle=False, collate_fn=lambda x: speech_enh_collate_fn(x, ignore=False)
+                test_mixed_ds, batch_size=self.batch_size, shuffle=False, collate_fn=lambda x: speech_enh_collate_fn(x, ignore=True)
             )
     def setup_data_from_scratch(self, heards_dir, speech_dir):
         """Set up data loaders from scratch without using pre-generated splits"""
@@ -156,10 +156,9 @@ class BaseExperiment(ABC):
             test_noisy_ds, batch_size=self.batch_size, shuffle=False, collate_fn=lambda x: speech_enh_collate_fn(x, ignore=False)
         )
         
-    def precompute_test_logmels(self, test_loader, trainer):
+    def precompute_test_logmels(self, test_loader):
         """Precompute logmels for test data across all SNR levels"""
         logger.info("Precomputing logmels for test data...")
-        # self.snr_levels = [-6]
         self.snr_levels = [-21, -18, -15, -12, -9, -6, -3, 0, 3, 6, 9, 12, 15, 18, 21]
         self.feature_cache = {}
         
@@ -181,14 +180,15 @@ class BaseExperiment(ABC):
                 # TOOD: See why extras[1] could be empty
                 if len(noisy) == 0:
                     continue
-                logmels = compute_average_logmel(noisy, self.device)
+                noisy_logmels = compute_average_logmel(noisy, self.device)
+                clean_logmels = compute_average_logmel(clean, self.device)
 
                 for extra in extras:
                     if extra[1] is None:
                         print(f"Extra {extra} is None")
                 
                 # Cache the features and save wav files
-                for i, (env, rec, cut_id, snip_id, snr_val, logmel) in enumerate(zip(envs, recs, cut_ids, snip_ids, snrs, logmels)):
+                for i, (env, rec, cut_id, snip_id, snr_val, noisy_logmel, clean_logmel) in enumerate(zip(envs, recs, cut_ids, snip_ids, snrs, noisy_logmels, clean_logmels)):
                     key = f"{env}_{rec}_{cut_id}_{snip_id}_{snr_val}"
                     
                     # Save wav files
@@ -212,9 +212,8 @@ class BaseExperiment(ABC):
                     
                     # Cache the features
                     self.feature_cache[key] = {
-                        'logmel': logmel,
-                        'clean': clean[i] if clean[i] is not None else None,
-                        'noisy': noisy[i],
+                        'noisy_logmel': noisy_logmel,
+                        'clean_logmel': clean_logmel,
                         'extra': extras[i],
                         'wav_paths': {
                             'noisy': noisy_path,
@@ -251,7 +250,7 @@ class BaseExperiment(ABC):
                     cut_id = parts[2]
                     snip_id = parts[3]
                     snr = parts[4]
-                return data['logmel'], data['clean'], env, rec, cut_id, snip_id, data['extra'], float(snr)
+                return data['noisy_logmel'], data['clean_logmel'], env, rec, cut_id, snip_id, data['extra'], float(snr)
 
         cached_dataset = CachedFeaturesDataset(self.feature_cache)
         return DataLoader(
@@ -440,13 +439,13 @@ class SpeechEnhancementExperiment(BaseExperiment):
         base_dir = self.create_experiment_dir("speech_enhance_snr_all", self.experiment_no)
         adam = SpeechEnhanceAdamEarlyStopTrainer(
             base_dir=base_dir,
-            num_epochs=200,
+            num_epochs=100,
             train_loader=self.train_loader,
             batch_size=self.batch_size,
             cuda=self.cuda,
             initial_lr=1e-3,
             early_stop_threshold=1e-4,
-            patience=6,
+            patience=5,
             augment=self.augment,
         )
 
@@ -454,22 +453,15 @@ class SpeechEnhancementExperiment(BaseExperiment):
         
         logger.info("Training phase completed. Starting results collection and analysis...")
 
-        results = self.initialize_result_containers()
-        results['duration'] = adam.duration
-        results['learning_rates'] = adam.learning_rates
-        results['losses'] = adam.losses
-
         model_path = os.path.join(base_dir, 'model.pth')
         cnn = CNNSpeechEnhancer().to(self.device)
         cnn.load_state_dict(torch.load(model_path, weights_only=True, map_location=self.device))
 
         # Precompute test logmels and create cached test dataset
-        cached_test_loader = self.precompute_test_logmels(self.test_loader, adam)
+        cached_test_loader = self.precompute_test_logmels(self.test_loader)
         
         # Use the cached test loader for results collection
         self.test(base_dir=base_dir, test_loader=cached_test_loader, model=cnn, trainer=adam)
-        # Evaluate model
-
 
 
 if __name__ == "__main__":
