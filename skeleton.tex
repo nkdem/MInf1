@@ -43,19 +43,24 @@
    through the lens of Acoustic Scene Analysis (ASA) and Speech Enhancement (SE).
    The primary objective of this dissertation is to develop machine learning models capable of prioritising 
    speech in noisy environments whilst remaining computationally feasible for implementation in hearing aids.
-   The vision is to chain the ASA and SE models together to form a state-dependent model, in essence,
-   a heuristic approach to SE that is tailored to the environment.
+   The vision is to chain the ASA and SE models together to form a state-dependent model, 
+   which leverages a-priori knowledge of the acoustic scene to suitably enhance the speech in the environment.
 
-   Accordingly, each proposed model is evaluated not only in terms of performance but also on its feasibility for real-time deployment, as measured by metrics such as Floating Point Operations Per Second (FLOPS) and the number of model parameters.
+   While there is a growing trend in academia to use deep neural networks (DNNs) for ASA and SE, 
+   they often overlook the computational constraints of the devices 
+   and even more so for HAs. Consequently, each proposed model is evaluated not only in terms of performance but also on its feasibility for real-time deployment, as measured by metrics such as Floating Point Operations Per Second (FLOPS) and the number of model parameters.
    
-   A growing trend in the market is the incorporation of deep neural networks (DNNs) into hearing aids.
+   Additionally, there is a growing trend in the market to incorporate deep neural networks (DNNs) into hearing aids.
+   This could be due to the increasing computational capabilities of the devices, 
+   and the potential for it to improve the quality of life for hearing aid users 
+   over non-neural network based approaches.
    Evidence from state of the art manufacturers suggests that a combination of ASA and SE techniques are employed,
-   further motivating the approach adopted in this project.
-   % As such, this project will aim to mimic this behaviour by 
-   % first classifying the environment using a machine learning model, and then applying
-   % heuristic speech enhancement techniques to prioritise speech in particular environments.
+   further motivating the approach adopted in this project. 
+   There is also more insight into the computational capabilities of the devices, 
+   which allows for more up-to-date feasibility comparisons.
    
-   Experiments are conducted primarily on a novel dataset called HEAR-DS.
+   Experiments are conducted primarily on a novel dataset called HEAR-DS -
+   one of the few datasets that is specifically designed for HA research.
    As a baseline, the Convolutional Neural Network (CNN) ASA model presented by the authors of the dataset is utilised.
    We will demonstrate improvements in both the training procedure and the generalisation capability 
    of the baseline CNN through the implementation of data augmentation strategies and the adoption of an alternative optimiser.
@@ -64,9 +69,6 @@
    using a shallow CNN model that works in the frequency-time domain. We evaluate the performance of the model 
    using artificial intelligibility and quality metrics such as STOI and PESQ. While the performance is not on par 
    with the state-of-the-art, it most certainly motivates further research in the next part of the dissertation.
-
-   Keywords: Acoustic Scene Analysis, Speech Enhancement, Hearing Aids, Machine Learning, Deep Neural Networks, Convolutional Neural Networks, 
-   State-Dependent Model, STOI, PESQ, FLOPs
 }
 
 \maketitle
