@@ -466,18 +466,10 @@ Additionally, the log mel spectrogram enhances the distinction between speech an
 may make a model more effective at ASA and speech enhancement tasks.
 \section{Related Work}
 As this project will chain two algorithms—Acoustic Speech Analysis (ASA) and Speech Enhancement, 
-to form a state-dependent model, we will cover each task in separate sections.
+to form a state-dependent model, we will cover each task in separate sections. We also add 
+a small section on how the idea of Green AI can be applied to the development of the models.
 
 \subsection{Acoustic Scene Analysis (ASA)}
-Acoustic Scene Analysis (ASA) refers to the task of classifying an environment based on an audio stream. 
-% Mathematically, ASA can be formalised as follows:
-
-% Consider an audio signal \(x \in \mathbb{R}^{T}\), where \(T\) denotes the number of samples in the signal, and let \(\mathcal{E} = \{e_1, e_2, \ldots, e_N\}\) represent a set of \(N\) distinct environments. ASA is concerned with determining a mapping 
-% \[
-% f: \mathbb{R}^{T} \rightarrow \mathcal{E},
-% \]
-% which assigns each audio signal to one of the environments in \(\mathcal{E}\). In this project, \(f\) is implemented as a neural network. Therefore, training the model requires a dataset containing audio signals along with their corresponding environmental labels and relevant recording metadata.
-
 We will be using HEAR-DS dataset introduced by \citet{Huwel2020HearDS}. This dataset was developed in response to the inadequacies of existing acoustic scene classification databases for HA processing. A more detailed description of the dataset is provided in Chapter \ref{sec:datasets}.
 The original paper on the HEAR-DS dataset illustrates its applicability by employing a Convolutional Neural Network (CNN) for environment classification. In Chapter \ref{chap:acoustic-scene-classification}, an attempt is made to reproduce the results presented in that study. The challenges encountered during this replication process are discussed comprehensively in the chapter. Additionally, to validate the model implementation, the same parameters were applied to the DCASE 2017 Acoustic Scenes Challenge dataset \citep{DCASE2017challenge}. In particular, a comparison is drawn between the model proposed by \citet{schindler_multi-temporal_2018} and the CNN model used in the HEAR-DS paper, with the findings detailed in Section \ref{sec:DCASE-results}.
 The two papers mentioned above utilise engineered features, and more specifically, the log mel spectrogram. This 
@@ -490,19 +482,6 @@ the overhead of the Fourier Transform and the Mel Filterbank in a hearing aid
 is potentially too high, and so working directly with the waveform may be a more feasible approach.
 
 % TODO: VERY DEEP CONVOLUTIONAL NEURAL NETWORKS FOR RAW WAVEFORMS
-
-
-% But it is enough to know that the dataset is classified in an environment of which it is subcategorised as 
-% either containing speech only, background only or speech \& background (both). To prevent machine learning 
-% models from overfitting and to increase the diversity of situations, each environment enforces a minimum of three recording situations (REC-SITs) i.e.
-% there must be at least three different locations for the recordings. The researchers presented the applicability 
-% of this dataset by performing a series of classification experiments using various Convolutional Neural Networks (CNN) of differing sizes.
-% This is where the paper could be more clear on the design decisions of the CNN, esepcially because the accuracy of the classification of the models 
-% can vary as high as 20\%. This project hopes to reproduce the results, and explain the high variability in the accuracy and how those can be circumvented,
-% because the high variability suggests that the random initialisation of weights during training is the primary factor influencing the model performance.
-% [To Hao: This is what I understood from your interpretation in the discussion of this paper last Friday, did I understand you correctly?].
-% For the recordings labeled as being in environments containing both speech and background noise, the researchers decided against recording the samples in situ.
-% Instead they took the speech data from CHiME 
 
 \newpage
 \subsection{Speech Enhancement}
@@ -535,6 +514,32 @@ is what will be used in this part of the dissertation. One of the primary object
 investigating how ASA and Speech Enhancement can be integrated to form a state-dependent model.
 Though, exploring the time domain approach is something I will be looking into for the second part of this dissertation 
 due to the potential overhead reduction of the time domain approach as mentioned in the previous section.
+
+\subsection{The parallels of Green AI}
+The paper by \citet{schwartz2019greenai} discusses the idea of Green AI 
+which is to advocate for the use of hardware-independent performance metrics.
+Metrics such as electricity consumption or elapsed real time are not good metrics 
+as they are dependent on the hardware on which the model is run. 
+Although the number of parameters in a model has been proposed as an 
+alternative metric, it can be problematic when comparing different model architectures 
+since it is possible that despite a more complex model having more parameters, 
+it could compute the same amount of work in a more efficient manner. 
+
+Instead, \citet{schwartz2019greenai} discusses how the number of floating point operations (FLOPs)
+provides a more concrete and meaningful measure of computational workload. 
+FLOPS are computed by analytically counting the number of \texttt{ADD} and \texttt{MULT} operations in the model.
+This is effective, as all operations in a DNN can be recursively reduced to a combination 
+of \texttt{ADD} and \texttt{MULT} operations.
+As an added bonus, the fact that we have an insight into HA's potential FLOPs is useful 
+as it allows us to compare the model's performance to the hardware's potential. If our 
+models are using less FLOPs than a HA device, then we know that the model is 
+potentially more energy efficient or that we could investigate expanding 
+the model. On the flip-side, if the model is using more FLOPs than a HA device, 
+then we know that the model is potentially too large for a HA device and we need 
+to look for ways to reduce the model size. It also helps that there is load 
+of literature on reducing the FLOPs of DNNs (e.g. \cite{liu_simple_2023}) so 
+using FLOPs as a metric is not only good from a reproducibility standpoint, 
+but from a development standpoint as well.
 
 \section{Criticism of Previous Work}
 We found out that the paper by \citet{Huwel2020HearDS} had 
@@ -703,7 +708,8 @@ and \(\mathbb{I}\) is the indicator function which is a piecewise function that 
 Evaluation from a feasibility of a hearing aid perspective will also be done. 
 This will be done by looking at the following metrics:
 \begin{itemize}
-   \item \textbf{Inference Time} - This will be done by looking at the time it takes for the model to process a sample.
+   \item \textbf{Floating Point Operations (FLOPs)}/\textbf{Multiply Accumulate (MACs)} - This will be done by looking at the number of operations the model performs.
+   % \item \textbf{Inference Time} - This will be done by looking at the time it takes for the trained model to process a sample.
    \item \textbf{Floating Point Operations (FLOPs)}/\textbf{Multiply Accumulate (MACs)} - This will be done by looking at the number of operations the model performs.
    \item \textbf{Number of Parameters} - This will be done by looking at the number of trainable parameters in the model.
 \end{itemize}
