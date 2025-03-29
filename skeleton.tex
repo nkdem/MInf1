@@ -975,30 +975,39 @@ Similarly, the \textit{Cocktail Party} environment contains 716 samples in our d
 As noted in the Introduction, the model can be made to act as a Voice Activity Detector (VAD) by incorporating environments with and without speech.
 The raw dataset however, only contains samples without speech, so we will be following the paper's approach to create the mixed environments.
 Although recording environments with and without speech was something the researchers did consider, the researchers prioritised full control over the signal-to-noise ratio (SNR) during the speech-background mixing process.
-One deviation from the original methodology is that, in this dissertation, the creation of mixed environments will not incorporate a head-related transfer function (HRTF) due to time constraints and the scarcity of readily usable libraries.
-Otherwise, the approach remains the same: using the CHiME 3 dataset (see Section \ref{}) to blend the speech signal with background noise.
-We ensure in a similar manner to the paper that each mixed 10-second snippet contains at least 7.5 seconds of speech.
-Given that we will be training and testing the model, the need for a training and test is imperative. 
+The speech mixing that the paper described is something we 
+will have to deviate from, at least for this part of the dissertation.
+Firstly, while the paper uses a head-related transfer function (HRTF) to mix the speech signal with the background noise,
+we will not be using it due to time constraints and the scarcity of readily usable libraries.
+Additionally, the paper uses the CHiME 2 dataset \citep{vincent_second_2013} to mix the speech signal with background noise.
+However, this is not a dataset we were able to get in time for this part 
+of the dissertation, so instead we will be using the CHiME 3 dataset \citep{barker_third_2015} to mix the speech signal with background noise.
+We discuss this limitation in more detail in Section \ref{sec:future-work}.
+Otherwise, the speech mixing itself is done in a similar manner to the paper.
+Firstly, the paper mentions that they ensure that each mixed 10-second snippet contains at least 7.5 seconds of speech.
+Given that we will be training and testing the model, the need for a training and test set is imperative. 
 It was not clear how the researchers split the speakers for the mixed environments, so we will be splitting the speakers into two groups—one for training and one for testing.
 Table \ref{tab:dataset-stats} shows that the CHiME 3 dataset contains 4 speakers, and conveniently enough an equal split of gender,
 thus we ensured for generalisability that each set contained a male and female speaker. 
 
 \subsection{CHiME3}
- As mentioned earlier, the researchers used the CHiME 3 \cite{barker_third_2015} dataset to mix the speech signal with the background noise. 
+ As mentioned earlier, we opted for using the CHiME 3 dataset to mix the speech signal with the background noise. 
 CHiME 3 is a dataset published in 2015 for ASR tasks, and was dedicated to improving the performance of mobile devices 
 in everyday, noisy environments. The vocabulary of the speech samples is taken from a subset of the Wall Street Journal (WSJ0) corupus \cite{TODO}.
 For brevity, we won't go into the details of the environments, as we 
 are only interested in the speech samples. 
-From the paper, we know that the researchers used a development set for the mixing 
-and we assume that they meant the development set in the BOOTH environment, as it would not make sense otherwise since the other sets contain noisy samples.
+We use the development set for the mixing process,
+and since this dataset contains noisy samples, we will only use clean speech samples 
+which is the BOOTH environment.
 
 As can be seen from Table \ref{tab:dataset-stats}, it contains 10 hours of data from 4 speakers. This could be a problem in both tasks (ASA and Speech Enhancements), in the former
 we could be overfitting to the data due to the Pigeon-hole principle i.e. we have much more background samples than speech samples, 
 and in the latter, the enhancement model may not generalise well to real-world scenarios due to the small size of the dataset. 
-A better approach would of perhaps been to to use the ORG environment which is a clean set of speech samples from the WSJ0 corpus 
-which has 15.15 hours of data from 83 speakers \cite{barker_third_2015}.
-Nevertheless, we will continue with the paper's approach to set up a baseline. The data was already in 16KHz so we did not need to 
-resample it. 
+
+% A better approach would of perhaps been to to use the ORG environment which is a clean set of speech samples from the WSJ0 corpus 
+% which has 15.15 hours of data from 83 speakers \cite{barker_third_2015}.
+% Nevertheless, we will continue with the paper's approach to set up a baseline. The data was already in 16KHz so we did not need to 
+% resample it. 
 
 \subsection{CHiME5/CHiME6}
 In the paper by \citet{Huwel2020HearDS}, the authors used the CHiME 5 dataset to create the \textit{Interfering Speakers} environment for the HEAR-DS dataset.
@@ -1015,7 +1024,7 @@ From Table \ref{tab:dataset-stats}, we can see that the dataset contains almost 
 
 \subsection{TUT Acoustic Scenes 2016}
 As mentioned in the previous chapter, I came across better results than the baseline model in the paper by \citet{Huwel2020HearDS} 
-so as a means of validation, I decided to use the TUT Acoustic Scenes 2016 dataset \cite{mesaros_tut_2016} to test the performance of the model.
+so as a means of validation, I decided to use the TUT Acoustic Scenes 2016 dataset \citep{mesaros_tut_2016} to test the performance of the model.
 In particular, I will comparing the results by \citet{schindler_multi-temporal_2018}. The paper presents a multi-temporal approach to ASA, and 
 the authors have used the development set of the TUT Acoustic Scenes 2016 dataset for their experiments. It is worth stressing 
 that this dataset contains background noise only, and the paper does not evaluate it with speech, so when we use it to validate 
@@ -1039,8 +1048,8 @@ Table \ref{tab:dataset-stats} shows that the dataset contains X hours of data fr
 \section{Data Preparation}
 \label{sec:data-preparation}
 As one of our hypotheses is to be able to replicate the results of the paper by \citet{Huwel2020HearDS}, 
-we will be following the same approach to prepare the data for the ASA task. 
-Before we can begin training, we need to prepare the data for the ASA task.
+we will be aiming to follow the same approach to prepare the data for the ASA task.
+We outline the approach below:
 
 To prevent overfitting, we will be splitting the data into a training and test set just as the paper did.
 The samples being identified by REC-SITs allow us to do this easily. The paper mentions that they randomly 
@@ -1058,7 +1067,7 @@ hypothesised that they perhaps did due to the high epoch count of 240 - to perha
 account for needing to train the model for a longer time to converge. However,
 as one of our hypotheses is to validate the effectiveness of utterance-level data 
 augmentation which we investigate in \ref{sec:data-augmentation}, we will 
-for the sake of consistency, not use any data augmentation techniques in the 
+for the sake of methodological consistency, not use any data augmentation techniques in the 
 initial experiments. This means that each mixed speech sample will have 15
 SNR levels that will be trained and tested for [-21, -18, -15, -12, -9, -6, -3, 0, 3, 6, 9, 12, 15, 18, 21].
 
@@ -1066,9 +1075,10 @@ Thirdly, as the CNN model excepts a logmel spectrogram as input, we need to conv
 to a logmel spectrogram. The paper decides to only use the ITC channel for the input, so we 
 will follow suit.
 As for the transformation, the logmel was calculated as follows:
-\[
+\begin{equation}
 \text{logmel} = \frac{20\log_{10}\left(M|x_{ITC-L, f_n}|\right) + 20\log_{10}\left(M|x_{ITC-R, f_n}|\right)}{2}
-\]
+\label{eq:logmel}
+\end{equation}
 which is the arithmetic mean of the logmel spectrogram of the left and right channels of the ITC microphone.
 $M$ is the mel filter bank matrix, and $x_{ITC-L, f_n}$ and $x_{ITC-R, f_n}$ are
 the STFT Coefficients of the left and right channels of the ITC microphone respectively.
@@ -1077,15 +1087,77 @@ a FFT window length of 1024 samples with a window length of 40ms and a hop lengt
 unclear which window function was used, but we will be using a Hann window as is standard in the literature.
 After computing the STFT, we then do a mel filter bank transformation to get the mel filter bank coefficients. 
 Of which we extract 40 mel bands. For a 10s snippet of audio, the resulting tensor is of shape $40 \times 500$.
+To control for the training time not being affected by the computation of the logmel spectrogram,
+we precompute the spectrograms before training.
 
-\section{Fixed Learning Rate SGD Approach}
-TODO
-\section{Adam Optimiser Approach}
-TODO
+As mentioned in the methodology section, we will be training 3 models 
+(net-8, net-20 and net-32) so in the following experiments, we will 
+be training these models with the configurations outlined below.
+
+\section{Baseline: Fixed Learning Rate SGD Approach}
+With the data preparation out of the way, we can now move on to the experiments.
+For the baseline, we will be following with the paper's approach of using the following 
+learning rates: [0.05, 0.01, 0.001, 0.0005, 0.0002, 0.0001].
+The learning rate in the paper is changed every 40 epochs, however, as that means doing 
+240 epochs, we decided to do 120 epochs instead and so change the learning rate every 20 epochs.
+As can be seen by Figure \ref{fig:fixed-lr-sgd-losses}, the model already converges by 120 epochs,
+so 240 epochs felt like overkill. What can be seen by the training curve is that the model is 
+achieving a cross-entropy loss of X and at test time, Figure \ref{fig:fixed-lr-sgd-accuracies} shows the accuracies 
+of the three models. The difference in accuracy we are achieving is much higher than the paper's. 
+The paper also presents the confusion matrix for the net-20 model, and our confusion matrix 
+in Figure \ref{fig:fixed-lr-sgd-confusion-matrix} shows some similarities... TODO: Explain similarities hopefully 
+
+Something the paper does not do is inspect how the model performs on specific SNRs. 
+This gives us an opportunity to investigate this. In particular we wanted to 
+see if the model is struggling with the lower SNRs as in those regions, 
+the speech is less heard and so the model in the worst case should classify it 
+as the non-speech variant of the environment. Figure \ref{fig:fixed-lr-sgd-snr-21} shows the 
+confusion matrix for the net-20 model at SNR -21. TODO: Hopefully the results are as expected.
 
 \section{Data Augmentation}
 \label{sec:data-augmentation}
-TODO
+Now that we have a baseline, the next step is to test the hypothesis 
+that utterance-level data augmentation is effective. More specifically, 
+notice that in the baseline, per epoch, we are training the model on all 
+combinations of SNRs, which in the case of 15 SNRS, means for each sample,
+per epoch we need to do 15x the amount of work. From a training perspective, 
+this means that the model will take longer to train. Instead, we wanted 
+to see if we can not only reduce the amount of work per epoch, but also 
+improve the performance of the model.
+
+We still precompute the spectrograms before training, however, during 
+training, each sample is stochastically assigned an SNR from the set of 
+15 SNRS. We do an equal weighted random sampling from the set of SNRS 
+and perhaps to better mimic the distribution of the sounds, it might 
+be better to use a weighted sampling. We leave this as 
+potential future work.
+
+Figure \ref{fig:data-augmentation-losses} shows the training curves for the 
+three models, and this is a good time to point out that the loss 
+will be higher for the data augmentation approach. This is expected 
+as there is less samples during training and since the formula for 
+Cross-Entropy loss is a weighted sum of the negative log likelihood of 
+the correct class, a lower number of samples means that the loss 
+will be higher. However, when we have a look at the test accuracy (Figure \ref{fig:data-augmentation-accuracies}),
+we see that the data augmentation approach is actually better than 
+the baseline. This is a good sign and suggests that the data 
+augmentation approach is effective. Figure \ref{fig:data-augmentation-confusion-matrix} shows 
+that the model is less ...
+
+\section{Adam Optimiser Approach}
+For uniformity across all experiments from now on, we wished to see 
+how the Adam optimiser performs as we plan to use it in the future 
+and forthcoming experiments. The paper mentioned that 
+the use of Adam is sensitive to the initialisation and 
+so that is why they opted for the SGD approach. 
+They back this up with a paper by \citet{} 
+but after reading it, while it says 
+Adam can lead to poor convergence in `\textit{some settings}'
+so it would have been interesting to see from \citet{Huwel2020HearDS}
+to see if this is the case for the ASA task. As such, 
+we will be taking this forward to investigate this.
+
+
 \section{Validating against TUT Acoustic Scenes 2016}
 
 \chapter{Speech Enhancement Experiments}
