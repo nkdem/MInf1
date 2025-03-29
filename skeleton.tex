@@ -19,7 +19,9 @@
 \usepackage{amssymb}
 \usepackage{amsmath}
 \graphicspath{ {./images/}}
-\bibliographystyle{unsrtnat}
+\usepackage{natbib}
+\bibliographystyle{abbrvnat}
+\setcitestyle{authoryear,open={(},close={)}} %Citation-related commands
 
 \begin{document}
 \begin{preliminary}
@@ -104,13 +106,13 @@ And to my parents, without whose sacrifices I would not have been able to pursue
 \section{Motivations}
 Hearing loss is a prevalent condition affecting as much as 
 430 million people - or 1 in 18 people. This is expected 
-to rise to 1 in 10 by 2050 \cite{WHO2024deafness}.
+to rise to 1 in 10 by 2050 \citep{WHO2024deafness}.
 The most common treatment for hearing loss is the 
 provision of hearing technology - such as Hearing Aids (HAs) or cochlear implants.
 There are many types of HAs, but the most common
-type is the behind-the-ear (BTE) hearing aid \cite{Kochkin2010MarkeTrak8}.
+type is the behind-the-ear (BTE) hearing aid \citep{Kochkin2010MarkeTrak8}.
 However, HA users often report that they struggle to hear speech
-in noisy environments. For example, in a study by Kochkin \cite{Kochkin2010MarkeTrak8},
+in noisy environments. For example, in the study by \citet{Kochkin2010MarkeTrak8},
 42\% of HA users reported that wind noise was a significant issue for them.
 This project aims to evaluate the effectiveness of machine learning algorithms
 in prioritising the speech in various environments (such as windy environments).
@@ -119,13 +121,13 @@ Modern hearing aids now apply a wide range of techniques to achieve
 better speech prioritisation. For wind noise reduction, this can be achieved 
 from mechanical solutions - product design to covers that reduce wind noise - to 
 signal processing techniques to compensate for mechanical limitations.
-However, current techniques are still not perfect as shown by the study from Kochkin.
+However, current techniques are still not perfect as shown by the study from \citet{Kochkin2010MarkeTrak8}.
 
 Wind noise reduction and indeed, noise reduction in general, is a challenging problem
 when paired with speech. This is because you have 
 to strike a balance between reducing background noise and
 preserving speech. 
-Korhen's paper \cite{Korhonen2021WindNoise} outlines 
+\citet{Korhonen2021WindNoise} outlines 
 various techniques that could be used to reduce the wind noise in hearing aids -
 from modulation-based noise reduction algorithms (Wiener filtering),
 adaptive filtering algorithms, to machine learning techniques.
@@ -142,36 +144,38 @@ Afterwards, a speech enhancement model will be trained to enhance the speech in 
 From now on, we will refer to the chaining of the ASA and SE models together as a state-dependent model
 as inspired by \citet{katagiri_handbook_2000}'s categorisation of SE techniques (see \ref{sec:background:se} for more details).
 
-In this project, we will be using a novel dataset proposed by \citet{Huwel2020HearDS}
+In this project, we will be using a novel dataset proposed by \citet{Huwel2020HearDS}.
 This dataset (called HEAR-DS) is unique because it is specially tailored for HA signal processing and contains
 various environments. Normally, voice activity detection (VAD) would be 
 used to detect speech, however, we will take inspiration from \citet{Huwel2020HearDS}
 by mixing the samples with speech and label them as so. 
 This can be used to implicitly train the machine learning model to classify the environment 
-and whether speech is present. Additionally, the paper presents an 
-elementary example of how the dataset can be used: to classify the environment -
-it showcases the use of a convolutional neural network (CNN) to classify the environment.
-This project will be extending the paper by looking at how HEAR-DS can be used 
-to additionally train a speech enhancement model and how the training and 
-generalisation capabilities of the model can be improved.
+and whether speech is present.
+%  Additionally, the paper presents an 
+% elementary example of how the dataset can be used: to classify the environment -
+The paper also presents an example of a task that can be performed on the dataset, 
+namely, ASA. It showcases the use of a convolutional neural network (CNN) to classify the environment.
+This dissertation will be extending the paper by looking at how HEAR-DS can be used 
+to additionally train a speech enhancement model 
+and to ultimately chain the ASA and SE models together to form a state-dependent model.
 
 The project will also be mindful in its algorithmic choices - as the computational
 power required in HA is limited. It is difficult to pinpoint the exact computational power of a HA
 due to the proprietary nature of the devices. In August 2024,
 Phonak (Sonova Holding AG) released a new HA which is their first AI 
 equipped HA. The device is said to be capable of handling 7,700 Million 
-Operations Per Second to accommmodate its neural network with 4.5 million parameters \cite{Hasemann2024PhonakSphere}.  Contrast this with a paper 
+Operations Per Second to accommmodate its neural network with 4.5 million parameters \citep{Hasemann2024PhonakSphere}.  Contrast this with a paper 
 from 2021 investigating techniques in VAD for hearing aids 
-quotes that it `rarely exceeds 5 million instructions per second (MIPS)` \cite{Gomez2021MIPS}
+quotes that it `rarely exceeds 5 million instructions per second` \citep{Gomez2021MIPS}.
 Moreover, Apple's release of a FDA approved hearing aid in which was previously a mainstream earphone wearable,
-Apple Airpods, also shows that there's more interest in this area.
+Apple Airpods, also shows that there's more interest in this area \citep{Apple2025Airpods}.
 So suffice to say, the computational power of hearing aids is accelerating 
 and is most likely going to continue to grow given the increasing demand 
 for HAs.
 
 Delay constraints also play a critical role in HA performance, as real-time speech perception is essential for user satisfaction.
 Prior research suggests that a delay of up to 30 milliseconds (ms), and ideally less than 20ms, the user
-is unaffected by the delay \cite{Stone2002Delays}. Therefore, the project will be mindful in its algorithmic choices to ensure that the model
+is unaffected by the delay \citep{Stone2002Delays}. Therefore, the project will be mindful in its algorithmic choices to ensure that the model
 is computationally efficient and feasible for real-time deployment.
 
 The main evaluation metrics we will consider in this part of the dissertation 
@@ -181,12 +185,12 @@ Their limitations are discussed in chapter \ref{chap:discussion}, with subsequen
 Additionally, informed by current state-of-the-art HA configurations, the project will also assess model complexity by analysing the number of weights utilised in our designs.
 
 The project is predominantly aimed at the hearing aid industry. If successful, the project
-could advance the state-of-the-art techniques in hearing aids.
-Which in turn could improve the quality of life for hearing aid users.
-A secondary goal is to make hearing aid research more accessible to the 
-computer science community.
-The project also hopes to benefit other fields that deal with audio signal processing,
+could advance the state-of-the-art techniques in hearing aids which 
+could improve the quality of life for hearing aid users.
+There is also potential to extend the work to other fields that deal with audio signal processing,
 such as mainstream wearables like headphones or microphones.
+% A secondary goal is to make hearing aid research more accessible to the 
+% computer science community.
 
 
 \section{Structure}
@@ -216,11 +220,17 @@ Going forward, the dissertation will be structured as follows:
 \label{ch:background}
 
 \section{Hearing Loss}
+To fully appreciate the topic of this dissertation,
+we will give a high level overview of the auditory system 
+which is ultimately responsible for our ability to hear.
+We will then cover how hearing loss can occur, and 
+what solutions have been developed to help those with hearing loss.
 \subsection{Auditory System}
 For sound to be registered by humans, it has to travel through the ear to transform them into
 what is known as a neural impulse which is then trasmitted to the brain. We will 
-give a high level overview of the process which was collated by the phonetics textbook from \citet{Wayland2018Phonetics},
+give a high level overview of how this process occurs which was collated by the phonetics textbook from \citet{Wayland2018Phonetics},
  but for further reading, refer to the textbook. 
+
  This process of sound to be registered by humans, is all done in what's known as the Auditory System.
  Figure \ref{fig:ear} shows a birds eye view of the auditory system, and it can be split into three segments
  that we will explore below.
@@ -234,7 +244,7 @@ give a high level overview of the process which was collated by the phonetics te
 
 \subsubsection{The Outer Ear}
 The outer ear (sometimes referred to as the External Ear) is responsible for channeling sound waves to the tympanic membrane (ear drum). Firstly,
-sound waves reach the Pinna which funnels it through the auditory canal, and at the end of the canal 
+sound waves reach the Pinna (the part of the ear that we can see and touch) which funnels it through the auditory canal, and at the end of the canal 
 is the ear drum, at which point the sound waves collide with the ear drum which causes the ear drum to vibrate. 
 The vibrations are passed along to the middle ear.
 
@@ -242,8 +252,9 @@ The vibrations are passed along to the middle ear.
 Zooming into the middle ear (Figure \ref{fig:middle-ear}), there are three bony structures: the Malleus, Incus, and Stapes,
 and together they make up a lever system. 
 It is worth pointing out that when transmitting the energy from the ear drum to the middle ear, there is bound to be some energy 
-loss \footnote{Depending on the frequency, this can be as high as 40\%}. The lever system's mechanical advantage 
-allows for the sound energy to be amplified so the loss is compensated. 
+loss which can be as high as 40\%. The lever system's mechanical advantage 
+allows for the sound energy to be amplified so the loss of energy is compensated. 
+
 The Stapes also has an additional function besides passing over the sound vibrations to the inner ear. The Stapes 
 is connected by a muscle, the Stapedius muscle, and in response to loud noises, it temporarily increases the stifness
 of the bones in the middle ear, which temporarily prevents the acoustic energy to be amplified. This 
@@ -266,22 +277,22 @@ Figure \ref{fig:corti} shows the frequency responses shows the various areas of 
 and its response to different frequencies. The Organ of Corti is linked to the audtiory nerves and 
 so the oscillations that pass through it get coverted to neural impulses and transmitted to the brain.
 
-
 \begin{figure}[h]
    \centering
-   \includegraphics[width=0.5\textwidth]{wayland-cohlear.png}
-   \caption{'Unrolled' cohlear from \citet{Wayland2018Phonetics}}
-   \label{fig:cohlear}
+   \begin{minipage}{0.4\textwidth}
+      \centering
+      \includegraphics[width=\textwidth]{wayland-cohlear.png}
+      \caption{'Unrolled' cohlear from \citet{Wayland2018Phonetics}}
+      \label{fig:cohlear}
+   \end{minipage}
+   \hfill
+   \begin{minipage}{0.48\textwidth}
+      \centering
+      \includegraphics[width=0.5\textwidth]{wayland-corti-2.png}
+      \caption{The Organ of Corti and the frequency responses. From \citet{Wayland2018Phonetics}}
+      \label{fig:corti}
+   \end{minipage}
 \end{figure}
-
-\begin{figure}[h]
-   \centering
-   \includegraphics[width=0.5\textwidth]{wayland-corti.png}
-   \caption{The Organ of Corti and the frequency responses. From \citet{Wayland2018Phonetics}}
-   \label{fig:corti}
-\end{figure}
-
-\newpage
 
 % \subsection{Congenital Hearing Loss}
 % TODO
@@ -295,16 +306,25 @@ it is the major cause of hearing loss since those hair cells are suspectible to 
 The cause of hair cell loss is complex, since it could be due to many factors such as 
 genetic abnormalities (congenital hearing loss), infection, diseases or extrinistic factors such as exposure to loud noises.
 It can also occur due to aging, which could be due to the reasons mentioned above, but also 
-could be triggered due to age related hearing loss genes. To make matters worse, hair cell loss is unrecoverable in humans \cite{Furness2015HairCell}.
-Hearing loss is a spectrum, and varies from mild (26-40dB loss), moderate (41-60dB loss), severe (61-80dB loss) to profound($>80$dB loss) \cite{Nieman2020HearingLoss}.
+could be triggered due to age related hearing loss genes. To make matters worse, hair cell loss is unrecoverable in humans \citep{Furness2015HairCell}.
+Hearing loss is a spectrum, and varies from mild (26-40dB loss), moderate (41-60dB loss), severe (61-80dB loss) to profound($>80$dB loss) \citep{Nieman2020HearingLoss}.
 Moreover, hearing loss may occur in one ear (unilateral) or in both ears (binaural). 
 
 \section{Hearing Loss Treatment}
 
+We now know how the auditory system works, and how hearing loss can occur.
+Hearing solutions have come a long way, 
+from acoustic devices to modern digital devices. 
+As this dissertation is focused on 
+the incorporation of machine learning techniques into hearing aids,
+we will gloss over the history of acoustic devices, but 
+for a comprehensive overview of the history of hearing technology,
+refer to the paper by \citet{levitt_historical_2007}.
+
 % \subsection{History of Hearing Technology}
 % TODO: Will see how much pages I have left after doing other chapters.
 
-Users were fitted with what would have been considered a HA in this day and age as early as the 18th century.
+% Users were fitted with what would have been considered a HA in this day and age as early as the 18th century.
 
 
 \subsection{Hearing Technology}
@@ -317,36 +337,55 @@ though typically cohlear implants are only considered if the user is experiencin
 a severe hearing loss or further. While we 
 focus on the HA, the concepts we explore can be applied to the CI.
 The components of a HA vary widely, but at the very least, 
-it contains a microphone, amplifier, receiver, and battery \cite{schuster-bruce_conventional_2025}.
+it contains a microphone, amplifier, receiver, and battery \citep{schuster-bruce_conventional_2025}.
 A microphone is a device that converts acoustic sound waves into electrical signals. 
 The electrical signals are then amplified by the amplifier, and the receiver converts the electrical 
 signals back into the acoustic waves. The battery is used to power the device. 
 Depending on the user, they may either be fitted with a hearing aid on each 
 ear (binaural) or a single hearing aid on one ear (unilateral). 
 Typically, the hearing aid contains multiple microphones, and the microphones 
-are placed in different locations on the device. As you will see when we discuss 
-the dataset we will be using, the samples are labelled with which microphone 
-is being used. 
+are placed in different locations on the device. 
+% Figure \ref{fig:hearing-aid} shows an image 
+% of a hearing aid.
 
 
 \subsection{Hearing Technology Now}
-Hearing aids are increasingly becoming more sophisticated and are starting to incorporate more powerful 
-algorithms to improve the quality of life for hearing aid users. From Apple's FDA approved hearing aid in 
-their Airpods, to big traditional players like Phonak, Oticon who are starting to incorporate 
-DNN and AI into their devices. There is also a trend of rechargable hearing aids (Lithium Ion Batteries), and while 
-it has a practical aspect i.e. the user does not need to change the batteries, it's also 
-specifically used because of the ability to handle higher peak power consumption (which allows for powerful models to be used such as DNNs).
-Whereas non-rechargable hearing aids are restricted to what's allowed by the battery. There is however, a trade-off,
-as the battery life of the device is sacrificed. Battery powered hearing aids 
-are most always using Zinc-air batteries \cite{sparkes_study_1997} \cite{mir_evaluation_2023} 
-and the most recent study by \citet{thomas_zincair_2024} shows that the average battery life 
-under high power conditions 50-80 hours. Contrast this with the average battery life of 
-rechargable hearing aids which is typically in the region of 15-30 hours. In the case of 
-Phonak's Speech Enhancer that kicks in when the user is in a loud environment, the 
-maximum battery life is under 6 hours. This goes to show that 
-using DNNs in HA can require careful design considerations but the potential benefits 
-are worth it.
 
+% Recent advances in hearing aid technology have led to the integration of increasingly sophisticated signal processing algorithms, including deep neural networks (DNNs) and artificial intelligence (AI), to enhance auditory performance and overall quality of life for users.
+% High-profile innovations, such as Apple’s FDA-approved AirPods and developments from established manufacturers like Phonak and Oticon, exemplify this trend with the incorporation of DNN-based processing techniques.
+
+% A notable development is the shift towards rechargeable hearing aids that utilise lithium-ion batteries.
+% These devices not only offer the practical benefit of eliminating battery replacement but also support higher peak power consumption, thereby accommodating the computational demands of advanced models such as DNNs.
+% In contrast, hearing aids powered by zinc-air batteries remain limited by the intrinsic energy constraints of their power source.
+% Recent studies report that under high power conditions, the average battery life of non-rechargeable, zinc-air-powered hearing aids lies within the range of 50–80 hours \citep{sparkes_study_1997, mir_evaluation_2023, thomas_zincair_2024}.
+% Rechargeable devices typically achieve operational durations of 15–30 hours, and when features like Phonak’s Speech Enhancer are activated in noisy environments, maximum battery life can drop to below six hours.
+
+
+% These findings underscore a fundamental trade-off in hearing aid design: while the application of DNNs can significantly elevate the performance of auditory devices, it concurrently imposes strict energy requirements that may compromise battery longevity.
+% Future research should therefore focus on optimising power efficiency to better balance computational performance with practical usability.
+
+As discussed in the Introduction, the increasing demand for HAs is not only 
+driving the development of more sophisticated HAs, but also the entry of big tech 
+companies like Apple to the hearing aid market, and the developments from established 
+manufacturers like Phonak who are starting to incorporate DNNs into their devices.
+
+Another trend is that of the shift towards rechargable hearing aids (Lithium Ion Batteries).
+These devices not only offer the practical benefit of eliminating battery replacement but also support higher peak power consumption 
+which could explain the correlation in the sudden interest in using DNNs in HAs.
+In contrast, hearing aids before the shift towards rechargable hearing aids were using Zinc-air batteries 
+(\cite{sparkes_study_1997}; \cite{mir_evaluation_2023})
+which are non-rechargable.
+A recent study by \citet{thomas_zincair_2024} which 
+experiments with various Zinc-air manufacturers, shows that the average battery life 
+under high power conditions is 50-80 hours. Contrast this with the average battery life of 
+rechargable hearing aids which is typically in the region of 15-30 hours and 
+features such as Phonak's Speech Enhancer (the DNN based feature) can drop the battery life 
+to below 6 hours. 
+
+These findings highlight an important trade-off in hearing aid design: 
+while there is loads of potential to improve the performance of HAs (DNNs or otherwise)
+it can come at the cost of battery life and possibly constrains 
+the types of models that can be used. NBASNSADNADNASDN
 
 Due to the proprietary nature of the devices, it is unclear what sort of 
 algorithms are used in the devices. Though, from Phonak's white paper on Spheric Speech Clarity \cite{Hasemann2024PhonakSphere}
@@ -356,8 +395,7 @@ performs 'scene classification' so in the context of this project, this can be
 considered as an acoustic scene analysis (ASA) algorithm. More specifically, if 
 the signal is classified as 'Speech in Loud Noise', then the signal is fed into a 
 deep neural network which outputs a mask that seperates the speech signal from the background noise 
-which is then applied to the signal. In the context of this project, we will aim to do something similar 
-when we train a speech enhancement model on HEAR-DS. 
+which is then applied to the signal. 
 
 
 
@@ -441,7 +479,7 @@ Acoustic Scene Analysis (ASA) refers to the task of classifying an environment b
 % which assigns each audio signal to one of the environments in \(\mathcal{E}\). In this project, \(f\) is implemented as a neural network. Therefore, training the model requires a dataset containing audio signals along with their corresponding environmental labels and relevant recording metadata.
 
 We will be using HEAR-DS dataset introduced by \citet{Huwel2020HearDS}. This dataset was developed in response to the inadequacies of existing acoustic scene classification databases for HA processing. A more detailed description of the dataset is provided in Chapter \ref{sec:datasets}.
-The original paper on the HEAR-DS dataset illustrates its applicability by employing a Convolutional Neural Network (CNN) for environment classification. In Chapter \ref{chap:acoustic-scene-classification}, an attempt is made to reproduce the results presented in that study. The challenges encountered during this replication process are discussed comprehensively in the chapter. Additionally, to validate the model implementation, the same parameters were applied to the DCASE 2017 Acoustic Scenes Challenge dataset \cite{DCASE2017challenge}. In particular, a comparison is drawn between the model proposed by \citet{schindler_multi-temporal_2018} and the CNN model used in the HEAR-DS paper, with the findings detailed in Section \ref{sec:DCASE-results}.
+The original paper on the HEAR-DS dataset illustrates its applicability by employing a Convolutional Neural Network (CNN) for environment classification. In Chapter \ref{chap:acoustic-scene-classification}, an attempt is made to reproduce the results presented in that study. The challenges encountered during this replication process are discussed comprehensively in the chapter. Additionally, to validate the model implementation, the same parameters were applied to the DCASE 2017 Acoustic Scenes Challenge dataset \citep{DCASE2017challenge}. In particular, a comparison is drawn between the model proposed by \citet{schindler_multi-temporal_2018} and the CNN model used in the HEAR-DS paper, with the findings detailed in Section \ref{sec:DCASE-results}.
 The two papers mentioned above utilise engineered features, and more specifically, the log mel spectrogram. This 
 approach in some literature is called operating on the frequency domain. It is worth pointing out 
 that there is research into doing ASA on the time domain i.e. operating on the waveform directly, 
@@ -492,31 +530,54 @@ Neural network-based speech enhancement algorithms can be categorised into four 
    \item \textbf{Online Iterative Methods} - The focus is on incorporating adaptive techniques that do not rely on pre-existing 
    training data. Key approaches include adaptive predictors, dual EKF algorithms, and noise-regularised adaptive filtering.
 \end{itemize}
-It is no accident I talked about Engineering Acoustic Features in the previous section, as this dissertation 
-will be focusing on the Transform-Domain Filtering approach. One of the primary objects of part two of this dissertation will be 
+The discussion of the engineering of acoustic features in the previous section is relevant here, as the Transform-Domain Filtering approach
+is what will be used in this part of the dissertation. One of the primary objectives of part two of this dissertation will be 
 investigating how ASA and Speech Enhancement can be integrated to form a state-dependent model.
 Though, exploring the time domain approach is something I will be looking into for the second part of this dissertation 
 due to the potential overhead reduction of the time domain approach as mentioned in the previous section.
 
 \section{Criticism of Previous Work}
-During the course of this project, I found out that the paper by \citet{Huwel2020HearDS} had some issues.
-Granted, the paper was more of an exploration of the applicability of the dataset rather than a thorough analysis of the 
-performance of the model, it is still important to point out the issues I found. First of all, the paper was not clear 
-in the details of the splitting strategy of the dataset so I had to make some assumptions. Additionally, it was not clear 
-what loss function was used for training the model. As the dataset only contains raw cuts of the background noise, and 
-the researchers opted to mix the speech signal with the background noise so that they have full control over the SNR of the signal,
-they used another dataset to mix the speech signal with the background noise. More specifically, they used the CHiME 3 \cite{barker_third_2015} 
-and CHiMe 5 \cite{barker18_fifth_2018} datasets. However, only the CHiME 3 development set was used for mixing the speech into the background noise.
-CHiME 5 was used for creating a new environment, 'Interferring Speakers', which are samples that contain speech from multiple speakers.
-I think using the CHiME 3 dataset and especially only the development set was an odd decision, as there is only roughly 10 hours of data 
-from 4 speakers. So a model trained on this dataset may not generalise well to real world scenarios, due to the rich variability of 
-speech from different speakers. Nevertheless, we continue with the paper's approach to set up a baseline. Another odd decision was 
-in the use of a fixed learning rate scheduler, and the use of a high epoch count without what appears to be no early stopping. This 
-will be discussed in more detail in Chapter \ref{chap:acoustic-scene-classification}. We still thank the authors for their work on the dataset 
-as it is a promising dataset for the future of HA research. Additionally, given that the dataset 
-has the potential to be used for HA devices, there is not any mention on the viability of the models 
-when used in a HA device. So a significant aspect of this project is to investigate the feasibility of 
-incorporating a DNN model into a HA device. 
+We found out that the paper by \citet{Huwel2020HearDS} had 
+some issues which prompted us to do a more thorough analysis of the ASA 
+model they presented. Granted, the paper was more of an exploration of the applicability of the dataset rather than a thorough analysis of the 
+performance of the model, there was some issues with 
+the results and gaps in the analysis which we aim to address in this part of the dissertation. 
+Additionally, as will become clear, the reproduction of the results 
+was difficult and while we had to deviate from the paper's approach 
+in some aspects, in other cases, we had to make some assumptions 
+about the pipeline details of the paper.
+
+% First of all, the paper was not clear 
+% in the details of the splitting strategy of the dataset so I had to make some assumptions 
+% of which we detail in the forthcoming chapters.
+% Additionally, it was not clear 
+% what loss function was used for training the model. As the dataset only contains raw cuts of the background noise, and 
+% the researchers opted to mix the speech signal with the background noise so that they have full control over the SNR of the signal,
+% they used another dataset to mix the speech signal with the background noise. 
+
+Reproduction issues aside, the paper concludes that the 
+most complex model was able to compute the environment 
+with a latency of 0.4s. However, the paper uses 
+a computer-powered device to run the model, which 
+could potentially be more powerful than a HA device. 
+The paper does mention that more verbose evaluation was not 
+the scope of the paper, and so this dissertation aims 
+to bring more insight into the viability of the models 
+when used in a HA device.
+
+
+% More specifically, they used the CHiME 3 \cite{barker_third_2015} 
+% and CHiMe 5 \cite{barker18_fifth_2018} datasets. However, only the CHiME 3 development set was used for mixing the speech into the background noise.
+% CHiME 5 was used for creating a new environment, 'Interferring Speakers', which are samples that contain speech from multiple speakers.
+% I think using the CHiME 3 dataset and especially only the development set was an odd decision, as there is only roughly 10 hours of data 
+% from 4 speakers. So a model trained on this dataset may not generalise well to real world scenarios, due to the rich variability of 
+% speech from different speakers. Nevertheless, we continue with the paper's approach to set up a baseline. Another odd decision was 
+% in the use of a fixed learning rate scheduler, and the use of a high epoch count without what appears to be no early stopping. This 
+% will be discussed in more detail in Chapter \ref{chap:acoustic-scene-classification}. We still thank the authors for their work on the dataset 
+% as it is a promising dataset for the future of HA research. Additionally, given that the dataset 
+% has the potential to be used for HA devices, there is not any mention on the viability of the models 
+% when used in a HA device. So a significant aspect of this project is to investigate the feasibility of 
+% incorporating a DNN model into a HA device. 
 
 
 \chapter{Methodology}
@@ -568,16 +629,16 @@ frequency domain representation for reasons mentioned in the background section.
 As per the paper, all the convulaotional layers use a $7 \times 7$ kernel
 with a stride of $1 \times 1$ and padding of $3 \times 3$. After the convoluational operation, 
 batch normalisation is applied which can help with the stability of forward propagation 
-and can act as a regulariser which can help prevent overfitting \cite{prince2023understanding}.
+and can act as a regulariser which can help prevent overfitting \citep{prince2023understanding}.
 The choice of activation function is a Rectified Linear Unit (ReLU) which is computionally 
-efficient and reduces the risk of the vanishing gradient problem \cite{prince2023understanding}.
+efficient and reduces the risk of the vanishing gradient problem \citep{prince2023understanding}.
 As the preceding operations can increase the dimensionality of the input, a form of down-sampling is applied by using a max-pooling operation which helps in achieving 
 translation invariance and reducing computational complexity for the following layers. Something worth considering for 
 part 2 of this dissertation is to explore the use of other down-sampling techniques, and in particular,
 \citet{liu_simple_2023} have proposed a family of simple pooling front-ends (SimPFs) 
 which in some cases reduce the number of FLOPs as much as 75\% in acoustic scene classification tasks. 
 Lastly, dropout of 0.3 is applied after the max-pooling operation which can help with 
-the model generalisation \cite{prince2023understanding}.
+the model generalisation \citep{prince2023understanding}.
 Applying convolutions is not enough for ASA, 
 as we need to have a way to compare the output of the CNN with the set of environments \(\mathcal{E}\).
 This is where the fully connected layer comes in, as it will output a vector of size \(N\), where \(N\) is the number of environments.
@@ -624,7 +685,7 @@ L(y, \hat{y}) = -\sum_{i=1}^{N} w_i \cdot y_i \log(\hat{y}_i),
 where \(y_i\) is the one-hot encoded environmental label, and \(\hat{y}_i\) is the predicted probability of the model.
 
 Once we have the loss function, we can use it to train the model. There are many approaches to training a model,
-and for reproducibility, we will be using the paper's approach of using Stochastic Gradient Descent (SGD) with a fixed learning rate.
+and for reproducibility (and as a baseline), we will be using the paper's approach of using Stochastic Gradient Descent (SGD) with a fixed learning rate.
 The learning rate was decreased every 40 epochs in a quasi-logarithmic manner: [0.05, 0.01, 0.001, 0.0005, 0.0002, 0.0001].
 This leads to a total of 240 epochs of training. 
 However one of objectives of this part of the dissertation was to explore if a different approach to learning rate scheduling
@@ -790,11 +851,6 @@ Once that's done, the reader will be in a position to now analyse the results of
    \item \textbf{Replication of ASA Results.} 
    We hypothesise that the results reported by \citet{Huwel2020HearDS} for the ASA task can be replicated using the methodological approach detailed in Section \ref{sec:methodology-asa}.
    Achieving replication is crucial as it brings us a step closer to our vision of creating a state-dependent model in the next part of the dissertation.
-   \item \textbf{Comparative Performance of the Adam Optimiser.}
-   It is hypothesised that using the Adam optimiser will result in a faster convergence with comparable performance to that of using a fixed learning rate Stochastic Gradient Descent (SGD) method, as employed in \citet{Huwel2020HearDS}.
-   Validating this hypothesis will speed up the development process going forward, 
-   enabling uniformity across subsequent experimental iterations. Additionally,
-   it will allow us to reach the objective of creating a state-dependent model faster due to acceleration of the development process.
    % TODO: Ask Hao if I should rephrase this to reject Huwel's claim that SGD is better than Adam due to weight initialisation issues?
    \item \textbf{Effectiveness of Utterance-Level Data Augmentation}. We hypothesise 
    that if we mix the speech signal with SNR at an utterance level, we will be able 
@@ -817,6 +873,11 @@ Once that's done, the reader will be in a position to now analyse the results of
    This is a really important hypothesis to validate, otherwise any work 
    we do would not allow us to create a state-dependent model if the dependant models 
    are not able to be deployed on HA devices. (implication)
+   \item \textbf{Comparative Performance of the Adam Optimiser.}
+   It is hypothesised that using the Adam optimiser will result in a faster convergence with comparable performance to that of using a fixed learning rate Stochastic Gradient Descent (SGD) method, as employed in \citet{Huwel2020HearDS}.
+   Validating this hypothesis will speed up the development process going forward, 
+   enabling uniformity across subsequent experimental iterations. Additionally,
+   it will allow us to reach the objective of creating a state-dependent model faster due to acceleration of the development process.
 \end{enumerate}
 
 \section{Datasets}
