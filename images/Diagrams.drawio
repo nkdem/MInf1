@@ -116,7 +116,28 @@
           </mxGeometry>
         </mxCell>
         <mxCell id="0vuEedHLtc2vo68gjhBj-9" value="" style="rounded=1;whiteSpace=wrap;html=1;rotation=-90;fillColor=#f5f5f5;strokeColor=#666666;fontSize=30;fontStyle=1;gradientColor=#b3b3b3;" vertex="1" parent="1">
-          <mxGeometry x="4100" y="1615" width="445.83" height="70" as="geometry" />
+          <mxGeometry x="4090" y="1592.5" width="495.83" height="135" as="geometry" />
+        </mxCell>
+        <mxCell id="0vuEedHLtc2vo68gjhBj-10" value="`P(e_1 | x)`" style="text;html=1;align=center;verticalAlign=middle;resizable=0;points=[];autosize=1;strokeColor=none;fillColor=none;fontSize=25;" vertex="1" parent="1">
+          <mxGeometry x="4262.92" y="1435" width="150" height="40" as="geometry" />
+        </mxCell>
+        <mxCell id="0vuEedHLtc2vo68gjhBj-11" value="`\vdots`" style="text;html=1;align=center;verticalAlign=middle;resizable=0;points=[];autosize=1;strokeColor=none;fillColor=none;fontSize=36;" vertex="1" parent="1">
+          <mxGeometry x="4267.92" y="1480" width="140" height="60" as="geometry" />
+        </mxCell>
+        <mxCell id="0vuEedHLtc2vo68gjhBj-12" value="`\vdots`" style="text;html=1;align=center;verticalAlign=middle;resizable=0;points=[];autosize=1;strokeColor=none;fillColor=none;fontSize=36;" vertex="1" parent="1">
+          <mxGeometry x="4267.92" y="1550" width="140" height="60" as="geometry" />
+        </mxCell>
+        <mxCell id="0vuEedHLtc2vo68gjhBj-13" value="`\vdots`" style="text;html=1;align=center;verticalAlign=middle;resizable=0;points=[];autosize=1;strokeColor=none;fillColor=none;fontSize=36;" vertex="1" parent="1">
+          <mxGeometry x="4267.91" y="1620" width="140" height="60" as="geometry" />
+        </mxCell>
+        <mxCell id="0vuEedHLtc2vo68gjhBj-14" value="`\vdots`" style="text;html=1;align=center;verticalAlign=middle;resizable=0;points=[];autosize=1;strokeColor=none;fillColor=none;fontSize=36;" vertex="1" parent="1">
+          <mxGeometry x="4267.91" y="1690" width="140" height="60" as="geometry" />
+        </mxCell>
+        <mxCell id="0vuEedHLtc2vo68gjhBj-15" value="`\vdots`" style="text;html=1;align=center;verticalAlign=middle;resizable=0;points=[];autosize=1;strokeColor=none;fillColor=none;fontSize=36;" vertex="1" parent="1">
+          <mxGeometry x="4267.92" y="1750" width="140" height="60" as="geometry" />
+        </mxCell>
+        <mxCell id="0vuEedHLtc2vo68gjhBj-17" value="`P(e_N | x)`" style="text;html=1;align=center;verticalAlign=middle;resizable=0;points=[];autosize=1;strokeColor=none;fillColor=none;fontSize=25;" vertex="1" parent="1">
+          <mxGeometry x="4257.92" y="1832.28" width="150" height="40" as="geometry" />
         </mxCell>
       </root>
     </mxGraphModel>
