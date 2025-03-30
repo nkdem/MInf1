@@ -139,6 +139,9 @@
         <mxCell id="0vuEedHLtc2vo68gjhBj-17" value="`P(e_N | x)`" style="text;html=1;align=center;verticalAlign=middle;resizable=0;points=[];autosize=1;strokeColor=none;fillColor=none;fontSize=25;" vertex="1" parent="1">
           <mxGeometry x="4257.92" y="1832.28" width="150" height="40" as="geometry" />
         </mxCell>
+        <mxCell id="0vuEedHLtc2vo68gjhBj-18" value="Fully Connected Layer" style="text;html=1;align=center;verticalAlign=middle;resizable=0;points=[];autosize=1;strokeColor=none;fillColor=none;fontSize=30;fontStyle=1" vertex="1" parent="1">
+          <mxGeometry x="3625" y="1430" width="320" height="50" as="geometry" />
+        </mxCell>
       </root>
     </mxGraphModel>
   </diagram>
