@@ -420,11 +420,20 @@ which is then applied to the signal.
 % However, besides it being an active area of research, it will not be applicable 
 % to individuals that have 
 
+\newpage
 \section{Speech Processing Techniques}
 \subsection{Digitisation}
+\begin{figure}[h]
+   \centering
+   \includegraphics[width=\textwidth]{waveform-spectrogram.png}
+   \caption{A wavefrom (bottom) and its spectrogram (top). 
+   Drawn with Pratt and used an excerpt mixed with speech with the `InTraffic'
+   environment from the HEAR-DS dataset \citep{Huwel2020HearDS}.}
+   \label{fig:waveform-spectrogram}
+\end{figure}
 To be able to perform speech processing on a device containing a chip/processor such as a HA, requires us 
 to have some sort of digital representation of the sound wave. A waveform is just that, a digital representation 
-of the sound we hear. A microphone is a device that converts those sound waves into a representation of the 
+of the sound we hear [Figure \ref{fig:waveform-spectrogram}]. A microphone is a device that converts those sound waves into a representation of the 
 waveform. Conceptually, this is done by measuring the relative air pressure at different points in time, and 
 this is represented as a waveform or a time series of amplitudes. Digital devices can't have infinite precision, so the signal produced by the sound will 
 be divided into discrete samples, and the rate at which this occurs is known as the sampling rate. Additionally,
@@ -445,7 +454,7 @@ The prevalance of engineering acoustic features in previous work relating to my 
 warrants a high level overview of this concept to better understand its usage. 
 Given some signal $x(t)$, an engineered feature $f(x(t))$ is a function that transforms the signal in some way.
 In this project we will be feeding the models the log mel spectrogram of the signal. To obtain the log mel spectrogram, 
-we first need to convert the signal (waveform) into the frequency domain (spectrogram).
+we first need to convert the signal (waveform) into the frequency domain (spectrogram) [Figure \ref{fig:waveform-spectrogram}].
 The process of converting the signal into the frequency domain is done by utilising 
 the Fourier Transform. We will technically be using the Fast Fourier Transform (FFT) 
 due to efficiency, and the main hyperparameters for the FFT are the window length $w$ 
@@ -483,7 +492,6 @@ is potentially too high, and so working directly with the waveform may be a more
 
 % TODO: VERY DEEP CONVOLUTIONAL NEURAL NETWORKS FOR RAW WAVEFORMS
 
-\newpage
 \subsection{Speech Enhancement}
 On the other hand, Speech Enhancement aims to improve the perceptual quality of a speech signal that 
 has been degraded by an additive noise \citep{loizou_speech_2007}. 
@@ -797,28 +805,31 @@ L(y, \hat{y}) = \frac{1}{T} \sum_{t=1}^{T} (y_t - \hat{y}_t)^2,
 \]
 where \(y_t\) is the ground truth speech signal and \(\hat{y}_t\) is the enhanced speech signal.
 For model stability we have ensured that the spectrograms are normalised to have zero mean and unit variance.
-This means that the loss function has a range of 0 to 1 where 0 is the best and 1 is the worst.
+This normalisation ensures that the loss function operates within a range from 0 (optimal) to 1 (suboptimal).
 
-\subsection{Evaluation - STILL NEED TO REVISE}
+\newpage
+
+\subsection{Evaluation}
 The evaluation of the speech enhancement model in this part of the dissertation will be 
-done by assessing two artificial metrics.
-Firstly, the Short-Time Objective Intelligibility (STOI) metric will be used to assess the intelligibility of the enhanced speech signal.
-Mathematically, the STOI metric is defined as follows:
-\[
-STOI = \frac{\sum_{t=1}^{T} \mathbb{I}(y_t = \hat{y}_t)}{\sum_{t=1}^{T} \mathbb{I}(y_t \neq 0)},
-\]
-where \(y_t\) is the ground truth speech signal and \(\hat{y}_t\) is the enhanced speech signal.
-TODO: Verify this formula
-Secondly, the Perceptual Evaluation of Speech Quality (PESQ) metric will be used to assess the perceptual quality of the enhanced speech signal.
-Mathematically, the PESQ metric is defined as follows:
-\[
-PESQ = \frac{1}{T} \sum_{t=1}^{T} \frac{y_t \hat{y}_t}{\|y_t\|_2 \|\hat{y}_t\|_2},
-\]
-where \(y_t\) is the ground truth speech signal and \(\hat{y}_t\) is the enhanced speech signal.
-TODO: Verify this formula and add more explanations and citations maybe
+done by assessing two artificial metrics. The other approach to evaluation is 
+to use subjective listening tests, which is a gold standard for evaluating speech enhancement models.
+However, as with all gold standard methods, they are time consuming and expensive to conduct. 
+Artificial metrics aim to be a proxy for the gold standard methods. 
 
-Similarly, just as in the ASA evaluation methodology, we will be testing the feasibility of the model 
-from a HA perspective. We will be looking at the inference time, the number of FLOPs and the number of parameters.
+Firstly, the Short-Time Objective Intelligibility (STOI) \citep{taal_algorithm_2011} metric will be used to assess the intelligibility of the enhanced speech signal.
+It is a function of the noisy speech signal $s_n$ and the degraded speech signal $s_d$ after enhancement.
+The STOI metric computes a value in the range \([0, 1]\), which can be interpreted as an approximation of the average percentage of correctly understood words in $s_d$. 
+For the sake of brevity, we will not be going into the details of the STOI metric, but for interested reader, we refer them to \citet{taal_algorithm_2011}.
+
+Secondly, the Perceptual Evaluation of Speech Quality (PESQ) \citep{rix_perceptual_2001} metric will be 
+used to assess the perceptual quality of the enhanced speech signal. 
+This metric is a function of the clean speech signal $s_c$ and the enhanced speech signal $\hat{s}_e$.
+PESQ compares $s_c$ and $\hat{s}_e$, yielding a score between 1 (indicating poor quality) and 4.5 (indicating near distortion-free quality). 
+As with STOI, the intricate details of the PESQ metric are not discussed here; the reader is encouraged to consult \citet{rix_perceptual_2001} for a comprehensive description.
+
+A valid question to ask is why the model is not trained to directly optimise for both metrics. The primary challenge lies in the fact that both STOI and PESQ are non-differentiable,
+which is a problem for gradient-based optimisation frameworks. However, there are methods to approximate the gradients of non-differentiable functions, and it is an active area of research.
+For future work, this avenue may be explored. 
 
 \section{Laying the Groundwork for State-Dependent Models}
 \begin{figure}[h] \centering
