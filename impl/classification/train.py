@@ -29,6 +29,7 @@ class CachedFeaturesDataset(Dataset):
     def __init__(self, feature_cache, env_to_int):
         self.features = []
         self.labels = []
+        self.snrs = [] # the corresponding snr for each feature - 100 if not applicable
         # Group features by environment to ensure we handle speech and non-speech correctly
         grouped_features = {}
         for key, feature in feature_cache.items():
@@ -56,19 +57,22 @@ class CachedFeaturesDataset(Dataset):
                 # Filter out None SNRs just in case
                 valid_snr_features = [(s, f) for s, f in snr_features if s is not None]
                 valid_snr_features.sort(key=lambda x: x[0])
-                for _, feature in valid_snr_features:
+                for snr, feature in valid_snr_features:
                     self.features.append(feature)
                     self.labels.append(env_to_int[env])
+                    self.snrs.append(snr)
             else:
                 # For non-speech environments, just add one feature (SNR doesn't matter)
-                self.features.append(snr_features[0][1])
-                self.labels.append(env_to_int[env])
+                for snr, feature in snr_features:
+                    self.features.append(feature)
+                    self.labels.append(env_to_int[env])
+                    self.snrs.append(-100)
     
     def __len__(self):
         return len(self.features)
     
     def __getitem__(self, idx):
-        return self.features[idx], self.labels[idx]
+        return self.features[idx], self.labels[idx], self.snrs[idx]
 
 class BaseTrainer:
     def __init__(self, base_dir: str, num_epochs:int, batch_size:int, train_loader: DataLoader, cuda=False, classes_train=None, augment = True):
@@ -105,7 +109,15 @@ class BaseTrainer:
         self.num_of_classes = len(self.envs)
         logger.info(f"Number of classes: {self.num_of_classes}")
         self.env_to_int = {env: i for i, env in enumerate(self.envs.keys())}
-        class_weights = compute_class_weight('balanced', classes=np.array(list(self.env_to_int.values())), y=np.array([self.env_to_int[env] for env in self.envs.keys() for _ in range(self.envs[env])]))
+        # class_weights = compute_class_weight('balanced', classes=np.array(list(self.env_to_int.values())), y=np.array([self.env_to_int[env] for env in self.envs.keys() for _ in range(self.envs[env])]))
+
+        # let's use inverse proportionality for the weights
+        # total samples / samples per class
+        total_samples = sum(self.envs.values())
+        class_weights = [total_samples / self.envs[env] for env in self.envs.keys()]
+
+
+
         for env, weight in zip(self.env_to_int.keys(), class_weights):
             logger.info(f"Class {env} has weight {weight:.4f}")
         self.weights = torch.tensor(class_weights, dtype=torch.float32).to(self.device)

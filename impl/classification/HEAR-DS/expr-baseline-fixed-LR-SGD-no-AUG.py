@@ -32,42 +32,6 @@ class FixedLR_SGD(BaseExperiment):
         self.device = torch.device("mps" if not cuda else "cuda")
         self.feature_cache = {}
 
-    def precompute_test_logmels(self, test_loader, env_to_int):
-        """Precompute logmels for test data and create a CachedFeaturesDataset"""
-        logger.info("Precomputing logmels for test data...")
-        self.snr_levels = [-21, -18, -15, -12, -9, -6, -3, 0, 3, 6, 9, 12, 15, 18, 21]
-        
-        # Precompute logmels for each SNR level
-        for snr in self.snr_levels:
-            # Set SNR for the dataset
-            for dataset in test_loader.dataset.datasets:
-                if hasattr(dataset, 'snr'):
-                    dataset.snr = snr
-                else:
-                    method = getattr(dataset, 'set_snr', None)
-                    if method is not None and callable(method):
-                        method(snr)
-
-            # Compute logmels for this SNR level
-            for batch in tqdm(test_loader, desc=f"Precomputing logmels for SNR {snr}", unit="batch"):
-                waveforms, _, envs, recsits, cuts, snippets, _, snrs = batch
-                logmels = compute_average_logmel(waveforms, self.device)
-
-                # delete from memory
-                
-                # Cache the features
-                for env, recsit, cut, snippet, snr_val, logmel in zip(envs, recsits, cuts, snippets, snrs, logmels):
-                    key = f"{env}_{recsit}_{cut}_{snippet}_{snr_val}"
-                    self.feature_cache[key] = logmel
-            torch.mps.empty_cache()
-
-        # Create a new dataset with cached features
-        cached_dataset = CachedFeaturesDataset(self.feature_cache, env_to_int)
-        return DataLoader(
-            cached_dataset,
-            batch_size=self.batch_size,
-            shuffle=False  # No shuffling for test data
-        )
 
     def run(self):
         print(f"Starting experiment: {self.experiment_name}")
