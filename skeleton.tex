@@ -427,7 +427,7 @@ which is then applied to the signal.
    \centering
    \includegraphics[width=\textwidth]{waveform-spectrogram.png}
    \caption{A wavefrom (bottom) and its spectrogram (top). 
-   Drawn with Pratt and used an excerpt mixed with speech with the `InTraffic'
+   We used an excerpt mixed with speech with the `InTraffic'
    environment from the HEAR-DS dataset \citep{Huwel2020HearDS}.}
    \label{fig:waveform-spectrogram}
 \end{figure}
@@ -569,26 +569,51 @@ was difficult and while we had to deviate from the paper's approach
 in some aspects, in other cases, we had to make some assumptions 
 about the pipeline details of the paper.
 
-% First of all, the paper was not clear 
-% in the details of the splitting strategy of the dataset so I had to make some assumptions 
-% of which we detail in the forthcoming chapters.
-% Additionally, it was not clear 
-% what loss function was used for training the model. As the dataset only contains raw cuts of the background noise, and 
-% the researchers opted to mix the speech signal with the background noise so that they have full control over the SNR of the signal,
-% they used another dataset to mix the speech signal with the background noise. 
+As the dataset is very likely to not be balanced, (as will become more clear in Chapter \ref{chap:acoustic-scene-classification})
+it was an odd decision for the authors 
+not to talk in detail about the splitting strategy of the dataset 
+and how they handled the imbalance. In particular, the metric 
+for the accuracies was what we believe to be quite a 
+naive approach to evaluating the model's performance (a simple accuracy score).
+It would have also been more informative to see how the model performs at various 
+SNRs (Signal-to-Noise Ratio) since it is possible that the model is performing poorly at low SNRs.
+So we will be extending the evaluation of the models to include these aspects. 
+More so, we will also incorporate precision, recall and F1 scores to get a more 
+holistic view of the model's performance. 
 
 Reproduction issues aside, the paper concludes that the 
 most complex model was able to compute the environment 
 with a latency of 0.4s. However, the paper uses 
 a computer-powered device to run the model, which 
 could potentially be more powerful than a HA device. 
+We will be taking a more thorough approach to
+investigating the viability of the models when used in a HA device 
+and be reporting FLOPs as per \citet{schwartz2019greenai}.
 The paper does mention that more verbose evaluation was not 
 the scope of the paper, and so this dissertation aims 
 to bring more insight into the viability of the models 
 when used in a HA device.
 
+It is important to note that the intention is not to 
+be critical of the original authors, but rather to 
+bring more insight that was built from the work of the original authors.
+This is done by providing a deeper insight into the model's performance 
+and feasibility when used in a HA device. The challenges encountered 
+in reproducing the results underscore the need for more 
+detailed methodological documentation, and so this dissertation aims 
+to address this gap.
 
-% More specifically, they used the CHiME 3 \cite{barker_third_2015} 
+In summary, while the previous study makes a valuable contribution
+to the field of HA research, a more thorough and systematic
+evaluation is necessary to fully assess the model's efficacy 
+in the task of ASA. This dissertation aims to contribute 
+to that venture by offering a comprehensive analysis
+of the model under conditions that more closely mirror real-world HA applications.
+Additionally, we want to take the paper's mission further and explore 
+other use-cases of the dataset, such as the task of Speech Enhancement 
+and how the two tasks (ASA and SE) can be combined to form a state-dependent model,
+all within the context of a HA device.
+
 % and CHiMe 5 \cite{barker18_fifth_2018} datasets. However, only the CHiME 3 development set was used for mixing the speech into the background noise.
 % CHiME 5 was used for creating a new environment, 'Interferring Speakers', which are samples that contain speech from multiple speakers.
 % I think using the CHiME 3 dataset and especially only the development set was an odd decision, as there is only roughly 10 hours of data 
@@ -715,12 +740,42 @@ could yield better results. So we will be exploring a different approach to lear
 It will be found that the Adam optimiser converges faster than the SGD optimiser and still results in a comparable 
 performance. 
 \subsection{Evaluation}
-The evaluation of the ASA model will be done using the accuracy metric. The accuracy is defined as follows:
+The evaluation of the ASA model will be done with a few metrics. 
+We will adopt the accuracy metric which is something the paper by \citet{Huwel2020HearDS} also used.
+The accuracy is defined as follows:
 \[
 Accuracy = \frac{1}{N} \sum_{i=1}^{N} \mathbb{I}(y_i = \hat{y}_i),
 \]
 where \(N\) is the total number of samples, \(y_i\) is the one-hot encoded environmental label, and \(\hat{y}_i\) is the predicted environmental label
 and \(\mathbb{I}\) is the indicator function which is a piecewise function that returns 1 if the condition is true and 0 otherwise.
+
+However, the issue with accuracy is that taking it 
+at face value can be misleading, even more so in the case of an imbalanced dataset 
+which as will become clear when we discuss the dataset in Chapter \ref{chap:dataset},
+this is certainly the case for the HEAR-DS dataset. 
+So on top of the accuracy metric, we will also be using precision, recall and F1 score metrics.
+These metrics are defined as follows:
+\[
+Precision = \frac{TP}{TP + FP},
+\]
+\[
+Recall = \frac{TP}{TP + FN},
+\] 
+\[
+F1 = 2 \cdot \frac{Precision \cdot Recall}{Precision + Recall},
+\]
+where TP is the number of true positives, FP is the number of false positives, and FN is the number of false negatives.
+Intuitively, precision is how well the model is doing at correctly identifying the positive class,
+while recall is how well the model is doing at correctly identifying all positive samples.
+The F1 score is the harmonic mean of precision and recall.
+
+Another aspect that we will be looking at is how the models peform at various SNRs. 
+This is because given some noisy sample, the model may perform differently depending on the SNR of the sample.
+It will be interesting to see how the model performs at the lowest SNR,
+as this is where the speech is quite faint and the background noise is quite strong. 
+Given that the model we will be training uses background and background+speech environments,
+it is possible that the model may conflate the two classes at the lowest SNRs.
+
 
 From a feasibility perspective, we will be adopting the Green AI principles \citep{schwartz2019greenai} 
 and evaluating the model using the following metrics:
@@ -806,8 +861,6 @@ L(y, \hat{y}) = \frac{1}{T} \sum_{t=1}^{T} (y_t - \hat{y}_t)^2,
 where \(y_t\) is the ground truth speech signal and \(\hat{y}_t\) is the enhanced speech signal.
 For model stability we have ensured that the spectrograms are normalised to have zero mean and unit variance.
 This normalisation ensures that the loss function operates within a range from 0 (optimal) to 1 (suboptimal).
-
-\newpage
 
 \subsection{Evaluation}
 The evaluation of the speech enhancement model in this part of the dissertation will be 
@@ -994,7 +1047,7 @@ Similarly, the \textit{Cocktail Party} environment contains 716 samples in our d
 
 As noted in the Introduction, the model can be made to act as a Voice Activity Detector (VAD) by incorporating environments with and without speech.
 The raw dataset however, only contains samples without speech, so we will be following the paper's approach to create the mixed environments.
-Although recording environments with and without speech was something the researchers did consider, the researchers prioritised full control over the signal-to-noise ratio (SNR) during the speech-background mixing process.
+Although recording environments with and without speech was something the researchers did consider, the researchers prioritised full control over the SNR during the speech-background mixing process.
 The speech mixing that the paper described is something we 
 will have to deviate from, at least for this part of the dissertation.
 Firstly, while the paper uses a head-related transfer function (HRTF) to mix the speech signal with the background noise,
@@ -1107,7 +1160,8 @@ a FFT window length of 1024 samples with a window length of 40ms and a hop lengt
 unclear which window function was used, but we will be using a Hann window as is standard in the literature.
 After computing the STFT, we then do a mel filter bank transformation to get the mel filter bank coefficients. 
 Of which we extract 40 mel bands. For a 10s snippet of audio, the resulting tensor is of shape $40 \times 500$.
-To control for the training time not being affected by the computation of the logmel spectrogram,
+To control for the training time not being affected by the IO 
+calls to retrieve the samples and then computing the logmel spectrograms,
 we precompute the spectrograms before training.
 
 As mentioned in the methodology section, we will be training 3 models 
