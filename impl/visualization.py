@@ -7,7 +7,7 @@ import seaborn as sns
 from typing import Dict, List
 from constants import MODELS
 
-def load_experiment_results(base_folder: str = 'models', max_experiments: int = 5) -> Dict:
+def load_experiment_results(base_folder: str = 'models', max_experiments: int = 4) -> Dict:
     """
     Load results from all experiments for different model configurations.
     Returns a dictionary with experiment types as keys and lists of results as values.
@@ -17,7 +17,7 @@ def load_experiment_results(base_folder: str = 'models', max_experiments: int = 
         if not os.path.isdir(os.path.join(base_folder, folder)):
             continue
             
-        for exp_type in ['fixed-lr-sgd-', 'adam-early-stop-']:
+        for exp_type in ['fixed-lr-sgd-AUG-', 'adam-early-stop-']:
             if folder.startswith(exp_type):
                 base_name = exp_type.rstrip('-')
                 if base_name not in results:

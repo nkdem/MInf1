@@ -25,7 +25,7 @@ class FullAdam(BaseExperiment):
         self.num_epochs = num_epochs
         self.batch_size = batch_size
         self.exp_no = experiment_no
-        self.experiment_name = f"adam-early-stop-{experiment_no}"
+        self.experiment_name = f"diff-weight-adam-early-stop-{experiment_no}"
         self.classes_train = classes_train
         self.classes_test = classes_test
 
@@ -43,10 +43,18 @@ class FullAdam(BaseExperiment):
             classes_train=self.classes_train,
         )
         adam.train()
+        # adam = None
 
         print("\nTraining phase completed. Starting results collection and analysis...")
+        env_to_int = {env: i for i, env in enumerate(self.classes_train.keys())}
+        cached_test_loader = self.precompute_test_logmels(self.test_loader, env_to_int)
 
-        results = self.get_results(trainer=adam, base_dir=base_dir, test_loader=self.test_loader)
+        losses = adam.losses if adam is not None else {model: [] for model in MODELS.keys()}
+        durations = adam.durations if adam is not None else {model: [] for model in MODELS.keys()}
+        learning_rates_used = adam.learning_rates_used if adam is not None else {model: [] for model in MODELS.keys()}
+
+        results = self.get_results(base_dir=base_dir, test_loader=cached_test_loader, num_of_classes=len(env_to_int), env_to_int=env_to_int, 
+                                   durations=durations, learning_rates_used=learning_rates_used, losses=losses)
 
         # save results 
         with open(os.path.join(base_dir, 'results.pkl'), 'wb') as f:
@@ -56,7 +64,10 @@ class FullAdam(BaseExperiment):
         # print accuracy
         for model in MODELS.keys():
             print(f"\nModel: {model}")
-            print(f"Average total accuracy: {np.mean(results['total_accuracies'][model])}")
+            # print(f"Naive class accuracy: {results['naive_class_accuracies'][model][-1]}")
+            print(f"Naive total accuracy: {results['naive_total_accuracies'][model][-1]}")
+            # print(f"Per SNR metrics: {results['per_snr_metrics'][model]}")
+            # print(f"Overall metrics: {results['overall_metrics'][model]}")
 
     def __str__(self):
         """String representation of the experiment configuration"""
@@ -84,7 +95,7 @@ if __name__ == '__main__':
     args = parser.parse_args()
 
     cuda = args.cuda
-    experiment_no = args.experiment_no
+    experiment_no = args.experiment_no if args.experiment_no is not None else 1
     split_file = f'splits/split_{experiment_no - 1}.pkl' # 0-indexed
     with open(split_file, 'rb') as f:
         split = pickle.load(f)
