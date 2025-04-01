@@ -404,7 +404,7 @@ to below 6 hours.
 These findings highlight an important trade-off in hearing aid design: 
 while there is loads of potential to improve the performance of HAs (DNNs or otherwise)
 it can come at the cost of battery life and possibly constrains 
-the types of models that can be used. NBASNSADNADNASDN
+the types of models that can be used. 
 
 Due to the proprietary nature of the devices, it is unclear what sort of 
 algorithms are used in the devices. Though, from Phonak's white paper on Spheric Speech Clarity \cite{Hasemann2024PhonakSphere}
@@ -688,6 +688,12 @@ and in the paper, they train the dataset on 7 different models, where they vary 
 Due to the time constraints, we will be training 3 models, as we're mostly interested in seeing if we're getting similar results to the paper.
 Table \ref{tab:cnn-model-params} shows the parameters of the models we will be training.
 
+\begin{figure}[h]
+   \centering
+   \includegraphics[width=0.95\textwidth]{cnn-diagram.png}
+   \caption{The baseline ASA model architecture.}
+   \label{fig:cnn-model-architecture}
+\end{figure}
 The model architecture is shown in Figure \ref{fig:cnn-model-architecture}. As 
 mentioned earlier the models operate on the frequency domain, and 
 we stuck with the paper's approach of using a Mel Spectrogram as the 
@@ -718,12 +724,6 @@ The environment with the highest probability is then chosen as the predicted env
 i.e. \(\hat{e} = \arg\max_{e_i \in \mathcal{E}} \sigma(x_i)\).
 
 
-\begin{figure}[h]
-   \centering
-   \includegraphics[width=0.95\textwidth]{cnn-diagram.png}
-   \caption{The baseline ASA model architecture.}
-   \label{fig:cnn-model-architecture}
-\end{figure}
 
 \subsection{Training}
 For ASA, we need to have a dataset that contains audio signals along with their corresponding environmental labels. 
