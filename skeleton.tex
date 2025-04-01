@@ -21,9 +21,26 @@
 \usepackage{url} % for better URL handling
 \urlstyle{tt} % use monospace font for URLs
 \graphicspath{ {./images/}}
-\usepackage{natbib}
-\bibliographystyle{abbrvnat}
-\setcitestyle{authoryear,open={(},close={)}} %Citation-related commands
+
+% Bibliography settings
+\bibliographystyle{plainnat}
+\setcitestyle{authoryear,open={(},close={)}}
+
+% Hyperref settings
+\usepackage{xcolor}
+\definecolor{citegray}{rgb}{0.5,0.5,0.5} % Medium gray
+\usepackage{hyperref}
+\hypersetup{
+    colorlinks=true,
+    linkcolor=black,     % TOC and internal links
+    filecolor=magenta,   % File links
+    urlcolor=cyan,       % URL links
+    citecolor=citegray   % Citation links with custom gray
+}
+
+
+% Make DOIs clickable
+\providecommand{\doi}[1]{\href{https://doi.org/#1}{\nolinkurl{#1}}}
 
 \begin{document}
 \begin{preliminary}
@@ -520,7 +537,7 @@ Neural network-based speech enhancement algorithms can be categorised into four 
    seems to be implemented in state-of-the-art HAs. 
    \item \textbf{Online Iterative Methods} - The focus is on incorporating adaptive techniques that do not rely on pre-existing 
    training data. Key approaches include adaptive predictors, dual EKF (Extended Kalman Filter) algorithms, and noise-regularised adaptive filtering.
-   There is some active research into incorporating Kalman Filters (KFs) or EKFs into the neural pipeline for speech enhancement \citep{Xue2020NeuralKF},\citep{Mellahi2023SpeechEU}.
+   There is some active research into incorporating Kalman Filters (KFs) or EKFs into the neural pipeline for speech enhancement \citep{Xue2020NeuralKF, Mellahi2023SpeechEU}.
 \end{itemize}
 The discussion of the engineering of acoustic features in the previous section is relevant here, as the Transform-Domain Filtering approach
 is what will be used in this part of the dissertation. 
@@ -914,7 +931,7 @@ $f$ can be represented as a piecewise function:
 In other words, the state-dependent model $f$ will apply the SE model $h_{\epsilon}$ to the input $x$ if the ASA model $g$ maps $x$ to $\epsilon$.
 For example, if a HA user is situated in anenvironment characterised as `Wind Turbulence and Speech',
 the state-dependent model will invoke the SE model that has been trained on this scenario to enhance the input signal $x$.
-The state-dependant model is inspired by the unveiling of the Spheric Clarity DNN model by Phonak \cite{Hasemann2024PhonakSphere} in late 2024
+The state-dependant model is inspired by the unveiling of the Spheric Clarity DNN model by Phonak \citep{Hasemann2024PhonakSphere} in late 2024
 in which if the HA user is faced in a 'Speech in Loud Noise' environment, the input signal $x$ will be passed through their Spheric Clarity DNN model.
 
 
