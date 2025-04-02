@@ -7,18 +7,25 @@
 % Understand any problems and seek approval before assuming it's ok to remove ugcheck.
 \documentclass[logo,bsc,singlespacing,parskip,online]{infthesis}
 \usepackage{ugcheck}
-
-
-% Include any packages you need below, but don't include any that change the page
-% layout or style of the dissertation. By including the ugcheck package above,
-% you should catch most accidental changes of page layout though.
-
+\usepackage{booktabs}  % For \toprule, \midrule, \bottomrule, \cmidrule
+\usepackage{multirow}  % For \multirow
 \usepackage{microtype} % recommended, but you can remove if it causes problems
 \usepackage[square,numbers]{natbib} % recommended for citations
 \usepackage{graphicx}
 \usepackage{amssymb}
 \usepackage{subcaption}
 \usepackage{amsmath}
+\usepackage{url} % for better URL handling
+\urlstyle{tt} % use monospace font for URLs
+
+
+% Include any packages you need below, but don't include any that change the page
+% layout or style of the dissertation. By including the ugcheck package above,
+% you should catch most accidental changes of page layout though.
+
+\usepackage{natbib}  % For \citet
+\usepackage{hyperref}  % For hyperlinks
+
 \usepackage{url} % for better URL handling
 \urlstyle{tt} % use monospace font for URLs
 \graphicspath{ 
@@ -1466,6 +1473,35 @@ TODO: Talk about the FLOPS and number of parameters of the models.
 TODO: Wrap up by showiong a table of the results (each experiment, eahc model's performance and training time, FLOPS, number of parameters)
 TODO: Refer them to Future Work since while the results are really good, 
 there are still areas of improvements and investigations to be done.
+
+% table
+% experiment, | net-8 |                                             net-20 | net-32 |
+%             | Overall Accuracy | Training Time | FLOPS | Params |  | Overall Accuracy | Training Time | FLOPS | Params |  | Overall Accuracy | Training Time | FLOPS | Params |
+% SGD, Aug, 120 | 0.85 | 100 | 100 | 0.85 | 100 | 100 | 0.85 | 100 | 100 |
+
+\begin{table}[h]
+   \centering
+   \begin{tabular}{lccccc}
+      \toprule
+      Model & Network Size & Accuracy & Training Time & FLOPS & Parameters \\
+      \midrule
+      \multirow{3}{*}{SGD No Aug, 120} & 8 & 0.85 & 100 & 100 & 100 \\
+      & 20 & 0.85 & 100 & 100 & 100 \\
+      & 32 & 0.85 & 100 & 100 & 100 \\
+      \midrule
+      \multirow{3}{*}{SGD Aug, 120} & 8 & 0.85 & 100 & 100 & 100 \\
+      & 20 & 0.85 & 100 & 100 & 100 \\
+      & 32 & 0.85 & 100 & 100 & 100 \\
+      \midrule 
+      \multirow{3}{*}{Adam, Aug, 120} & 8 & 0.85 & 100 & 100 & 100 \\
+      & 20 & 0.85 & 100 & 100 & 100 \\
+      & 32 & 0.85 & 100 & 100 & 100 \\
+
+      \bottomrule
+   \end{tabular}
+   \caption{Comparison of different network sizes using SGD with augmentation and 120 epochs.}
+\end{table}
+
 
 
 TODO
