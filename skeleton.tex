@@ -1341,15 +1341,24 @@ in future work.
 % The paper also presents the confusion matrix for the net-20 model, and our confusion matrix 
 % in Figure \ref{fig:fixed-lr-sgd-confusion-matrix} shows some similarities... TODO: Explain similarities hopefully 
 
-% Something the paper does not do is inspect how the model performs on specific SNRs. 
-% This gives us an opportunity to investigate this. In particular we wanted to 
-% see if the model is struggling with the lower SNRs as in those regions, 
-% the speech is less heard and so the model in the worst case should classify it 
-% as the non-speech variant of the environment. Figure \ref{fig:fixed-lr-sgd-snr-21} shows the 
-% confusion matrix for the net-20 model at SNR -21. TODO: Hopefully the results are as expected.
-
 \section{Data Augmentation}
 \label{sec:data-augmentation}
+\begin{figure}[h]
+   \centering
+   \begin{subfigure}[b]{0.48\textwidth}
+      \centering
+      \includegraphics[width=\textwidth]{fixed-lr-sgd-AUG_training_losses.png}
+      \caption{The training curves for the net-8, net-20 and net-32 models when using the fixed learning rate SGD approach with data augmentation.}
+      \label{fig:data-augmentation-losses}
+   \end{subfigure}
+   \hfill
+   \begin{subfigure}[b]{0.48\textwidth}
+      \centering
+      \includegraphics[width=\textwidth]{fixed-lr-sgd-AUG_training_times.png}
+      \caption{The training curves for the net-8, net-20 and net-32 models when using the fixed learning rate SGD approach with data augmentation.}
+      \label{fig:data-augmentation-times}
+   \end{subfigure}
+\end{figure}
 Now that we have a baseline, the next step is to test the hypothesis 
 that utterance-level data augmentation is effective. More specifically, 
 notice that in the baseline, per epoch, we are training the model on all 
@@ -1366,24 +1375,45 @@ and perhaps to better mimic the distribution of the sounds, it might
 be better to use a weighted sampling. We leave this as 
 potential future work.
 
-Figure \ref{fig:data-augmentation-losses} shows the training curves for the 
-three models, and this is a good time to point out that the loss 
-will be higher for the data augmentation approach. This is expected 
-as there is less samples during training and since the formula for 
+Figure \ref{fig:data-augmentation-losses} and \ref{fig:data-augmentation-times} shows 
+the resulting training curves and training times for the net-8, net-20 and net-32 models
+when now using the data augmentation approach. The plateu of the training curves 
+are similar to the baseline, but the training times have at least 
+a 5 fold reduction. While the cross entropy loss is higher, this is 
+to be expected as there is less samples during training and since the formula for 
 Cross-Entropy loss is a weighted sum of the negative log likelihood of 
 the correct class, a lower number of samples means that the loss 
-will be higher. However, when we have a look at the test accuracy (Figure \ref{fig:data-augmentation-accuracies}),
-we see that the data augmentation approach is actually better than 
-the baseline. This is a good sign and suggests that the data 
-augmentation approach is effective. Figure \ref{fig:data-augmentation-confusion-matrix} shows 
-that the model is less ...
+will be higher. When we have a look at the test accuracy (Figure \ref{fig:data-augmentation-accuracies}),
+we see that there is no significant difference in the performance of the model 
+but the training time has been reduced by a factor of 5.
+
+\begin{figure}[h]
+   \centering
+   \includegraphics[width=0.8\textwidth]{average_accuracies_sgd_aug.png}
+   \caption{The average accuracies fitted with linear regression of the net-8, net-20 and net-32 models when using the fixed learning rate SGD approach with data augmentation.
+   Also plotted are the extrapolated results from \citet{Huwel2020HearDS} for the three models.
+   }
+   \label{fig:data-augmentation-accuracies}
+\end{figure}
+% three models, and this is a good time to point out that the loss 
+% will be higher for the data augmentation approach. This is expected 
+% as there is less samples during training and since the formula for 
+% Cross-Entropy loss is a weighted sum of the negative log likelihood of 
+% the correct class, a lower number of samples means that the loss 
+% will be higher. However, when we have a look at the test accuracy (Figure \ref{fig:data-augmentation-accuracies}),
+% we see that the data augmentation approach is actually better than 
+% the baseline. This is a good sign and suggests that the data 
+% augmentation approach is effective. Figure \ref{fig:data-augmentation-confusion-matrix} shows 
+% that the model is less ...
 
 \section{Adam Optimiser Approach}
-For uniformity across all experiments from now on, we wished to see 
-how the Adam optimiser performs as we plan to use it in the future 
-and forthcoming experiments. The paper mentioned that 
-the use of Adam is sensitive to the initialisation and 
-so that is why they opted for the SGD approach. 
+Since we established that the data augmentation approach is effective, we wanted to see 
+if using a different optimiser would either yield better performance or reduce the 
+training time. Additionally, since we noticed in the earlier experiments 
+that the model was converging much earlier than the 120 epochs (let alone the suggested 
+240 epochs), thus we wanted to adopt an early stopping approach as well.
+\citet{Huwel2020HearDS} mentions that the use of Adam is sensitive to the initialisation 
+and so that is why they opted for the SGD approach. 
 They back this up with a paper by \citet{} 
 but after reading it, while it says 
 Adam can lead to poor convergence in `\textit{some settings}'
@@ -1392,13 +1422,52 @@ to see if this is the case for the ASA task. As such,
 we will be taking this forward to investigate this.
 
 
+\begin{figure}[h]
+   \centering
+   \begin{subfigure}[b]{0.48\textwidth}
+      \centering
+      \includegraphics[width=\textwidth]{adam-early-stop_training_losses.png}
+      \caption{The training curves for the net-8, net-20 and net-32 models when using the Adam optimiser.}
+      \label{fig:adam-optimiser-losses}
+   \end{subfigure}
+   \hfill
+   \begin{subfigure}[b]{0.48\textwidth}
+      \centering
+      \includegraphics[width=\textwidth]{adam-early-stop_training_times.png}
+      \caption{The training times for the net-8, net-20 and net-32 models when using the Adam optimiser.}
+      \label{fig:adam-optimiser-times}
+   \end{subfigure}
+\end{figure}
+
+Figure \ref{fig:adam-optimiser-losses} and \ref{fig:adam-optimiser-times} shows 
+the training curves and training times for the net-8, net-20 and net-32 models
+when using the Adam optimiser. We can see that the training curves converge to a 
+similar loss as to the one in \ref{sec:data-augmentation}, but the training times 
+are in some cases reduced by 50 \%, which is due to the early stopping approach.
+While there seems to be evidence of this sensitivity (as observed by the slightly larger spread 
+of the training curves), it is not as pronounced as the paper suggested and 
+could maybe suggest that the setting this optimiser is being used 
+is not as bad. 
+
 \section{Validating against TUT Acoustic Scenes 2016}
 As a means of validating that the implementation is correct, 
 we wanted to see if we can get similar results to a different paper 
 that is doing ASA. In particular, we will be using the paper by 
 \citet{schindler_multi-temporal_2018}. It uses the TUT Acoustic Scenes 2016 dataset
+as described in Section \ref{sec:datasets}.
+Since we found that using the Adam optimiser with Augmentation yields comparable 
+results to the fixed learning rate SGD approach (non-augmented), we will continue 
+to go with this approach for the following validation. 
 
-\section{Summary}
+TODO
+
+\section{Wrap Up/Feasibiltiy} 
+TODO: Talk about the FLOPS and number of parameters of the models.
+TODO: Wrap up by showiong a table of the results (each experiment, eahc model's performance and training time, FLOPS, number of parameters)
+TODO: Refer them to Future Work since while the results are really good, 
+there are still areas of improvements and investigations to be done.
+
+
 TODO
 
 \chapter{Speech Enhancement Experiments}
