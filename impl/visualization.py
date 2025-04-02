@@ -6,8 +6,12 @@ import pandas as pd
 import seaborn as sns
 from typing import Dict, List
 from constants import MODELS
+from sklearn.linear_model import LogisticRegression
+from sklearn.preprocessing import PolynomialFeatures
+from sklearn.linear_model import LinearRegression
+from sklearn.pipeline import make_pipeline
 
-def load_experiment_results(base_folder: str = 'models', max_experiments: int = 2) -> Dict:
+def load_experiment_results(base_folder: str = 'models', max_experiments: int = 3) -> Dict:
     """
     Load results from all experiments for different model configurations.
     Returns a dictionary with experiment types as keys and lists of results as values.
@@ -122,17 +126,52 @@ def plot_training_losses(results: Dict, output_dir: str):
 
 def plot_classwise_accuracies(results: Dict, output_dir: str):
     """Plot classwise accuracies for each model and experiment."""
+    # Reference data from the paper
+    paper_accuracies = {
+        'Music': 82,
+        'CocktailParty': 57,
+        'ReverberantEnvironment': 40,
+        'QuietIndoors': 75,
+        'InVehicle': 90,
+        'WindTurbulence': 63,
+        'InTraffic': 85,
+        'InterfereringSpeakers': 77,
+        'SpeechIn_Music': 80,
+        'SpeechIn_ReverberantEnvironment': 40,
+        'SpeechIn_QuietIndoors': 84,
+        'SpeechIn_InVehicle': 74,
+        'SpeechIn_WindTurbulence': 63,
+        'SpeechIn_InTraffic': 80, 
+    }
+    
+    paper_spreads = {
+        'Music': 10,
+        'CocktailParty': 30,
+        'ReverberantEnvironment': 23,
+        'QuietIndoors': 25,
+        'InVehicle': 3,
+        'WindTurbulence': 17,
+        'InTraffic': 3,
+        'InterfereringSpeakers': 10,
+        'SpeechIn_Music': 3,
+        'SpeechIn_ReverberantEnvironment': 25,
+        'SpeechIn_QuietIndoors': 5,
+        'SpeechIn_InVehicle': 17,
+        'SpeechIn_WindTurbulence': 20,
+        'SpeechIn_InTraffic': 4,
+    }
+
     for exp_type, exp_results in results.items():
         for model_name in MODELS.keys():
             # Create model-specific and experiment-type directory
             exp_dir = os.path.join(output_dir, model_name, exp_type)
+            os.makedirs(exp_dir, exist_ok=True)
             
             # Load class labels
             class_labels = load_class_labels('models', exp_type, model_name)
             
             # Collect classwise accuracies for all experiments
             all_accuracies = []
-            all_total_accuracies = []  # For overall accuracy
             for exp in exp_results:
                 if model_name in exp['naive_class_accuracies']:
                     acc = exp['naive_class_accuracies'][model_name]
@@ -143,15 +182,6 @@ def plot_classwise_accuracies(results: Dict, output_dir: str):
                         else:
                             acc_array = np.array(acc) * 100 if np.max(acc) <= 1 else np.array(acc)
                             all_accuracies.append(acc_array)
-                            
-                if model_name in exp['naive_total_accuracies']:
-                    total_acc = exp['naive_total_accuracies'][model_name]
-                    if isinstance(total_acc, (list, np.ndarray)):
-                        total_acc_list = [a * 100 if a <= 1 else a for a in total_acc]
-                        all_total_accuracies.extend(total_acc_list)
-                    else:
-                        total_acc_val = total_acc * 100 if total_acc <= 1 else total_acc
-                        all_total_accuracies.append(total_acc_val)
             
             if not all_accuracies:  # Skip if no data
                 continue
@@ -162,63 +192,81 @@ def plot_classwise_accuracies(results: Dict, output_dir: str):
             std_accuracies = np.std(all_accuracies, axis=0)
             
             # Calculate overall accuracy statistics
-            mean_total = np.mean(all_total_accuracies) if all_total_accuracies else 0
-            std_total = np.std(all_total_accuracies) if all_total_accuracies else 0
+            mean_total = np.mean(mean_accuracies)
+            std_total = np.std(mean_accuracies)
             
             # Create figure with two subplots side by side
-            fig, (ax1, ax2) = plt.subplots(1, 2, gridspec_kw={'width_ratios': [0.3, 4]}, figsize=(10, 4))  # Reduced from (15, 6)
+            fig, (ax1, ax2) = plt.subplots(1, 2, gridspec_kw={'width_ratios': [0.3, 4]}, figsize=(15, 6))
             
             # Set the same y-limits for both plots
             y_min = 0  # Accuracies should never be negative
-            y_max = max(100, np.max(mean_accuracies + std_accuracies), mean_total + std_total)
+            y_max = max(100, np.max(mean_accuracies + std_accuracies))
             ax1.set_ylim(y_min, y_max)
             ax2.set_ylim(y_min, y_max)
             
-            # Remove the box around the plots
-            ax1.spines['top'].set_visible(False)
-            ax1.spines['right'].set_visible(False)
-            ax2.spines['top'].set_visible(False)
-            ax2.spines['right'].set_visible(False)
+            # Plot overall accuracy on the left
+            if model_name == 'net-20':
+                # Our model
+                ax1.bar(0.3, mean_total, yerr=std_total, capsize=5, width=0.3,
+                       color='#1f77b4', label='_nolegend_')
+                # Reference model
+                ax1.bar(0.7, 77, yerr=6, capsize=5, width=0.3,
+                       color='gray', alpha=0.7, label='_nolegend_')
+                ax1.set_xlim(0, 1)
+                ax1.set_xticks([0.5])
+            else:
+                # Just our model
+                ax1.bar(0.5, mean_total, yerr=std_total, capsize=5, width=0.4,
+                       color='#1f77b4', label='_nolegend_')
+                ax1.set_xlim(0, 1)
+                ax1.set_xticks([0.5])
             
-            # Plot overall accuracy on the left with thinner bar
-            ax1.bar(x=0.5, height=mean_total, yerr=std_total, capsize=0,  # Remove error bar caps
-                   alpha=0.7, color='#1f77b4', width=0.8)  # Extremely thin bar
-            ax1.set_xlim(0, 1)  # Set explicit x-axis limits
-            ax1.set_xticks([0.5])  # Center the "Total" label
             ax1.set_xticklabels(['Total'])
-            ax1.set_title('Total Accuracy', fontsize=9)
+            ax1.set_title('Total Accuracy', fontsize=10)
             ax1.grid(True, alpha=0.3)
             ax1.set_ylabel('Accuracy (%)', fontsize=9)
             
             # Plot classwise accuracies on the right
-            x = np.arange(len(mean_accuracies))  # Use numpy arange instead of range
-            ax2.bar(x, mean_accuracies, yerr=std_accuracies, capsize=0,  # Remove error bar caps
-                   alpha=0.7, color='#1f77b4')  # Default width
-            ax2.set_title('Classwise Accuracy', fontsize=9)
+            x = np.arange(len(mean_accuracies))
             
-            # Set class labels
+            if model_name == 'net-20':
+                # Plot both our model and baseline
+                width = 0.35
+                # Our model bars
+                rects1 = ax2.bar(x - width/2, mean_accuracies, width, yerr=std_accuracies,
+                               capsize=5, color='#1f77b4', label='Our Model')
+                
+                # Reference model bars
+                paper_acc_list = [paper_accuracies[label] for label in class_labels.values()]
+                paper_spread_list = [paper_spreads[label] for label in class_labels.values()]
+                rects2 = ax2.bar(x + width/2, paper_acc_list, width, yerr=paper_spread_list,
+                               capsize=5, color='gray', alpha=0.7, label='HEAR-DS CNN Baseline')
+            else:
+                # Just plot our model
+                width = 0.6
+                ax2.bar(x, mean_accuracies, width, yerr=std_accuracies,
+                       capsize=5, color='#1f77b4', label='Our Model')
+            
+            # Set labels
             labels = [class_labels.get(i, str(i)) for i in range(len(mean_accuracies))]
             ax2.set_xticks(x)
             ax2.set_xticklabels(labels, rotation=45, ha='right')
+            ax2.set_title('Classwise Accuracy', fontsize=10)
             
-            # Remove y-ticks and label from right plot
-            ax2.set_yticklabels([])
-            ax2.set_ylabel('')
-            
-            # Add grid to both plots
-            ax1.grid(True, alpha=0.3)
+            # Add grid
             ax2.grid(True, alpha=0.3)
             
-            # Adjust font sizes
-            ax1.tick_params(axis='both', which='major', labelsize=8)
-            ax2.tick_params(axis='both', which='major', labelsize=8)
+            # Add legend only for net-20
+            if model_name == 'net-20':
+                handles, labels = ax2.get_legend_handles_labels()
+                fig.legend(handles, labels, loc='upper right', bbox_to_anchor=(0.99, 0.99))
             
-            # Remove subplot titles and add a single title for the figure
-            fig.suptitle(f'Accuracies - {model_name} ({exp_type})', y=1.02, fontsize=10)
-            
+            # Adjust layout
             plt.tight_layout()
+            
+            # Save figure
             plt.savefig(os.path.join(exp_dir, 'classwise_accuracies.png'),
-                       bbox_inches='tight', dpi=300)
+                        bbox_inches='tight', dpi=300)
             plt.close()
 
 def plot_training_times(results: Dict, output_dir: str):
@@ -251,7 +299,7 @@ def plot_training_times(results: Dict, output_dir: str):
             continue
             
         # Create bar plot
-        plt.figure(figsize=(8, 4))  # Reduced from (12, 6)
+        plt.figure(figsize=(6, 4))  # Reduced from (12, 6)
         x = range(len(model_names))
         plt.bar(x, mean_times, yerr=std_times, capsize=5, alpha=0.7)
         
@@ -347,7 +395,15 @@ def plot_confusion_matrices(results: Dict, output_dir: str):
             
             # Create descriptive title
             depth = model_name.split('-')[1]  # Extract depth number from model name
-            optimizer_type = 'SGD' if exp_type == 'fixed-lr-sgd' else 'Adam with Early Stopping'
+            # Determine optimizer type based on experiment type
+            if exp_type.startswith('fixed-lr-sgd-AUG'):
+                optimizer_type = 'SGD with Augmentation'
+            elif exp_type.startswith('adam-early-stop'):
+                optimizer_type = 'Adam with Early Stopping'
+            elif exp_type.startswith('FIXED-fixed-lr-sgd'):
+                optimizer_type = 'SGD without Augmentation'
+            else:
+                optimizer_type = exp_type
             title = f'Scene Classification Performance - {depth}-Layer Network ({optimizer_type})'
             fig.suptitle(title, y=1.05, fontsize=10, fontweight='bold')
             
@@ -458,7 +514,15 @@ def plot_class_metrics(results: Dict, output_dir: str):
             
             # Create descriptive title
             depth = model_name.split('-')[1]
-            optimizer_type = 'SGD' if exp_type == 'fixed-lr-sgd' else 'Adam with Early Stopping'
+            # Determine optimizer type based on experiment type
+            if exp_type.startswith('fixed-lr-sgd-AUG'):
+                optimizer_type = 'SGD with Augmentation'
+            elif exp_type.startswith('adam-early-stop'):
+                optimizer_type = 'Adam with Early Stopping'
+            elif exp_type.startswith('FIXED-fixed-lr-sgd'):
+                optimizer_type = 'SGD without Augmentation'
+            else:
+                optimizer_type = exp_type
             fig.suptitle(f'Performance Metrics - {depth}-Layer Network ({optimizer_type})', 
                         y=1.05, fontsize=10, fontweight='bold')
             
@@ -515,11 +579,11 @@ def plot_extreme_snr_performance(results: Dict, output_dir: str):
                     mean_recall[class_idx] = np.mean(class_recalls)
                     mean_f1[class_idx] = np.mean(class_f1s)
                 
-                # Create a figure with three subplots
-                fig = plt.figure(figsize=(15, 4))
-                gs = fig.add_gridspec(1, 3, width_ratios=[1, 1, 1], wspace=0.3)
+                # Create a figure with two subplots arranged vertically
+                fig = plt.figure(figsize=(8, 10))
+                gs = fig.add_gridspec(2, 1, height_ratios=[1, 1], hspace=0.3)
                 
-                # 1. Confusion Matrix
+                # 1. Confusion Matrix (top)
                 ax1 = fig.add_subplot(gs[0])
                 # Create custom colormap from yellow to purple
                 colors = ['#ffff00', '#ff9900', '#ff3300', '#990099', '#330099']
@@ -543,48 +607,40 @@ def plot_extreme_snr_performance(results: Dict, output_dir: str):
                 ax1.set_xlabel('Estimated Scene', fontsize=9)
                 plt.colorbar(im, ax=ax1, fraction=0.046, pad=0.04)
                 
-                # 2. Classwise Accuracy Plot
-                ax2 = fig.add_subplot(gs[1])
-                # Calculate classwise accuracy by normalizing each row
-                row_sums = mean_conf_matrix.sum(axis=1, keepdims=True)
-                row_sums[row_sums == 0] = 1  # Avoid division by zero
-                class_accuracies = np.diag(mean_conf_matrix / row_sums.flatten())
-                
+                # 2. Class Metrics (bottom) - Horizontal bars
+                ax3 = fig.add_subplot(gs[1])
                 # Only plot speech classes (8-13)
                 speech_classes = range(8, 14)
-                speech_accuracies = class_accuracies[8:14]
-                x = np.arange(len(speech_classes))
-                ax2.bar(x, speech_accuracies, alpha=0.7)
-                ax2.set_title('Classwise Accuracy', fontsize=9)
-                ax2.set_xticks(x)
-                ax2.set_xticklabels([class_labels.get(i, str(i)) for i in speech_classes], 
-                                  rotation=45, ha='right')
-                ax2.set_ylim(0, 1.0)
-                ax2.grid(True, alpha=0.3)
-                
-                # 3. Class Metrics (Precision, Recall, F1)
-                ax3 = fig.add_subplot(gs[2])
-                # Only plot speech classes (8-13)
                 speech_precision = mean_precision[8:14]
                 speech_recall = mean_recall[8:14]
                 speech_f1 = mean_f1[8:14]
-                x = np.arange(len(speech_classes))
+                y = np.arange(len(speech_classes))
                 width = 0.25
-                ax3.bar(x - width, speech_precision, width, label='Precision', alpha=0.7)
-                ax3.bar(x, speech_recall, width, label='Recall', alpha=0.7)
-                ax3.bar(x + width, speech_f1, width, label='F1', alpha=0.7)
+                
+                # Plot horizontal bars
+                ax3.barh(y - width, speech_precision, width, label='Precision', alpha=0.7)
+                ax3.barh(y, speech_recall, width, label='Recall', alpha=0.7)
+                ax3.barh(y + width, speech_f1, width, label='F1', alpha=0.7)
+                
                 ax3.set_title('Class Metrics', fontsize=9)
-                ax3.set_xticks(x)
-                ax3.set_xticklabels([class_labels.get(i, str(i)) for i in speech_classes], 
-                                  rotation=45, ha='right')
-                ax3.set_ylim(0, 1.0)
+                ax3.set_yticks(y)
+                ax3.set_yticklabels([class_labels.get(i, str(i)) for i in speech_classes])
+                ax3.set_xlim(0, 1.0)
                 # Move legend outside the plot
                 ax3.legend(fontsize=8, loc='center left', bbox_to_anchor=(1.0, 0.5))
                 ax3.grid(True, alpha=0.3)
                 
                 # Add overall title
                 depth = model_name.split('-')[1]
-                optimizer_type = 'SGD' if exp_type == 'fixed-lr-sgd' else 'Adam with Early Stopping'
+                # Determine optimizer type based on experiment type
+                if exp_type.startswith('fixed-lr-sgd-AUG'):
+                    optimizer_type = 'SGD with Augmentation'
+                elif exp_type.startswith('adam-early-stop'):
+                    optimizer_type = 'Adam with Early Stopping'
+                elif exp_type.startswith('FIXED-fixed-lr-sgd'):
+                    optimizer_type = 'SGD without Augmentation'
+                else:
+                    optimizer_type = exp_type
                 title = f'Performance at SNR {snr}dB - {depth}-Layer Network ({optimizer_type})'
                 fig.suptitle(title, y=1.05, fontsize=10, fontweight='bold')
                 
@@ -595,6 +651,136 @@ def plot_extreme_snr_performance(results: Dict, output_dir: str):
                 plt.savefig(os.path.join(exp_dir, f'snr_{snr}_performance.png'),
                           bbox_inches='tight', dpi=300)
                 plt.close()
+
+def plot_average_accuracies(results: Dict, output_dir: str):
+    """Plot average accuracies with polynomial regression fitting for each experiment type."""
+    from sklearn.preprocessing import PolynomialFeatures
+    from sklearn.linear_model import LinearRegression
+    from sklearn.pipeline import make_pipeline
+    
+    # Define colors for each model
+    colors = plt.cm.rainbow(np.linspace(0, 1, len(MODELS)))
+    
+    # Paper reference points
+    paper_depths = np.array([8, 20, 32])
+    paper_accuracies = np.array([44, 70, 80])
+    paper_errors = np.array([
+        [6, 12],  # [lower, upper] for net-8: 35-55
+        [5, 5],   # net-20: 65-75
+        [3, 2],   # net-32: 77-82
+    ])
+    
+    # Create a plot for each experiment type
+    for exp_type, exp_results in results.items():
+        # Create figure
+        plt.figure(figsize=(10, 6))
+        
+        # Collect accuracies and model depths
+        model_data = {}  # Dict to store accuracies for each model
+        
+        # Collect accuracies from all experiments
+        for exp in exp_results:  # Loop through all experiments
+            for model_name in MODELS.keys():
+                if model_name in exp['naive_total_accuracies']:
+                    if model_name not in model_data:
+                        model_data[model_name] = []
+                    
+                    accuracy = exp['naive_total_accuracies'][model_name]
+                    if isinstance(accuracy, (int, float)):
+                        accuracy = accuracy * 100 if accuracy <= 1 else accuracy
+                    elif isinstance(accuracy, list):
+                        accuracy = accuracy[-1] * 100 if accuracy[-1] <= 1 else accuracy[-1]
+                    
+                    model_data[model_name].append(accuracy)
+        
+        # Prepare data for plotting
+        X = []  # Model depths
+        y = []  # Mean accuracies
+        yerr = []  # Standard deviations for error bars
+        
+        for model_name, accuracies in model_data.items():
+            if accuracies:  # Only process if we have data
+                depth = int(model_name.split('-')[1])
+                mean_acc = np.mean(accuracies)
+                std_acc = np.std(accuracies) if len(accuracies) > 1 else 0
+                
+                print(f"{exp_type} - {model_name}: mean={mean_acc:.2f}, std={std_acc:.2f}, n={len(accuracies)}")  # Debug print
+                
+                X.append(depth)
+                y.append(mean_acc)
+                yerr.append(std_acc)
+        
+        if not X:  # Skip if no data for this experiment type
+            continue
+            
+        X = np.array(X).reshape(-1, 1)
+        y = np.array(y)
+        
+        # Fit polynomial regression
+        poly_reg = make_pipeline(PolynomialFeatures(3), LinearRegression())
+        poly_reg.fit(X, y)
+        
+        # Generate points for smooth curve
+        X_smooth = np.linspace(min(X), max(X), 100).reshape(-1, 1)
+        y_smooth = poly_reg.predict(X_smooth)
+        
+        # Plot with error bars and smooth curve
+        for i, (x, mean_acc, std_acc) in enumerate(zip(X.flatten(), y, yerr)):
+            model_name = f'net-{int(x)}'
+            plt.errorbar(x, mean_acc, yerr=std_acc, fmt='o', capsize=5, markersize=8, 
+                        color=colors[i], label=model_name, zorder=2)
+        
+        plt.plot(X_smooth, y_smooth, 'k-', linewidth=2, label=None, zorder=1)
+        
+        # Plot paper reference points with dashed line
+        yerr_paper = [paper_errors[:, 0], paper_errors[:, 1]]  # Split into lower and upper errors
+        plt.errorbar(paper_depths, paper_accuracies, yerr=yerr_paper, fmt='s', 
+                    color='gray', capsize=5, markersize=8, label='HEAR-DS CNN Baseline',
+                    zorder=3)
+        plt.plot(paper_depths, paper_accuracies, 'k--', linewidth=2, zorder=2)
+        
+        # Customize plot
+        plt.xlabel('Model', fontsize=12)
+        plt.ylabel('Accuracy [%]', fontsize=12)
+        plt.grid(True, alpha=0.3)
+        
+        # Move legend to the right side outside the plot
+        plt.legend(fontsize=10, bbox_to_anchor=(1.05, 1), loc='upper left')
+        
+        # Set x-ticks to model names
+        plt.xticks(X.flatten(), [f'net-{int(x)}' for x in X.flatten()])
+        
+        # Set y-axis limits from 0 to 100
+        plt.ylim(0, 100)
+        
+        # Add title based on experiment type
+        if exp_type.startswith('fixed-lr-sgd-AUG'):
+            title = 'Average Accuracy - SGD with Augmentation'
+        elif exp_type.startswith('adam-early-stop'):
+            title = 'Average Accuracy - Adam with Early Stopping'
+        elif exp_type.startswith('FIXED-fixed-lr-sgd'):
+            title = 'Average Accuracy - SGD without Augmentation'
+        else:
+            title = f'Average Accuracy - {exp_type}'
+        
+        plt.title(title, fontsize=12, pad=20)
+        
+        # Adjust layout and save
+        plt.tight_layout()
+        
+        # Create experiment-specific filename
+        if exp_type.startswith('fixed-lr-sgd-AUG'):
+            filename = 'average_accuracies_sgd_aug.png'
+        elif exp_type.startswith('adam-early-stop'):
+            filename = 'average_accuracies_adam.png'
+        elif exp_type.startswith('FIXED-fixed-lr-sgd'):
+            filename = 'average_accuracies_sgd_no_aug.png'
+        else:
+            filename = f'average_accuracies_{exp_type}.png'
+        
+        plt.savefig(os.path.join(output_dir, filename),
+                    bbox_inches='tight', dpi=300)
+        plt.close()
 
 def generate_all_plots(output_dir: str = 'output/visualizations'):
     """Generate all visualization plots."""
@@ -609,12 +795,13 @@ def generate_all_plots(output_dir: str = 'output/visualizations'):
             exp_dir = os.path.join(model_dir, exp_type)
             os.makedirs(exp_dir, exist_ok=True)
     
-    plot_training_losses(results, output_dir)
-    plot_classwise_accuracies(results, output_dir)
-    plot_training_times(results, output_dir)
-    plot_confusion_matrices(results, output_dir)
-    plot_class_metrics(results, output_dir)
+    # plot_training_losses(results, output_dir)
+    # plot_classwise_accuracies(results, output_dir)
+    # plot_training_times(results, output_dir)
+    # plot_confusion_matrices(results, output_dir)
+    # plot_class_metrics(results, output_dir)
     plot_extreme_snr_performance(results, output_dir)
+    # plot_average_accuracies(results, output_dir)
 
 if __name__ == "__main__":
     generate_all_plots() 

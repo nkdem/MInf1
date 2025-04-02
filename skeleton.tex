@@ -17,10 +17,22 @@
 \usepackage[square,numbers]{natbib} % recommended for citations
 \usepackage{graphicx}
 \usepackage{amssymb}
+\usepackage{subcaption}
 \usepackage{amsmath}
 \usepackage{url} % for better URL handling
 \urlstyle{tt} % use monospace font for URLs
-\graphicspath{ {./images/}}
+\graphicspath{ 
+   {./images/} {./impl/output/visualizations/} 
+   {./impl/output/visualizations/net-8/adam-early-stop/} 
+   {./impl/output/visualizations/net-8/FIXED-fixed-lr-sgd/} 
+   {./impl/output/visualizations/net-8/fixed-lr-sgd-AUG/} 
+   {./impl/output/visualizations/net-20/adam-early-stop/} 
+   {./impl/output/visualizations/net-20/FIXED-fixed-lr-sgd/} 
+   {./impl/output/visualizations/net-20/fixed-lr-sgd-AUG/} 
+   {./impl/output/visualizations/net-32/adam-early-stop/} 
+   {./impl/output/visualizations/net-32/FIXED-fixed-lr-sgd/} 
+   {./impl/output/visualizations/net-32/fixed-lr-sgd-AUG/} 
+}
 
 % Bibliography settings
 \bibliographystyle{plainnat}
@@ -987,10 +999,10 @@ Once that's done, the reader will be in a position to now analyse the results of
       \hline
       Dataset & \rotatebox{90}{Environments} & \rotatebox{90}{No. of Speakers} & \rotatebox{90}{Hours of Data} \\
       \hline
-   HEAR-DS \cite{Huwel2020HearDS} & 6 & - & 21 hours \\ % TODO: The hours is wrong, find the correct number
-      CHiME 3 (booth dev. set) \cite{barker_third_2015} & - & 4 & 10 hours \\
-      CHiME 6 (train + dev + eval) \cite{barker18_fifth_2018} & - & 48 & 50 hours \\
-      TUT Acoustic Scenes 2016 \cite{mesaros_tut_2016} & 10 & - & 10 hours \\
+   HEAR-DS \citep{Huwel2020HearDS} & 6 & - & 21 hours \\ % TODO: The hours is wrong, find the correct number
+      CHiME 3 (booth dev. set) \citep{barker_third_2015} & - & 4 & 10 hours \\
+      CHiME 6 (train + dev + eval) \citep{barker18_fifth_2018} & - & 48 & 50 hours \\
+      TUT Acoustic Scenes 2016 \citep{mesaros_tut_2016} & 10 & - & 10 hours \\
       \hline
    \end{tabular}
    \caption{Dataset statistics.}
@@ -1188,24 +1200,153 @@ As mentioned in the methodology section, we will be training 3 models
 be training these models with the configurations outlined below.
 
 \section{Baseline: Fixed Learning Rate SGD Approach}
+\begin{figure}[h]
+   \centering
+   \begin{subfigure}[b]{0.45\textwidth}
+      \centering
+      \includegraphics[width=\textwidth]{FIXED-fixed-lr-sgd_training_losses.png}  
+      \caption{}
+      \label{fig:fixed-lr-sgd-losses}
+   \end{subfigure}
+   \begin{subfigure}[b]{0.45\textwidth}
+      \centering
+      \includegraphics[width=\textwidth]{FIXED-fixed-lr-sgd_training_times.png}
+      \caption{}
+      \label{fig:fixed-lr-sgd-times}
+   \end{subfigure}
+   \caption{The training curve (\subref{fig:fixed-lr-sgd-losses}) and training times (\subref{fig:fixed-lr-sgd-times}) of the net-8, net-20 and net-32 models when using the fixed learning rate SGD approach.}
+   \label{fig:training-curves}
+\end{figure}
 With the data preparation out of the way, we can now move on to the experiments.
 For the baseline, we will be following with the paper's approach of using the following 
 learning rates: [0.05, 0.01, 0.001, 0.0005, 0.0002, 0.0001].
 The learning rate in the paper is changed every 40 epochs, however, as that means doing 
 240 epochs, we decided to do 120 epochs instead and so change the learning rate every 20 epochs.
 As can be seen by Figure \ref{fig:fixed-lr-sgd-losses}, the model already converges by 120 epochs,
-so 240 epochs felt like overkill. What can be seen by the training curve is that the model is 
-achieving a cross-entropy loss of X and at test time, Figure \ref{fig:fixed-lr-sgd-accuracies} shows the accuracies 
-of the three models. The difference in accuracy we are achieving is much higher than the paper's. 
-The paper also presents the confusion matrix for the net-20 model, and our confusion matrix 
-in Figure \ref{fig:fixed-lr-sgd-confusion-matrix} shows some similarities... TODO: Explain similarities hopefully 
+indicating that the aditional epochs in the original paper were not necessary. 
+Moreover, the minimal variability that is observed in the training curve across the 5 experiments 
+raises questions on why the paper by \citet{Huwel2020HearDS} did 50 experiments. Unfortunately,
+the lack of access to the original paper's training curves means we cannot investigate this further. 
 
-Something the paper does not do is inspect how the model performs on specific SNRs. 
-This gives us an opportunity to investigate this. In particular we wanted to 
-see if the model is struggling with the lower SNRs as in those regions, 
-the speech is less heard and so the model in the worst case should classify it 
-as the non-speech variant of the environment. Figure \ref{fig:fixed-lr-sgd-snr-21} shows the 
-confusion matrix for the net-20 model at SNR -21. TODO: Hopefully the results are as expected.
+\begin{figure}[h]
+   \centering
+   \includegraphics[width=0.8\textwidth]{average_accuracies_sgd_no_aug.png}
+   \caption{The average accuracies fitted with linear regression of the net-8, net-20 and net-32 models when using the fixed learning rate SGD approach.
+   Also plotted are the extrapolated results from \citet{Huwel2020HearDS} for the three models.
+   }
+   \label{fig:fixed-lr-sgd-accuracies}
+\end{figure}
+
+Figure \ref{fig:fixed-lr-sgd-accuracies} demonstrates the model's performance on the test set after training for 120 epochs 
+with the results from the paper by \citet{Huwel2020HearDS} also plotted. It is clear 
+that with using a more powerful model, we are able to achieve a higher accuracy 
+as seen by the positive slope of the increasing accuracy with model size.
+Our accuracies are much higher than the paper's, and we are not getting a gradual 
+increase in accuracy as they are. For further investigation, we 
+compare our classwise accuracies of the net-20 model against theirs in Figure 
+\ref{fig:fixed-lr-sgd-classwise-accuracies}. It is encouraging 
+that the overall trend between our results and the paper's are similar. 
+Namely, it seems to be struggling a lot more with the Cocktail Party, Reveberant 
+Environment and the Speech In Wind Turbulence environments.
+It is also interesting the paper's results have a lot more variance in the classwise accuracies 
+just as we have seen in the training curves. We can only hypothesise 
+that this is due to the different speech dataset used (CHiME 3 instead of CHiME 2) 
+and perhaps the inclusion of the HRTFs during the speech mixing process. We leave 
+this for future work to be investigated.
+
+\begin{figure}[h]
+   \centering
+   \includegraphics[width=0.8\textwidth]{net-20/FIXED-fixed-lr-sgd/classwise_accuracies.png}
+   \caption{The classwise accuracies of the net-20 model when using the fixed learning rate SGD approach.
+   Also plotted are the extrapolated results from \citet{Huwel2020HearDS} for the net-20 model.}
+   \label{fig:fixed-lr-sgd-classwise-accuracies}
+\end{figure}   
+
+As discussed in the previous chapter, in each of the classification experiments, we felt like reporting just the overall 
+accuracies was not enough to get a holistic view of the model's performance. 
+So we wanted to investigate the model's performance on specific SNRs and also by reporting the precision, recall and F1 scores to
+see if the model is performing well for all classes. 
+
+For the sake of brevity, our investigation focuses on the two extremes of the SNRs,
+(-21dB, 21dB) and seen through the lens of two models: net-8 and net-32.
+The lowest SNR (-21) gives an indication of
+how well the model is able to reliably detect the presence of speech 
+even when background noise is barely discernible, although it 
+may struggle to differentiate between various environments.
+The highest SNR (21dB) evaluates the model's
+capacity to identify the correct environment in situations with significant background noise, albeit possibly at the expense of accurately detecting the presence of speech.
+The selection of net-8 and net-32 allows us to assess whether increased model complexity enhances the model's sensitivity to these nuances, particularly in terms of capturing subtle differences in performance across varying SNR conditions.
+
+\begin{figure}[h]
+   \centering
+   \begin{subfigure}[b]{0.48\textwidth}
+      \centering
+      \includegraphics[width=\textwidth]{net-8/FIXED-fixed-lr-sgd/snr_-21_performance.png}
+      \caption{The performance of the net-8 model at SNR -21.}
+      \label{fig:fixed-lr-sgd-snr--21}
+   \end{subfigure}
+   \hfill
+   \begin{subfigure}[b]{0.48\textwidth}
+      \centering
+      \includegraphics[width=\textwidth]{net-8/FIXED-fixed-lr-sgd/snr_21_performance.png}
+      \caption{The performance of the net-8 model at SNR 21.}
+      \label{fig:fixed-lr-sgd-snr-21}
+   \end{subfigure}
+\end{figure}
+
+Figure \ref{fig:fixed-lr-sgd-snr--21} and \ref{fig:fixed-lr-sgd-snr-21} shows 
+the performance of the net-8 model at SNR -21 and 21 respectively.
+Clearly, the discussed problems above are evident in the results. 
+It is interesting to note that in the SNR -21 case, 
+the model has a significant precision rate, but a low recall rate. 
+When paired with the confusion matrix, the model 
+is unsure whether to classify the sample as non-speech or speech
+which is presumably due to the added difficulty of distinguishing 
+between spoken lyrics and speech of a person. 
+It is reassuring to see in the SNR 21 case, that the model 
+is successfully detecting speech in what is a very noisy environment,
+granted it seems to be more conflated in what environment the speech is coming from.
+
+% net-32
+\begin{figure}[h]
+   \centering
+   \begin{subfigure}[b]{0.48\textwidth}
+      \centering
+      \includegraphics[width=\textwidth]{net-32/FIXED-fixed-lr-sgd/snr_-21_performance.png}
+      \caption{The performance of the net-32 model at SNR -21.}
+      \label{fig:fixed-lr-sgd-snr--21-net-32}
+   \end{subfigure}
+   \hfill
+   \begin{subfigure}[b]{0.48\textwidth}  
+         \centering
+      \includegraphics[width=\textwidth]{net-32/FIXED-fixed-lr-sgd/snr_21_performance.png}
+      \caption{The performance of the net-32 model at SNR 21.}
+      \label{fig:fixed-lr-sgd-snr-21-net-32}
+   \end{subfigure}
+\end{figure}
+
+Figure \ref{fig:fixed-lr-sgd-snr--21-net-32} and \ref{fig:fixed-lr-sgd-snr-21-net-32} shows 
+the performance of the net-32 model at SNR -21 and 21 respectively.
+As a whole, the net-32 model is less prone to misclassification, 
+as evidenced by the higher F1 scores. Though, it is interesting, that in the 
+net-32 model, the F1 score for Speech in Music is worse than the net-8 model.
+Given the complexity of this particular environment, it suggests that 
+there is more work to be done on this particular environment. 
+
+Overall, these more in-depth results not only emphasise 
+how difficult the ASA task can be in the presence of speech (especially 
+if it's not a binary classification task), but also 
+presents a promising direction for further refinement of the model's performance across varying acoustic challenges
+in future work.
+% The paper also presents the confusion matrix for the net-20 model, and our confusion matrix 
+% in Figure \ref{fig:fixed-lr-sgd-confusion-matrix} shows some similarities... TODO: Explain similarities hopefully 
+
+% Something the paper does not do is inspect how the model performs on specific SNRs. 
+% This gives us an opportunity to investigate this. In particular we wanted to 
+% see if the model is struggling with the lower SNRs as in those regions, 
+% the speech is less heard and so the model in the worst case should classify it 
+% as the non-speech variant of the environment. Figure \ref{fig:fixed-lr-sgd-snr-21} shows the 
+% confusion matrix for the net-20 model at SNR -21. TODO: Hopefully the results are as expected.
 
 \section{Data Augmentation}
 \label{sec:data-augmentation}
