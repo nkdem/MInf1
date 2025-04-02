@@ -26,7 +26,7 @@ class FixedLR_SGD(BaseExperiment):
         self.batch_size = batch_size
         self.exp_no = experiment_no
         self.learning_rates = learning_rates
-        self.experiment_name = f"fixed-lr-sgd-{experiment_no}"
+        self.experiment_name = f"FIXED-fixed-lr-sgd-{experiment_no}"
         self.classes_train = classes_train
         self.classes_test = classes_test
         self.device = torch.device("mps" if not cuda else "cuda")
@@ -52,19 +52,35 @@ class FixedLR_SGD(BaseExperiment):
         )
         trainer.train()
 
-        print("\nTraining phase completed. Starting results collection and analysis...")
+        # with open(os.path.join(base_dir, 'results.pkl'), 'rb') as f:
+        #     resultss = pickle.load(f)
 
-        # Precompute test logmels and create cached test dataset
+        # losses = resultss['losses']
+        # durations = resultss['duration']
+        # learning_rates_used = resultss['learning_rates']
+
+        losses = trainer.losses
+        durations = trainer.durations
+        learning_rates_used = trainer.learning_rates_used
+
+        print("\nTraining phase completed. Starting results collection and analysis...")
         env_to_int = {env: i for i, env in enumerate(self.classes_train.keys())}
         cached_test_loader = self.precompute_test_logmels(self.test_loader, env_to_int)
-        
-        # Use the cached test loader for results collection
-        results = self.get_results(trainer=trainer, base_dir=base_dir, test_loader=cached_test_loader)
+
+        results = self.get_results(base_dir=base_dir, test_loader=cached_test_loader, num_of_classes=len(env_to_int), env_to_int=env_to_int, 
+                                   durations=durations, learning_rates_used=learning_rates_used, losses=losses)
 
         # save results 
-        with open(os.path.join(base_dir, 'results.pkl'), 'wb') as f:
+        with open(os.path.join(base_dir, 'results2.pkl'), 'wb') as f:
             pickle.dump(results, f)
         print(f"Results saved in {base_dir}")
+        # print accuracy
+        for model in MODELS.keys():
+            print(f"\nModel: {model}")
+            # print(f"Naive class accuracy: {results['naive_class_accuracies'][model][-1]}")
+            print(f"Naive total accuracy: {results['naive_total_accuracies'][model][-1]}")
+            # print(f"Per SNR metrics: {results['per_snr_metrics'][model]}")
+            # print(f"Overall metrics: {results['overall_metrics'][model]}")
 
     def __str__(self):
         """String representation of the experiment configuration"""
@@ -91,7 +107,7 @@ if __name__ == '__main__':
     parser.add_argument("--cuda", action='store_true', default=False)
     args = parser.parse_args()
 
-    experiment_no = args.experiment_no
+    experiment_no = args.experiment_no if args.experiment_no is not None else 1
     cuda = args.cuda
     split_file = f'splits/split_{experiment_no - 1}.pkl' # 0-indexed
     with open(split_file, 'rb') as f:
@@ -100,6 +116,9 @@ if __name__ == '__main__':
         test_combined = split['random_snr']['test']
         classes_train = split['classes']['train']['random_snr']
         classes_test = split['classes']['test']['random_snr']
+        # for keys that start with SpeechIn, multiply the value by 15
+        classes_train = {k: v * 15 if k.startswith('SpeechIn') else v for k, v in classes_train.items()}
+        classes_test = {k: v * 15 if k.startswith('SpeechIn') else v for k, v in classes_test.items()}
         experiment = FixedLR_SGD(
             train_combined=train_combined,
             test_combined=test_combined,

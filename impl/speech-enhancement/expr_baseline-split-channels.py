@@ -27,6 +27,22 @@ from helpers import compute_average_logmel, linear_to_waveform, logmel_to_linear
 logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
 logger = logging.getLogger(__name__)
 
+def set_snr(dataset, snr):
+    if hasattr(dataset, 'snr'):
+        dataset.snr = snr
+    else:
+        method = getattr(dataset, 'set_snr', None)
+        if method is not None and callable(method):
+            method(snr)
+
+def set_load_waveforms(dataset, load_waveforms):
+    if hasattr(dataset, 'load_waveforms'):
+        dataset.load_waveforms = load_waveforms
+    else:
+        method = getattr(dataset, 'set_load_waveforms', None)
+        if method is not None and callable(method):
+            method(load_waveforms)
+
 class BaseExperiment(ABC):
     def __init__(self, batch_size, cuda=False, train_loader=None, test_loader=None):
         self.batch_size = batch_size
@@ -61,8 +77,8 @@ class BaseExperiment(ABC):
             split = pickle.load(f)
             
             # Extract the mixed datasets from the splits
-            train_mixed_ds_L: MixedAudioDataset = split['subsets']['train']['mixed']
-            test_mixed_ds_L: MixedAudioDataset = split['subsets']['test']['mixed']
+            train_mixed_ds_L: MixedAudioDataset = split['random_snr']['subsets']['train']['mixed']
+            test_mixed_ds_L: MixedAudioDataset = split['random_snr']['subsets']['test']['mixed']
             train_mixed_ds_L.channel = 'L'
             test_mixed_ds_L.channel = 'L'
 
@@ -169,7 +185,7 @@ class BaseExperiment(ABC):
 
 
         
-    def test(self, base_dir, test_loader: DataLoader, model: CNNSpeechEnhancer, trainer: SpeechEnhanceAdamEarlyStopTrainer):
+    def test(self, base_dir, test_loader: DataLoader, model: CNNSpeechEnhancer, trainer: SpeechEnhanceAdamEarlyStopTrainer, left: bool):
         model.eval()
 
         # Initialize dictionaries to store scores
@@ -182,27 +198,26 @@ class BaseExperiment(ABC):
         env_scores = {}
         test_files = []
 
+        # Create base directory for saving wav files
+        wav_dir = os.path.join(base_dir, 'wav_files')
+        os.makedirs(wav_dir, exist_ok=True)
+
         with torch.no_grad():
             for batch in tqdm(test_loader, desc="Testing", unit="batch"):
-                noisy, clean, envs, recs, cut_ids, snip_ids, extras, snrs = batch
-                if len(noisy) == 0:
+                logmels, clean, envs, recs, cut_ids, snip_ids, extras, snrs = batch
+                if len(logmels) == 0:
                     continue
-                noisy_computed_logmel = compute_average_logmel(noisy, self.device)
+                # noisy_computed_logmel = compute_average_logmel(noisy, self.device)
 
                 # Normalize the input
-                normalised_noisy_logmels = trainer.normalize_logmels(noisy_computed_logmel)
+                normalised_noisy_logmels = trainer.normalize_logmels(logmels)
 
-                # Reshape the input to match the expected 4D format
-                batch_size, channels, time_frames = normalised_noisy_logmels.shape
-                reshaped_input = normalised_noisy_logmels.view(batch_size, channels, 1, time_frames)
-
-                enhanced = model(reshaped_input)
+                enhanced = model(normalised_noisy_logmels)
 
                 sample_rate = 16000
                 inverted = logmel_to_linear(logmel_spectrogram=enhanced.squeeze(2), sample_rate=sample_rate, n_fft=1024, n_mels=40, device=self.device)
                 hop_length = int(0.02 * sample_rate)
                 win_length = int(0.04 * sample_rate)
-                waveform = linear_to_waveform(linear_spectrogram_batch=inverted, sample_rate=sample_rate, n_fft=1024, device=self.device, hop_length=hop_length, win_length=win_length)
 
                 # Denormalize the enhanced logmel
                 denormalised = trainer.denormalize_logmels(enhanced.squeeze(2), is_clean=True)
@@ -214,8 +229,11 @@ class BaseExperiment(ABC):
                 for i, (cut_id, rec, snr, env, extra) in enumerate(zip(cut_ids, recs, snrs, envs, extras)):
                     if clean[i] is None:
                         continue
-                    noisy_audio = np.array(noisy[i][0])
-                    clean_audio = np.array(clean[i][0])
+                    key = f"{env}_{rec}_{cut_id}_{snip_ids[i]}_{int(snr)}"
+                    wav_paths = self.feature_cache[key]['wav_paths']
+                    append_to_path = '_L.wav' if left else '_R.wav'
+                    noisy_audio = sf.read(f"{wav_paths['noisy']}{append_to_path}")[0]
+                    clean_audio = sf.read(f"{wav_paths['clean']}{append_to_path}")[0]
                     enhanced_audio = waveform_denormalised[i].cpu().numpy()
 
                     before_pesq = pesq(sample_rate, clean_audio, noisy_audio, 'wb')
@@ -242,31 +260,17 @@ class BaseExperiment(ABC):
                     env_scores[env]['after_pesq'][snr_key] = env_scores[env]['after_pesq'].get(snr_key, []) + [after_pesq]
                     env_scores[env]['after_stoi'][snr_key] = env_scores[env]['after_stoi'].get(snr_key, []) + [after_stoi]
 
-                    # Add to test_files list
-                    test_files.append({
-                        'base_name': extra[0],
-                        'speech_used': extra[1],
-                    })
-
                 # Save the enhanced and denormalised audio
                 os.makedirs(os.path.join(base_dir, 'enhanced'), exist_ok=True)
-                for i, (cut_id, rec, extra) in enumerate(zip(cut_ids, recs, extras)):
-                    os.makedirs(os.path.join(base_dir, 'enhanced', rec), exist_ok=True)
-                    save_path = os.path.join(base_dir, 'enhanced', rec, f'{cut_id}_enhanced.wav')
-                    sf.write(save_path, waveform_denormalised[i].cpu().numpy(), 16000)
-
-                    save_path = os.path.join(base_dir, 'enhanced', rec, f'{cut_id}_noisy')
-                    sample_L = np.array(noisy[i][0])
-                    sample_R = np.array(noisy[i][1])
-                    sf.write(f"{save_path}_L.wav", sample_L, 16000)
-                    sf.write(f"{save_path}_R.wav", sample_R, 16000)
+                for i, (rec, cut_id, snip_id, snr, extra) in enumerate(zip(recs, cut_ids, snip_ids, snrs, extras)):
+                    # create a folder for the rec
+                    rec_dir = os.path.join(wav_dir, rec, str(int(snr)))
+                    os.makedirs(rec_dir, exist_ok=True)
                     
-                    if clean[i] is not None:
-                        save_path = os.path.join(base_dir, 'enhanced', rec, f'{cut_id}_clean')
-                        sample_L = np.array(clean[i][0])
-                        sample_R = np.array(clean[i][1])
-                        sf.write(f"{save_path}_L.wav", sample_L, 16000)
-                        sf.write(f"{save_path}_R.wav", sample_R, 16000)
+                    # Save enhanced audio
+                    save_path = os.path.join(base_dir, 'enhanced', rec, str(int(snr)), f'{cut_id}_{snip_id}_enhanced.wav')
+                    os.makedirs(os.path.dirname(save_path), exist_ok=True)
+                    sf.write(save_path, waveform_denormalised[i].cpu().numpy(), 16000)
 
         # Function to print table
         def print_table(title, data):
@@ -363,6 +367,109 @@ class SpeechEnhancementExperiment(BaseExperiment):
         logger.info("SpeechEnhancementExperiment initialized.")
         
 
+    def precompute_test_logmels(self, test_loader):
+        """Precompute logmels for test data across all SNR levels"""
+        logger.info("Precomputing logmels for test data...")
+        # self.snr_levels = [-21, -18, -15, -12, -9, -6, -3, 0, 3, 6, 9, 12, 15, 18, 21]
+        self.snr_levels = [0]
+        self.feature_cache = {}
+        
+        # Create base directory for saving wav files
+        base_dir = os.path.join('models', 'speech_enhance', str(self.experiment_no))
+        wav_dir = os.path.join(base_dir, 'wav_files')
+        os.makedirs(wav_dir, exist_ok=True)
+        
+        # Precompute logmels for each SNR level
+        for snr in self.snr_levels:
+            # Set SNR for the dataset
+            dataset = test_loader.dataset
+            set_snr(dataset, snr)
+            set_load_waveforms(dataset, True)  # Ensure we load waveforms
+
+            # Compute logmels for this SNR level
+            for batch in tqdm(test_loader, desc=f"Precomputing logmels for SNR {snr}", unit="batch"):
+                noisy, clean, envs, recs, cut_ids, snip_ids, extras, snrs = batch
+                if len(noisy) == 0:
+                    continue
+                noisy_logmels = compute_average_logmel(noisy, self.device)
+                clean_logmels = compute_average_logmel(clean, self.device)
+
+                for extra in extras:
+                    if extra[1] is None:
+                        print(f"Extra {extra} is None")
+                
+                # Cache the features and save wav files
+                for i, (env, rec, cut_id, snip_id, snr_val, noisy_logmel, clean_logmel) in enumerate(zip(envs, recs, cut_ids, snip_ids, snrs, noisy_logmels, clean_logmels)):
+                    key = f"{env}_{rec}_{cut_id}_{snip_id}_{snr_val}"
+                    
+                    # Save wav files
+                    rec_dir = os.path.join(wav_dir, rec, str(snr_val))
+                    os.makedirs(rec_dir, exist_ok=True)
+                    
+                    # Save noisy wav files
+                    noisy_path = os.path.join(rec_dir, f'{cut_id}_{snip_id}')
+                    sample_L = np.array(noisy[i][0])
+                    sample_R = np.array(noisy[i][1])
+                    sf.write(f"{noisy_path}_L.wav", sample_L, 16000)
+                    sf.write(f"{noisy_path}_R.wav", sample_R, 16000)
+                    
+                    # Save clean wav files if available
+                    if clean[i] is not None:
+                        clean_path = os.path.join(rec_dir, f'{cut_id}_clean')
+                        clean_L = np.array(clean[i][0])
+                        clean_R = np.array(clean[i][1])
+                        sf.write(f"{clean_path}_L.wav", clean_L, 16000)
+                        sf.write(f"{clean_path}_R.wav", clean_R, 16000)
+                    
+                    # Cache the features
+                    self.feature_cache[key] = {
+                        'noisy_logmel': noisy_logmel,
+                        'clean_logmel': clean_logmel,
+                        'extra': extras[i],
+                        'wav_paths': {
+                            'noisy': noisy_path,
+                            'clean': clean_path if clean[i] is not None else None
+                        }
+                    }
+            torch.mps.empty_cache()
+            set_load_waveforms(dataset, False)
+
+        # Create a new dataset with cached features
+        class CachedFeaturesDataset(torch.utils.data.Dataset):
+            def __init__(self, feature_cache):
+                self.feature_cache = feature_cache
+                self.keys = list(feature_cache.keys())
+
+            def __len__(self):
+                return len(self.keys)
+
+            def __getitem__(self, idx):
+                key = self.keys[idx]
+                data = self.feature_cache[key]
+                parts = key.split('_')
+                if parts[0] == 'SpeechIn':
+                    # Format: SpeechIn_env_recsit_cut_snippet_snr
+                    env = f"SpeechIn_{parts[1]}"
+                    rec = parts[2]
+                    cut_id = parts[3]
+                    snip_id = parts[4]
+                    snr = parts[5]
+                else:
+                    # Format: env_recsit_cut_snippet_snr
+                    env = parts[0]
+                    rec = parts[1]
+                    cut_id = parts[2]
+                    snip_id = parts[3]
+                    snr = parts[4]
+                return data['noisy_logmel'], data['clean_logmel'], env, rec, cut_id, snip_id, data['extra'], float(snr)
+
+        cached_dataset = CachedFeaturesDataset(self.feature_cache)
+        return DataLoader(
+            cached_dataset,
+            batch_size=1,
+            shuffle=False  # No shuffling for test data
+        )
+
     def run(self):
         """
         Example run method: you might do a training loop here, or call
@@ -373,7 +480,7 @@ class SpeechEnhancementExperiment(BaseExperiment):
         base_dir_R = self.create_experiment_dir("speech_enhance", self.experiment_no, 'R')
         adam_L = SpeechEnhanceAdamEarlyStopTrainer(
             base_dir=base_dir_L,
-            num_epochs=240,
+            num_epochs=1,
             train_loader=self.train_loader_L,
             batch_size=self.batch_size,
             cuda=self.cuda,
@@ -384,7 +491,7 @@ class SpeechEnhancementExperiment(BaseExperiment):
 
         adam_R = SpeechEnhanceAdamEarlyStopTrainer(
             base_dir=base_dir_R,
-            num_epochs=240,
+            num_epochs=1,
             train_loader=self.train_loader_R,
             batch_size=self.batch_size,
             cuda=self.cuda,
@@ -411,8 +518,13 @@ class SpeechEnhancementExperiment(BaseExperiment):
         cnn = CNNSpeechEnhancer().to(self.device)
         cnn.load_state_dict(torch.load(model_path, weights_only=True, map_location=self.device))
 
-        self.test(base_dir=base_dir_L, test_loader=self.test_loader_L, model=cnn, trainer=adam_L)
-        self.test(base_dir=base_dir_R, test_loader=self.test_loader_R, model=cnn, trainer=adam_R)
+        # Precompute test logmels and create cached test datasets
+        cached_test_loader_L = self.precompute_test_logmels(self.test_loader_L)
+        cached_test_loader_R = self.precompute_test_logmels(self.test_loader_R)
+        
+        # Use the cached test loaders for results collection
+        self.test(base_dir=base_dir_L, test_loader=cached_test_loader_L, model=cnn, trainer=adam_L, left=True)
+        self.test(base_dir=base_dir_R, test_loader=cached_test_loader_R, model=cnn, trainer=adam_R, left=False)
 
 
 

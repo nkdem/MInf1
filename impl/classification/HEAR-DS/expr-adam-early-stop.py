@@ -25,7 +25,7 @@ class FullAdam(BaseExperiment):
         self.num_epochs = num_epochs
         self.batch_size = batch_size
         self.exp_no = experiment_no
-        self.experiment_name = f"diff-weight-adam-early-stop-{experiment_no}"
+        self.experiment_name = f"adam-early-stop-{experiment_no}"
         self.classes_train = classes_train
         self.classes_test = classes_test
 
@@ -35,29 +35,36 @@ class FullAdam(BaseExperiment):
 
         print(f"\nStarting experiment run {self.exp_no}...")
         base_dir = self.create_experiment_dir(self.experiment_name, self.exp_no)
-        adam = AdamEarlyStopTrainer(
-            cuda=self.cuda,
-            base_dir=base_dir,
-            train_loader=self.train_loader,
-            num_epochs=self.num_epochs,
-            classes_train=self.classes_train,
-        )
-        adam.train()
+        # adam = AdamEarlyStopTrainer(
+        #     cuda=self.cuda,
+        #     base_dir=base_dir,
+        #     train_loader=self.train_loader,
+        #     num_epochs=self.num_epochs,
+        #     classes_train=self.classes_train,
+        # )
+        # adam.train()
         # adam = None
+        # read results.pkl
+        with open(os.path.join(base_dir, 'results.pkl'), 'rb') as f:
+            resultss = pickle.load(f)
+
+        losses = resultss['losses']
+        durations = resultss['duration']
+        learning_rates_used = resultss['learning_rates']
 
         print("\nTraining phase completed. Starting results collection and analysis...")
         env_to_int = {env: i for i, env in enumerate(self.classes_train.keys())}
         cached_test_loader = self.precompute_test_logmels(self.test_loader, env_to_int)
 
-        losses = adam.losses if adam is not None else {model: [] for model in MODELS.keys()}
-        durations = adam.durations if adam is not None else {model: [] for model in MODELS.keys()}
-        learning_rates_used = adam.learning_rates_used if adam is not None else {model: [] for model in MODELS.keys()}
+        # losses = adam.losses if adam is not None else {model: [] for model in MODELS.keys()}
+        # durations = adam.durations if adam is not None else {model: [] for model in MODELS.keys()}
+        # learning_rates_used = adam.learning_rates_used if adam is not None else {model: [] for model in MODELS.keys()}
 
         results = self.get_results(base_dir=base_dir, test_loader=cached_test_loader, num_of_classes=len(env_to_int), env_to_int=env_to_int, 
                                    durations=durations, learning_rates_used=learning_rates_used, losses=losses)
 
         # save results 
-        with open(os.path.join(base_dir, 'results.pkl'), 'wb') as f:
+        with open(os.path.join(base_dir, 'results2.pkl'), 'wb') as f:
             pickle.dump(results, f)
         print(f"Results saved in {base_dir}")
 

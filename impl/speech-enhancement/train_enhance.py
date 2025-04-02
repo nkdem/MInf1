@@ -117,7 +117,8 @@ class BaseTrainer:
             if method is not None and callable(method):
                 method(load_waveforms)
     def precompute_logmels(self, augment=True):
-        self.snr_levels = [-21, -18, -15, -12, -9, -6, -3, 0, 3, 6, 9, 12, 15, 18, 21]
+        # self.snr_levels = [-21, -18, -15, -12, -9, -6, -3, 0, 3, 6, 9, 12, 15, 18, 21]
+        self.snr_levels = [0]
         
         # Always use random_snr approach for precomputation
         for snr in self.snr_levels:
@@ -138,7 +139,7 @@ class BaseTrainer:
                 del noisy_batch, clean_batch
                 torch.mps.empty_cache()
         
-        self.set_snr(None)
+        self.set_snr(0)
         self.set_load_waveforms(False)
         
         # If not augmenting, create a new dataset with cached features

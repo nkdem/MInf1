@@ -109,12 +109,12 @@ class BaseTrainer:
         self.num_of_classes = len(self.envs)
         logger.info(f"Number of classes: {self.num_of_classes}")
         self.env_to_int = {env: i for i, env in enumerate(self.envs.keys())}
-        # class_weights = compute_class_weight('balanced', classes=np.array(list(self.env_to_int.values())), y=np.array([self.env_to_int[env] for env in self.envs.keys() for _ in range(self.envs[env])]))
+        class_weights = compute_class_weight('balanced', classes=np.array(list(self.env_to_int.values())), y=np.array([self.env_to_int[env] for env in self.envs.keys() for _ in range(self.envs[env])]))
 
         # let's use inverse proportionality for the weights
         # total samples / samples per class
-        total_samples = sum(self.envs.values())
-        class_weights = [total_samples / self.envs[env] for env in self.envs.keys()]
+        # total_samples = sum(self.envs.values())
+        # class_weights = [total_samples / self.envs[env] for env in self.envs.keys()]
 
 
 
@@ -268,10 +268,11 @@ class FixedLRSGDTrainer(BaseTrainer):
                     unit="batch"
                 )
                 for batch in pbar:
-                    if len(batch) == 2:  # cached features case
-                        logmels, actual_labels = batch
+                    if len(batch) == 3:  # cached features case
+                        logmels, actual_labels, snrs = batch
                         logmels = logmels.to(self.device)
                         actual_labels = actual_labels.to(self.device)
+                        snrs = snrs.to(self.device)
                     else:  # augment case
                         waveforms, _, envs, recsits, cuts, snippets, _, snrs = batch
                         logmels = self.compute_logmels(waveforms, envs, recsits, cuts, snippets, snrs)

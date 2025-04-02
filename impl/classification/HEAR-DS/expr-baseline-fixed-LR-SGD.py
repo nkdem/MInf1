@@ -37,31 +37,44 @@ class FixedLR_SGD(BaseExperiment):
 
         print(f"\nStarting experiment run {self.exp_no}...")
         base_dir = self.create_experiment_dir(self.experiment_name, self.exp_no)
-        trainer = FixedLRSGDTrainer(
-            cuda=self.cuda,
-            base_dir=base_dir,
-            train_loader=self.train_loader,
-            num_epochs=self.num_epochs,
-            learning_rates=self.learning_rates,
-            change_lr_at_epoch=20,
-            augment=True,   
-            classes_train=self.classes_train
-        )
-        trainer.train()
+        # trainer = FixedLRSGDTrainer(
+        #     cuda=self.cuda,
+        #     base_dir=base_dir,
+        #     train_loader=self.train_loader,
+        #     num_epochs=self.num_epochs,
+        #     learning_rates=self.learning_rates,
+        #     change_lr_at_epoch=20,
+        #     augment=True,   
+        #     classes_train=self.classes_train
+        # )
+        # trainer.train()
+        with open(os.path.join(base_dir, 'results.pkl'), 'rb') as f:
+            resultss = pickle.load(f)
+
+        losses = resultss['losses']
+        durations = resultss['duration']
+        learning_rates_used = resultss['learning_rates']
+
+        print("\nTraining phase completed. Starting results collection and analysis...")
+        env_to_int = {env: i for i, env in enumerate(self.classes_train.keys())}
+        cached_test_loader = self.precompute_test_logmels(self.test_loader, env_to_int)
 
         print("\nTraining phase completed. Starting results collection and analysis...")
 
-        results = self.get_results(trainer=trainer, base_dir=base_dir)
+        results = self.get_results(base_dir=base_dir, test_loader=cached_test_loader, num_of_classes=len(env_to_int), env_to_int=env_to_int, 
+                                   durations=durations, learning_rates_used=learning_rates_used, losses=losses)
 
         # save results 
-        with open(os.path.join(base_dir, 'results.pkl'), 'wb') as f:
+        with open(os.path.join(base_dir, 'results2.pkl'), 'wb') as f:
             pickle.dump(results, f)
         print(f"Results saved in {base_dir}")
-
         # print accuracy
         for model in MODELS.keys():
             print(f"\nModel: {model}")
-            print(f"Average total accuracy: {np.mean(results['total_accuracies'][model])}")
+            # print(f"Naive class accuracy: {results['naive_class_accuracies'][model][-1]}")
+            print(f"Naive total accuracy: {results['naive_total_accuracies'][model][-1]}")
+            # print(f"Per SNR metrics: {results['per_snr_metrics'][model]}")
+            # print(f"Overall metrics: {results['overall_metrics'][model]}")
 
     def __str__(self):
         """String representation of the experiment configuration"""
