@@ -1265,7 +1265,7 @@ this for future work to be investigated.
    \centering
    \includegraphics[width=0.8\textwidth]{net-20/FIXED-fixed-lr-sgd/classwise_accuracies.png}
    \caption{The classwise accuracies of the net-20 model when using the fixed learning rate SGD approach.
-   Also plotted are the extrapolated results from \citet{Huwel2020HearDS} for the net-20 model.}
+   Also plotted are the extrapolated classwise accuracies from Figure 3 of \citet{Huwel2020HearDS} for comparison.}
    \label{fig:fixed-lr-sgd-classwise-accuracies}
 \end{figure}   
 
@@ -1487,16 +1487,50 @@ without augmentation, as it indicates our implementation is fundamentally sound.
 leave it for future work to adopt the multi-resolution model into our framework and see 
 if we can get any improvements in performance.
 
-\section{Wrap Up/Feasibiltiy} 
-% TODO: Talk about the FLOPS and number of parameters of the models.
-% TODO: Wrap up by showiong a table of the results (each experiment, eahc model's performance and training time, FLOPS, number of parameters)
-% TODO: Refer them to Future Work since while the results are really good, 
-% there are still areas of improvements and investigations to be done.
+\section{Feasibiltiy} 
+% Before we do a cursory analysis of the speech enhancement task, we will summarise 
+% the results of the experiments we have done so far and end on a discussion of the 
+% feasibility of the task from a HA perspective.
+% We started off with a baseline implementation of the ASA that aimed to mimic the paper 
+% by \citet{Huwel2020HearDS} as closely as possible. We were getting a higher accuracy than the paper,
+% but it's most likely due to the difference in dataset used for speech mixing. We then investigated 
+% whether we can improve the generalisation of the model by utilising data augmentation at the speech 
+% mixing proces. The results were not as promising as we hoped from a performance perspective, but the 
+% training time was substantially reduced. Afterwards, we investigated the claim 
+% by \citet{Huwel2020HearDS} that the Adam optimiser is sensitive to the initialisation,
+% but applying the Adam optimiser to the same setup as the data augmentation approach, 
+% we were able to get comparable approach to that of using the SGD optimiser.
+% And to validate that our implementation is correct, we were able to get comparable 
+% performance to the paper by \citet{schindler_multi-temporal_2018}.
 
-% table
-% experiment, | net-8 |                                             net-20 | net-32 |
-%             | Overall Accuracy | Training Time | FLOPS | Params |  | Overall Accuracy | Training Time | FLOPS | Params |  | Overall Accuracy | Training Time | FLOPS | Params |
-% SGD, Aug, 120 | 0.85 | 100 | 100 | 0.85 | 100 | 100 | 0.85 | 100 | 100 |
+We tested the feasibility of the task from a HA perspective by benchmarking 
+how many parameters and FLOPs each model has. For the calculation of the FLOPs, 
+we used a library called \texttt{thop}\footnote{\url{https://github.com/Lyken17/pytorch-OpCounter}} 
+which integrates with PyTorch to analyse how many operations a model performs. 
+Table \ref{tab:model-comparison} shows the FLOPs and parameters of the net-8, net-20 and net-32 models.
+Given that we know that the state of the art models of HAs have capabilities of 
+7,700 million FLOPS and processing models containing 5m parameters, 
+we can see that we are definitely below this which is a good starting point. 
+There is more work to be done in this area, for example, the overhead 
+of calculating the spectrogam is something worth investigating. We leave this 
+for part two of the dissertation to be investigated. However, based on these 
+results suggests that the DNN models could most likely be ran on a HA device.
+
+% table with the model (net-8, net-20, net-32) and the model size, FLOPS and number of parameters
+\begin{table}[h]
+   \centering
+   \begin{tabular}{lccc}
+      \toprule
+      Model & FLOPS & Parameters \\
+      \midrule
+      net-8 & 13.550M & 7.951K \\
+      net-20 & 52.694M & 46.423K \\
+      net-32 & 114.421M & 116.623K \\
+      \bottomrule
+   \end{tabular}
+   \caption{Comparison of the FLOPs and parameters of the net-8, net-20 and net-32 models.}
+   \label{tab:model-comparison}
+\end{table}
 
 % \begin{table}[h]
 %    \centering
@@ -1519,6 +1553,7 @@ if we can get any improvements in performance.
 %       \bottomrule
 %    \end{tabular}
 %    \caption{Comparison of different network sizes using SGD with augmentation and 120 epochs.}
+%    \label{tab:model-comparison}
 % \end{table}
 
 \chapter{Speech Enhancement Experiments}

@@ -314,6 +314,7 @@ def main():
     elif device == 'mps' and not torch.backends.mps.is_available():
         print("MPS not available, falling back to CPU")
         device = 'cpu'
+    device = 'cpu'
     
     # Benchmark specific model from path
     if args.model_path:
@@ -340,12 +341,12 @@ def main():
             output_dir=args.output_dir
         )
     
-    if args.model_type in ['speech_enhancer', 'all']:
-        benchmark_speech_enhancer(
-            device=device,
-            save_results=not args.no_save,
-            output_dir=args.output_dir
-        )
+    # if args.model_type in ['speech_enhancer', 'all']:
+    #     benchmark_speech_enhancer(
+    #         device=device,
+    #         save_results=not args.no_save,
+    #         output_dir=args.output_dir
+    #     )
 
 if __name__ == '__main__':
     main() 
