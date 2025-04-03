@@ -1457,54 +1457,69 @@ could maybe suggest that the setting this optimiser is being used
 is not as bad. 
 
 \section{Validating against TUT Acoustic Scenes 2016}
+\begin{figure}[h]
+   \centering
+   \includegraphics[width=0.9\textwidth]{average_accuracies_tut_comparison.png}
+   \caption{(left) The average accuracies fitted with linear regression of the net-8, net-20 and net-32 models when using the Adam optimiser. 
+   (right) Various models extrapolated from Table 2 of \citet{schindler_multi-temporal_2018} for comparison.}
+   \label{fig:tut-asa-results}
+\end{figure}
 As a means of validating that the implementation is correct, 
 we wanted to see if we can get similar results to a different paper 
 that is doing ASA. In particular, we will be using the paper by 
 \citet{schindler_multi-temporal_2018}. It uses the TUT Acoustic Scenes 2016 dataset
 as described in Section \ref{sec:datasets}.
-Since we found that using the Adam optimiser with Augmentation yields comparable 
-results to the fixed learning rate SGD approach (non-augmented), we will continue 
-to go with this approach for the following validation. 
 
-TODO
+Figure \ref{fig:tut-asa-results} shows two accuracy curves, one for our results 
+and one for the results from \citet{schindler_multi-temporal_2018}. For their results 
+we reported two models, the single resolution model which is their baseline, 
+and the multi-resolution model which is their proposed model. They also 
+report results with and without augmentation, though their augmentation techniques 
+are going to be different to ours as our data augmentation technique is more 
+concerned with the speech mixing process whereas theirs is a more general 
+data augmentation technique and they utilise techniques such as pitch shifting and 
+time stretching to name a few. However, we leave it for future work 
+to perhaps adopt their data augmentation techniques and see 
+if we can get huge improvements in performance as can be seen in their results.
+Nevertheless, it is encouraging to see 
+that the net-32 model is able to just about match the performance of the single resolution model 
+without augmentation, as it indicates our implementation is fundamentally sound. Additionally, we 
+leave it for future work to adopt the multi-resolution model into our framework and see 
+if we can get any improvements in performance.
 
 \section{Wrap Up/Feasibiltiy} 
-TODO: Talk about the FLOPS and number of parameters of the models.
-TODO: Wrap up by showiong a table of the results (each experiment, eahc model's performance and training time, FLOPS, number of parameters)
-TODO: Refer them to Future Work since while the results are really good, 
-there are still areas of improvements and investigations to be done.
+% TODO: Talk about the FLOPS and number of parameters of the models.
+% TODO: Wrap up by showiong a table of the results (each experiment, eahc model's performance and training time, FLOPS, number of parameters)
+% TODO: Refer them to Future Work since while the results are really good, 
+% there are still areas of improvements and investigations to be done.
 
 % table
 % experiment, | net-8 |                                             net-20 | net-32 |
 %             | Overall Accuracy | Training Time | FLOPS | Params |  | Overall Accuracy | Training Time | FLOPS | Params |  | Overall Accuracy | Training Time | FLOPS | Params |
 % SGD, Aug, 120 | 0.85 | 100 | 100 | 0.85 | 100 | 100 | 0.85 | 100 | 100 |
 
-\begin{table}[h]
-   \centering
-   \begin{tabular}{lccccc}
-      \toprule
-      Model & Network Size & Accuracy & Training Time & FLOPS & Parameters \\
-      \midrule
-      \multirow{3}{*}{SGD No Aug, 120} & 8 & 0.85 & 100 & 100 & 100 \\
-      & 20 & 0.85 & 100 & 100 & 100 \\
-      & 32 & 0.85 & 100 & 100 & 100 \\
-      \midrule
-      \multirow{3}{*}{SGD Aug, 120} & 8 & 0.85 & 100 & 100 & 100 \\
-      & 20 & 0.85 & 100 & 100 & 100 \\
-      & 32 & 0.85 & 100 & 100 & 100 \\
-      \midrule 
-      \multirow{3}{*}{Adam, Aug, 120} & 8 & 0.85 & 100 & 100 & 100 \\
-      & 20 & 0.85 & 100 & 100 & 100 \\
-      & 32 & 0.85 & 100 & 100 & 100 \\
+% \begin{table}[h]
+%    \centering
+%    \begin{tabular}{lccccc}
+%       \toprule
+%       Model & Network Size & Accuracy & Training Time & FLOPS & Parameters \\
+%       \midrule
+%       \multirow{3}{*}{SGD No Aug, 120} & 8 & 0.85 & 100 & 100 & 100 \\
+%       & 20 & 0.85 & 100 & 100 & 100 \\
+%       & 32 & 0.85 & 100 & 100 & 100 \\
+%       \midrule
+%       \multirow{3}{*}{SGD Aug, 120} & 8 & 0.85 & 100 & 100 & 100 \\
+%       & 20 & 0.85 & 100 & 100 & 100 \\
+%       & 32 & 0.85 & 100 & 100 & 100 \\
+%       \midrule 
+%       \multirow{3}{*}{Adam, Aug, 120} & 8 & 0.85 & 100 & 100 & 100 \\
+%       & 20 & 0.85 & 100 & 100 & 100 \\
+%       & 32 & 0.85 & 100 & 100 & 100 \\
 
-      \bottomrule
-   \end{tabular}
-   \caption{Comparison of different network sizes using SGD with augmentation and 120 epochs.}
-\end{table}
-
-
-
-TODO
+%       \bottomrule
+%    \end{tabular}
+%    \caption{Comparison of different network sizes using SGD with augmentation and 120 epochs.}
+% \end{table}
 
 \chapter{Speech Enhancement Experiments}
 \section{Data Preparation}

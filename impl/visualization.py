@@ -11,7 +11,7 @@ from sklearn.preprocessing import PolynomialFeatures
 from sklearn.linear_model import LinearRegression
 from sklearn.pipeline import make_pipeline
 
-def load_experiment_results(base_folder: str = 'models', max_experiments: int = 3) -> Dict:
+def load_experiment_results_HEARDS(base_folder: str = 'models', max_experiments: int = 3) -> Dict:
     """
     Load results from all experiments for different model configurations.
     Returns a dictionary with experiment types as keys and lists of results as values.
@@ -32,6 +32,28 @@ def load_experiment_results(base_folder: str = 'models', max_experiments: int = 
                     with open(f'{base_folder}/{folder}/{experiment_number}/results2.pkl', 'rb') as f:
                         results[base_name].append(pickle.load(f))
     
+    return results
+
+def load_experiment_results_TUT(base_folder: str = 'models/full_adam_240epochs_32batchsize_TUT') -> Dict:
+    """
+    Load results from all experiments for different model configurations.
+    Returns a dictionary with experiment types as keys and lists of results as values.
+    """
+    results = {'TUT-experiment': []}
+    for exp_type in ['exp1', 'exp2', 'exp3', 'exp4', 'exp5']:
+        for fold in ['fold1', 'fold2', 'fold3', 'fold4']:
+            with open(os.path.join(base_folder, exp_type, f'results-{fold}.pkl'), 'rb') as f:
+                # as the pickle files were created before refactoring the keys need to be renamed
+                # namely confusion_matrix_raw -> naive_confusion_matrix_raw
+                # class_accuracies -> naive_class_accuracies
+                # total_accuracies -> naive_total_accuracies
+                
+                obj = pickle.load(f)
+                obj['naive_confusion_matrix_raw'] = obj['confusion_matrix_raw']
+                obj['naive_class_accuracies'] = obj['class_accuracies']
+                obj['naive_total_accuracies'] = obj['total_accuracies']
+                results['TUT-experiment'].append(obj)
+
     return results
 
 def load_class_labels(base_folder: str, exp_type: str, model_name: str) -> Dict[int, str]:
@@ -111,7 +133,6 @@ def plot_training_losses(results: Dict, output_dir: str):
     
             # y ticks 0, 0.25, 0.5, 0.75, 1, 1.25, 1.5, 1.75, 2, 2.25
             plt.yticks([0, 0.25, 0.5, 0.75, 1, 1.25, 1.5, 1.75, 2, 2.25])
-            # x axis max 120
             plt.xlim(0, 121)
             plt.title(f'Training Loss Over Time ({exp_type})', fontsize=10)
             plt.xlabel('Epoch', fontsize=9)
@@ -229,7 +250,8 @@ def plot_classwise_accuracies(results: Dict, output_dir: str):
             # Plot classwise accuracies on the right
             x = np.arange(len(mean_accuracies))
             
-            if model_name == 'net-20':
+            # if not tut
+            if model_name == 'net-20' and not exp_type.startswith('TUT-experiment'):
                 # Plot both our model and baseline
                 width = 0.35
                 # Our model bars
@@ -669,13 +691,27 @@ def plot_average_accuracies(results: Dict, output_dir: str):
         [5, 5],   # net-20: 65-75
         [3, 2],   # net-32: 77-82
     ])
+
+    # TUT reference points
+    tut_single_no_aug = 73.12
+    tut_single_aug = 83.19
+    tut_multi_no_aug = 74.30
+    tut_multi_no_aug_std = 4.81
+    tut_multi_aug = 87.29
+    tut_multi_aug_std = 2.02
     
     # Create a plot for each experiment type
     for exp_type, exp_results in results.items():
-        # Create figure
-        plt.figure(figsize=(10, 6))
+        # Determine if this is a TUT experiment
+        is_tut_experiment = exp_type.startswith('TUT-experiment')
         
-        # Collect accuracies and model depths
+        # Create figure - two subplots for TUT, one for others
+        if is_tut_experiment:
+            fig, (ax1, ax2) = plt.subplots(1, 2, figsize=(15, 6))
+        else:
+            fig, ax1 = plt.subplots(1, 1, figsize=(10, 6))
+        
+        # Collect accuracies and model depths for our models
         model_data = {}  # Dict to store accuracies for each model
         
         # Collect accuracies from all experiments
@@ -693,7 +729,7 @@ def plot_average_accuracies(results: Dict, output_dir: str):
                     
                     model_data[model_name].append(accuracy)
         
-        # Prepare data for plotting
+        # Prepare data for plotting our models
         X = []  # Model depths
         y = []  # Mean accuracies
         yerr = []  # Standard deviations for error bars
@@ -703,8 +739,6 @@ def plot_average_accuracies(results: Dict, output_dir: str):
                 depth = int(model_name.split('-')[1])
                 mean_acc = np.mean(accuracies)
                 std_acc = np.std(accuracies) if len(accuracies) > 1 else 0
-                
-                print(f"{exp_type} - {model_name}: mean={mean_acc:.2f}, std={std_acc:.2f}, n={len(accuracies)}")  # Debug print
                 
                 X.append(depth)
                 y.append(mean_acc)
@@ -716,7 +750,7 @@ def plot_average_accuracies(results: Dict, output_dir: str):
         X = np.array(X).reshape(-1, 1)
         y = np.array(y)
         
-        # Fit polynomial regression
+        # Fit polynomial regression for our models
         poly_reg = make_pipeline(PolynomialFeatures(3), LinearRegression())
         poly_reg.fit(X, y)
         
@@ -724,46 +758,93 @@ def plot_average_accuracies(results: Dict, output_dir: str):
         X_smooth = np.linspace(min(X), max(X), 100).reshape(-1, 1)
         y_smooth = poly_reg.predict(X_smooth)
         
-        # Plot with error bars and smooth curve
+        # Plot our models
         for i, (x, mean_acc, std_acc) in enumerate(zip(X.flatten(), y, yerr)):
             model_name = f'net-{int(x)}'
-            plt.errorbar(x, mean_acc, yerr=std_acc, fmt='o', capsize=5, markersize=8, 
+            ax1.errorbar(x, mean_acc, yerr=std_acc, fmt='o', capsize=5, markersize=8, 
                         color=colors[i], label=model_name, zorder=2)
         
-        plt.plot(X_smooth, y_smooth, 'k-', linewidth=2, label=None, zorder=1)
+        ax1.plot(X_smooth, y_smooth, 'k-', linewidth=2, label=None, zorder=1)
         
         # Plot paper reference points with dashed line
-        yerr_paper = [paper_errors[:, 0], paper_errors[:, 1]]  # Split into lower and upper errors
-        plt.errorbar(paper_depths, paper_accuracies, yerr=yerr_paper, fmt='s', 
-                    color='gray', capsize=5, markersize=8, label='HEAR-DS CNN Baseline',
-                    zorder=3)
-        plt.plot(paper_depths, paper_accuracies, 'k--', linewidth=2, zorder=2)
+        if not is_tut_experiment:
+            yerr_paper = [paper_errors[:, 0], paper_errors[:, 1]]
+            ax1.errorbar(paper_depths, paper_accuracies, yerr=yerr_paper, fmt='s', 
+                        color='gray', capsize=5, markersize=8, label='HEAR-DS CNN Baseline',
+                        zorder=3)
+            ax1.plot(paper_depths, paper_accuracies, 'k--', linewidth=2, zorder=2)
         
-        # Customize plot
-        plt.xlabel('Model', fontsize=12)
-        plt.ylabel('Accuracy [%]', fontsize=12)
-        plt.grid(True, alpha=0.3)
+        # Customize first subplot/main plot
+        ax1.set_xlabel('Model Depth', fontsize=12)
+        ax1.set_ylabel('Accuracy [%]', fontsize=12)
+        ax1.grid(True, alpha=0.3)
+        ax1.legend(fontsize=10)
+        ax1.set_xticks(X.flatten())
+        ax1.set_xticklabels([f'net-{int(x)}' for x in X.flatten()])
+        ax1.set_ylim(0, 100)
         
-        # Move legend to the right side outside the plot
-        plt.legend(fontsize=10, bbox_to_anchor=(1.05, 1), loc='upper left')
-        
-        # Set x-ticks to model names
-        plt.xticks(X.flatten(), [f'net-{int(x)}' for x in X.flatten()])
-        
-        # Set y-axis limits from 0 to 100
-        plt.ylim(0, 100)
-        
-        # Add title based on experiment type
+        if is_tut_experiment:
+            ax1.set_title('Our Models', fontsize=12)
+            
+            # Plot TUT results on the right subplot
+            x = np.array([1, 2])  # x positions for bars
+            width = 0.35  # width of bars
+            
+            # Plot no augmentation results
+            ax2.bar(x[0] - width/2, tut_single_no_aug, width, label='Single Resolution', 
+                   color='#8B4513')  # Saddle Brown
+            ax2.bar(x[1] - width/2, tut_multi_no_aug, width, yerr=tut_multi_no_aug_std,
+                   capsize=5, label='Multi Resolution', color='#4B0082')  # Indigo
+            
+            # Plot augmentation results
+            ax2.bar(x[0] + width/2, tut_single_aug, width, 
+                   color='#8B4513', alpha=0.6, hatch='//')
+            ax2.bar(x[1] + width/2, tut_multi_aug, width, yerr=tut_multi_aug_std,
+                   capsize=5, color='#4B0082', alpha=0.6, hatch='//')
+
+            # Add text annotations for the values
+            ax2.text(x[0] - width/2, tut_single_no_aug + 1, f'{tut_single_no_aug:.1f}%', 
+                    ha='center', va='bottom')
+            ax2.text(x[0] + width/2, tut_single_aug + 1, f'{tut_single_aug:.1f}%', 
+                    ha='center', va='bottom')
+            ax2.text(x[1] - width/2, tut_multi_no_aug + 1, f'{tut_multi_no_aug:.1f}%', 
+                    ha='center', va='bottom')
+            ax2.text(x[1] + width/2, tut_multi_aug + 1, f'{tut_multi_aug:.1f}%', 
+                    ha='center', va='bottom')
+
+            # Customize right subplot
+            ax2.set_ylabel('Accuracy [%]', fontsize=12)
+            ax2.grid(True, alpha=0.3)
+            ax2.set_xticks(x)
+            ax2.set_xticklabels(['No Augmentation', 'With Augmentation'])
+            ax2.set_ylim(0, 100)
+            ax2.set_title('TUT Models', fontsize=12)
+            ax2.text(0.5, -0.15, 
+                    'Note: As per the paper, Single Resolution results show grouped predictions\n(averaging all predictions per file), hence no error bars.',
+                    ha='center', va='center', transform=ax2.transAxes, 
+                    style='italic', fontsize=9, color='#555555')
+
+            # Create custom legend handles
+            from matplotlib.patches import Patch
+            legend_elements = [
+                Patch(facecolor='#8B4513', label='Single Resolution'),
+                Patch(facecolor='#4B0082', label='Multi Resolution'),
+            ]
+            ax2.legend(handles=legend_elements, fontsize=10)
+
+        # Add overall title based on experiment type
         if exp_type.startswith('fixed-lr-sgd-AUG'):
             title = 'Average Accuracy - SGD with Augmentation'
         elif exp_type.startswith('adam-early-stop'):
             title = 'Average Accuracy - Adam with Early Stopping'
         elif exp_type.startswith('FIXED-fixed-lr-sgd'):
             title = 'Average Accuracy - SGD without Augmentation'
+        elif exp_type.startswith('TUT-experiment'):
+            title = 'Average Accuracy Comparison with TUT Models'
         else:
             title = f'Average Accuracy - {exp_type}'
         
-        plt.title(title, fontsize=12, pad=20)
+        plt.suptitle(title, fontsize=14, y=1.05)
         
         # Adjust layout and save
         plt.tight_layout()
@@ -775,6 +856,8 @@ def plot_average_accuracies(results: Dict, output_dir: str):
             filename = 'average_accuracies_adam.png'
         elif exp_type.startswith('FIXED-fixed-lr-sgd'):
             filename = 'average_accuracies_sgd_no_aug.png'
+        elif exp_type.startswith('TUT-experiment'):
+            filename = 'average_accuracies_tut_comparison.png'
         else:
             filename = f'average_accuracies_{exp_type}.png'
         
@@ -785,7 +868,9 @@ def plot_average_accuracies(results: Dict, output_dir: str):
 def generate_all_plots(output_dir: str = 'output/visualizations'):
     """Generate all visualization plots."""
     os.makedirs(output_dir, exist_ok=True)
-    results = load_experiment_results()
+    
+    # Load and plot HEARDS results
+    results = load_experiment_results_HEARDS()
     
     # Create subdirectories for each model and experiment type
     for model_name in MODELS.keys():
@@ -795,13 +880,18 @@ def generate_all_plots(output_dir: str = 'output/visualizations'):
             exp_dir = os.path.join(model_dir, exp_type)
             os.makedirs(exp_dir, exist_ok=True)
     
-    # plot_training_losses(results, output_dir)
+    plot_training_losses(results, output_dir)
+    plot_average_accuracies(results, output_dir)
     # plot_classwise_accuracies(results, output_dir)
     # plot_training_times(results, output_dir)
     # plot_confusion_matrices(results, output_dir)
     # plot_class_metrics(results, output_dir)
-    plot_extreme_snr_performance(results, output_dir)
-    # plot_average_accuracies(results, output_dir)
+    # plot_extreme_snr_performance(results, output_dir)
+
+    # Load and plot TUT results
+    results_tut = load_experiment_results_TUT('models/full_adam_240epochs_32batchsize_TUT')
+    plot_training_losses(results_tut, output_dir)
+    plot_average_accuracies(results_tut, output_dir)
 
 if __name__ == "__main__":
     generate_all_plots() 
