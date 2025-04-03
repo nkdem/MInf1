@@ -19,8 +19,8 @@ TARGET_LENGTH = int((ORIGINAL_SAMPLE_RATE / 32768) * DOWN_SAMPLE_TO_SAMPLE_RATE)
 ROOT_DIR = '/Users/nkdem/Downloads/DS_10283_2791'
 
 dir_map = {
-    'train': ('noisy_trainset_28spk_wav', 'clean_trainset_28spk_wav'),
-    'test': ('noisy_testset_wav', 'clean_testset_wav')
+    'train': ('train/noisy', 'train/clean'),
+    'test': ('test/noisy', 'test/clean')
 }
 
 class VoicebankDataset(Dataset):
@@ -29,6 +29,7 @@ class VoicebankDataset(Dataset):
         self.split = split
         self.audio_files = self._get_audio_files()
         self.resampler = torchaudio.transforms.Resample(ORIGINAL_SAMPLE_RATE, DOWN_SAMPLE_TO_SAMPLE_RATE)
+        self.load_waveforms = True  # Default to True for backward compatibility
 
     def __len__(self):
         return len(self.audio_files)
@@ -36,6 +37,10 @@ class VoicebankDataset(Dataset):
     def __getitem__(self, idx):
         base_name = self.audio_files[idx][0].split('/')[-1]
         noisy_file_path, clean_file_path = self.audio_files[idx]
+        
+        if not self.load_waveforms:
+            return np.zeros(TARGET_LENGTH), np.zeros(TARGET_LENGTH), base_name
+            
         noisy_audio, sample_rate = torchaudio.load(noisy_file_path)
         clean_audio, sample_rate = torchaudio.load(clean_file_path)
         

@@ -20,7 +20,7 @@ sys.path.append(os.path.abspath(os.path.join('.')))
 from heards_dataset import BackgroundDataset, MixedAudioDataset, SpeechDataset, split_background_dataset, split_speech_dataset
 from helpers import compute_average_logmel, linear_to_waveform, logmel_to_linear
 from models import CNNSpeechEnhancer
-from expr_baseline import BaseExperiment
+from expr_baseline import BaseExperiment, set_snr, set_load_waveforms
 
 logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
 logger = logging.getLogger(__name__)
@@ -35,11 +35,13 @@ class PerEnvironmentSpeechEnhancementExperiment(BaseExperiment):
         cuda: bool = False,
         experiment_no: int = 1,
         use_splits: bool = True,
+        augment: bool = True,
     ):
         self.heards_dir = '/Users/nkdem/Downloads/HEAR-DS' if not cuda else '/disk/scratch/s2203859/minf-1/HEAR-DS'
         self.speech_dir = '/Volumes/SSD/Datasets/CHiME3/CHiME3-Isolated-DEV/dt05_bth' if not cuda else '/disk/scratch/s2203859/minf-1/dt05_bth/'
         self.experiment_no = experiment_no
         self.use_splits = use_splits
+        self.augment = augment
         
         # Initialize with empty loaders first
         super().__init__(batch_size=batch_size, cuda=cuda)
@@ -57,7 +59,7 @@ class PerEnvironmentSpeechEnhancementExperiment(BaseExperiment):
         def get_indices_for_environment(dataset, target_env):
             indices = []
             for i in range(len(dataset)):
-                _, _, env, _, _, _, _ = dataset[i]
+                _, _, env, _, _, _, _, _ = dataset[i]  # Updated to match new format
                 if env == f"SpeechIn_{target_env}":
                     indices.append(i)
             return indices
@@ -76,19 +78,21 @@ class PerEnvironmentSpeechEnhancementExperiment(BaseExperiment):
             envs = []
             recs = []
             cut_ids = []
+            snip_ids = []
             extras = []
             snrs = []
 
-            for (noisy, clean, env, recsit, cut_id, extra, snr) in batch:
+            for (noisy, clean, env, recsit, cut_id, snip_id, extra, snr) in batch:
                 noisy_list.append(noisy)
                 clean_list.append(clean)
                 envs.append(env)
                 recs.append(recsit)
                 cut_ids.append(cut_id)
+                snip_ids.append(snip_id)
                 extras.append(extra)
                 snrs.append(snr)
 
-            return noisy_list, clean_list, envs, recs, cut_ids, extras, snrs
+            return noisy_list, clean_list, envs, recs, cut_ids, snip_ids, extras, snrs
 
         # Create data loaders for the environment-specific subsets
         train_loader = DataLoader(
@@ -101,7 +105,7 @@ class PerEnvironmentSpeechEnhancementExperiment(BaseExperiment):
             test_env_ds,
             batch_size=self.batch_size,
             shuffle=False,
-            collate_fn=speech_enh_collate_fn
+            collate_fn=lambda x: speech_enh_collate_fn(x, ignore=True)
         )
 
         return train_loader, test_loader
@@ -126,8 +130,8 @@ class PerEnvironmentSpeechEnhancementExperiment(BaseExperiment):
         split_file = f'splits/split_{self.experiment_no - 1}.pkl'
         with open(split_file, 'rb') as f:
             split = pickle.load(f)
-            train_mixed_ds = split['subsets']['train']['mixed']
-            test_mixed_ds = split['subsets']['test']['mixed']
+            train_mixed_ds = split['random_snr']['subsets']['train']['mixed']
+            test_mixed_ds = split['random_snr']['subsets']['test']['mixed']
 
         # Train and evaluate a model for each environment
         for env in environments:
@@ -144,13 +148,14 @@ class PerEnvironmentSpeechEnhancementExperiment(BaseExperiment):
             # Initialize trainer for this environment
             adam = SpeechEnhanceAdamEarlyStopTrainer(
                 base_dir=base_dir,
-                num_epochs=240,  # You might want to adjust this
+                num_epochs=120,  
                 train_loader=env_train_loader,
                 batch_size=self.batch_size,
                 cuda=self.cuda,
                 initial_lr=1e-3,
                 early_stop_threshold=1e-4,
                 patience=5,
+                augment=False
             )
 
             # Train the model
@@ -163,8 +168,11 @@ class PerEnvironmentSpeechEnhancementExperiment(BaseExperiment):
             cnn = CNNSpeechEnhancer().to(self.device)
             cnn.load_state_dict(torch.load(model_path, weights_only=True, map_location=self.device))
 
-            # Test the model
-            self.test(base_dir=base_dir, test_loader=env_test_loader, model=cnn, trainer=adam)
+            # Precompute test logmels and create cached test dataset
+            cached_test_loader = self.precompute_test_logmels(env_test_loader)
+            
+            # Test the model with cached features
+            self.test(base_dir=base_dir, test_loader=cached_test_loader, model=cnn, trainer=adam)
             
             logger.info(f"Evaluation completed for {env}")
 
@@ -177,6 +185,8 @@ if __name__ == "__main__":
     parser.add_argument("--cuda", action='store_true', default=False)
     parser.add_argument("--no_splits", action='store_true', default=False, 
                         help="If set, don't use pre-generated splits")
+    parser.add_argument("--no_augment", action='store_true', default=False,
+                        help="If set, don't use data augmentation and use cached features")
     args = parser.parse_args()
 
     # if arg is not provided, default to 1
@@ -188,11 +198,13 @@ if __name__ == "__main__":
         experiment_no = args.experiment_no
     cuda = args.cuda
     use_splits = not args.no_splits
+    augment = not args.no_augment
     exp = PerEnvironmentSpeechEnhancementExperiment(
         batch_size=16,
         cuda=cuda,
         experiment_no=experiment_no,
-        use_splits=use_splits
+        use_splits=use_splits,
+        augment=augment
     )
     exp.run()
     logger.info("Done.") 

@@ -446,7 +446,7 @@ class SpeechEnhancementExperiment(BaseExperiment):
             initial_lr=1e-3,
             early_stop_threshold=1e-4,
             patience=5,
-            augment=self.augment,
+            augment=False
         )
 
         adam.train()

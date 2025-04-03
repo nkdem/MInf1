@@ -93,14 +93,28 @@ def compute_average_logmel(
         torch.Tensor: Averaged log-mel spectrogram with shape (batch_size, 1, n_mels, n_frames)
     """
     # Convert and stack the left and right channels similar to your original approach.
-    batch_waveforms_l = torch.stack([
-        process_waveform(a[0], device)
-        for a in audio_batch
-    ])
-    batch_waveforms_r = torch.stack([
-        process_waveform(a[1], device)
-        for a in audio_batch
-    ])
+    if len(audio_batch) == 2:
+        batch_waveforms_l = torch.stack([
+            process_waveform(a, device)
+            for a in audio_batch[0]
+        ])
+        batch_waveforms_r = torch.stack([
+            process_waveform(a, device)
+            for a in audio_batch[1]
+        ])
+
+    else:
+        batch_waveforms_l = torch.stack([
+            process_waveform(a[0], device)
+            for a in audio_batch
+        ])
+        batch_waveforms_r = torch.stack([
+            process_waveform(a[1], device)
+            for a in audio_batch
+        ])
+
+    # IF VOICEBANK 
+    
 
     # Define transformation parameters.
     hop_length = int(0.02 * sample_rate)  # 20 ms
