@@ -1206,6 +1206,8 @@ As mentioned in the methodology section, we will be training 3 models
 (net-8, net-20 and net-32) so in the following experiments, we will 
 be training these models with the configurations outlined below.
 
+All of the experiments were done using PyTorch with a batch size of 32.
+
 \section{Baseline: Fixed Learning Rate SGD Approach}
 \begin{figure}[h]
    \centering
@@ -1558,18 +1560,36 @@ results suggests that the DNN models could most likely be ran on a HA device.
 
 \chapter{Speech Enhancement Experiments}
 \section{Data Preparation}
-We incorporated the same data preparation approach as the ASA task, so consult Section \ref{sec:data-preparation} for more details.
+We incorporated the same data preparation approach as the ASA task, so consult Section \ref{sec:data-preparation} for more details. 
+We extended the data preparation to also normalise the spectrograms to have zero mean and unit variance so 
+that the MSE loss is stable. The following experiments all are done using the Adam optimiser with a learning rate of 0.001 
+and early stopping was applied when the loss does not improve after 5 epochs and with a batch size of 32.
+
 \section{One Model Approach}
-TODO
+This is where we train a single model to enhance speech in all environments. 
+
+% Training Curve
+% STOI PESQ per SNR Table (Poorer results after enhancement)
+% Despite this, comparing the clean, noisy and enhanced spectrograms, we can see that the enhanced 
+% spectrogram is removing the noise, but the speech is degraded which can be noted by the discontinuity in the formants 
+% 
+
 \section{Per Environment Model Approach}
+% Similar story
 TODO
 \section{Validating against VOICEBANK + DEMAND}
+% Similar story
 TODO
-\section{Summary}
+\section{Feasibility}
+% FLOPs and Parameters
 TODO
 
 \chapter{Conclusions}
 \section{Discussion}
+% Hypotheses' pertaining to ASA achieved 
+% SE task is more difficult, and more work is needed. Given that the FLOP count is low, we can look into much 
+% deeper models 
+% 
 TODO
 \section{Future Work}
 TODO
