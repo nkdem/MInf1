@@ -82,7 +82,7 @@
    This dissertation explores the intersection of Machine Learning, Automatic Speech Recognition (ASR) and Hearing Aids (HA) 
    through the lens of Acoustic Scene Analysis (ASA) and Speech Enhancement (SE).
    The primary objective of this dissertation is to develop machine learning models capable of prioritising 
-   speech in noisy environments whilst remaining computationally feasible for implementation in hearing aids.
+   speech in noisy environments whilst remaining computationally feasible for implementation in HAs.
    The vision is to chain the ASA and SE models together to form a state-dependent model, 
    which leverages a-priori knowledge of the acoustic scene to suitably enhance the speech in the environment.
 
@@ -105,10 +105,14 @@
    We will demonstrate improvements in both the training procedure and the generalisation capability 
    of the baseline CNN through the implementation of data augmentation strategies and the adoption of an alternative optimiser.
    
-   Furthermore, the dataset is extended by demonstrating a proof-of-concept of a speech enhancement model 
-   using a shallow CNN model that works in the frequency-time domain. We evaluate the performance of the model 
-   using artificial intelligibility and quality metrics such as STOI and PESQ. While the performance is not on par 
-   with the state-of-the-art, it most certainly motivates further research in the next part of the dissertation.
+   Furthermore, preliminary work on convolutional encoder-decoder (CED) 
+   models in the speech enhancement is adopted to various datasets 
+   including HEAR-DS. We evaluate the performance of the model 
+   using artificial intelligibility and quality metrics such as STOI and PESQ. 
+   Notably, there appears to be a lack of comprehensive feasibility analyses in 
+   the SE literature within the context of HAs, so we aim to fill this gap. 
+   Preliminary results, while modest, indicate that further research is required 
+   to achieve a model that is both effective and feasible for real-time deployment in HAs.
 }
 
 \maketitle
@@ -217,18 +221,15 @@ is unaffected by the delay \citep{Stone2002Delays}. Therefore, the project will 
 is computationally efficient and feasible for real-time deployment.
 
 The main evaluation metrics we will consider in this part of the dissertation 
-is short-time objective intelligibility (STOI) and perceptual evaluation of speech quality (PESQ). 
-These are both artificial metrics and give an indication of the quality of the speech enhancement model. 
-Their limitations are discussed in chapter \ref{chap:discussion}, with subsequent sections outlining strategies to address these shortcomings.
-Additionally, informed by current state-of-the-art HA configurations, the project will also assess model complexity by analysing the number of weights utilised in our designs.
+are artificial metrics such as short-time objective intelligibility (STOI) and perceptual evaluation of speech quality (PESQ) 
+which give an indication of the quality of the speech enhancement model.
+Additionally, informed by current state-of-the-art HA configurations, the project will also assess model feasibility by analysing the number of Floating Point Operations Per Second (FLOPs) and number of parameters
+in the models.
 
-The project is predominantly aimed at the hearing aid industry. If successful, the project
-could advance the state-of-the-art techniques in hearing aids which 
-could improve the quality of life for hearing aid users.
-There is also potential to extend the work to other fields that deal with audio signal processing,
-such as mainstream wearables like headphones or microphones.
-% A secondary goal is to make hearing aid research more accessible to the 
-% computer science community.
+The project is predominantly aimed at the hearing aid industry. 
+Moreover, there is potential to extend the work to other fields that deal with audio signal processing,
+such as mainstream wearables like headphones or microphones. Lastly, the project aims to make HA research more accessible 
+in fields like ML and ASR to further promote research in the field.
 
 
 \section{Structure}
@@ -513,20 +514,52 @@ Additionally, the log mel spectrogram enhances the distinction between speech an
 may make a model more effective at ASA and speech enhancement tasks.
 \section{Related Work}
 As this project will chain two algorithms—Acoustic Speech Analysis (ASA) and Speech Enhancement, 
-to form a state-dependent model, we will cover each task in separate sections. We also add 
-a small section on how the idea of Green AI can be applied to the development of the models.
+to form a state-dependent model, we will briefly cover the related work for each task.
+Additionally, we will cover the idea of Green AI, and how it can be applied to the development of the models.
 
 \subsection{Acoustic Scene Analysis (ASA)}
-We will be using HEAR-DS dataset introduced by \citet{Huwel2020HearDS}. This dataset was developed in response to the inadequacies of existing ASA databases for HA processing. A more detailed description of the dataset is provided in Chapter \ref{sec:datasets}.
-The original paper on the HEAR-DS dataset illustrates its applicability by employing a Convolutional Neural Network (CNN) for environment classification. In Chapter \ref{chap:acoustic-scene-classification}, an attempt is made to reproduce the results presented in that study. The challenges encountered during this replication process are discussed comprehensively in the chapter. Additionally, to validate the model implementation, the same parameters were applied to the DCASE 2017 Acoustic Scenes Challenge dataset \citep{DCASE2017challenge}. In particular, a comparison is drawn between the model proposed by \citet{schindler_multi-temporal_2018} and the CNN model used in the HEAR-DS paper, with the findings detailed in Section \ref{sec:DCASE-results}.
-The two papers mentioned above utilise engineered features, and more specifically, the log mel spectrogram. This 
-approach in some literature is called operating on the frequency domain. It is worth pointing out 
-that there is research into doing ASA on the time domain i.e. operating on the waveform directly, 
-such as the papers by \cite{dai_very_2016} and \cite{kumar_end_2020}. While not explored in this part, 
-it is something I will look into exploring in part 2 of this dissertation as there is 
-a compelling reason to possibly consider the time domain approach. Namely, 
-the overhead of the Fourier Transform and the Mel Filterbank in a hearing aid 
-is potentially too high, and so working directly with the waveform may be a more feasible approach.
+We will give a more mathetmatical formulation of the ASA task in Chapter \ref{chap:acoustic-scene-classification}. 
+But conceptually, the task is to classify an input signal into one of the pre-defined scenes/classes.
+
+Typically, the two approaches to ASA are to either 
+operate on the frequency domain or the time domain otherwise known as end-to-end models 
+since they operate on the raw waveform directly. 
+There is an equal amount of research into both approaches, 
+such as the papers by \citet{schindler_multi-temporal_2018} and \citet{kim_specmix_2021} 
+in the former case (frequency domain) and \citet{dai_very_2016} 
+and \citet{kumar_end_2020} in the latter case (time domain).
+
+A novel dataset was developed in response to the inadequacies of existing ASA databases for HA processing. 
+This dataset was developed by \citet{Huwel2020HearDS} and is called the HEAR-DS dataset (more details in Chapter \ref{sec:datasets}).
+The original paper on the HEAR-DS dataset illustrates its applicability by employing a Convolutional Neural Network (CNN) for ASA 
+in the frequency domain. 
+
+While in this part of the dissertation we will be using the frequency domain approach,
+we will be exploring the time domain approach in part 2 of this dissertation. 
+The motivation for this is to determine whether the overhead of constructing engineered features is too high compared to operating on the raw waveform. 
+Though, it could also be that the larger input size in the model counterbalances the overhead of the engineered features, so 
+for future work, it would be interesting to explore this from a HA perspective.
+% There is also a compendium of ASA challenges occuring in the literaturem such 
+% as the DCASE 2017 Acoustic Scenes Challenge \citep{DCASE2017challenge}, where 
+% researchers such as \citet{schindler_multi-temporal_2018} have participated in the challenge 
+% to improve the state-of-the-art in ASA.
+%  The two papers mentioned above utilise engineered features, and more specifically, the log mel spectrogram. 
+% While operating on the time domain is not explored in this part of the dissertation, it is something I will be looking into 
+% in part 2 of this dissertation as the overhead of the Fourier Transform and the Mel Filterbank in a hearing aid 
+% is potentially too high, and so working directly with the waveform may be a more feasible approach. 
+
+
+% The challenges encountered during this replication process are discussed comprehensively in the chapter. 
+
+% % Additionally, to validate the model implementation, the same parameters were applied to the DCASE 2017 Acoustic Scenes Challenge dataset \citep{DCASE2017challenge}. In particular, a comparison is drawn between the model proposed by \citet{schindler_multi-temporal_2018} and the CNN model used in the HEAR-DS paper, with the findings detailed in Section \ref{sec:DCASE-results}.
+% The two papers mentioned above utilise engineered features, and more specifically, the log mel spectrogram. This 
+% approach in some literature is called operating on the frequency domain. It is worth pointing out 
+% that there is research into doing ASA on the time domain i.e. operating on the waveform directly, 
+% such as the papers by \cite{dai_very_2016} and \cite{kumar_end_2020}. While not explored in this part, 
+% it is something I will look into exploring in part 2 of this dissertation as there is 
+% a compelling reason to possibly consider the time domain approach. Namely, 
+% the overhead of the Fourier Transform and the Mel Filterbank in a hearing aid 
+% is potentially too high, and so working directly with the waveform may be a more feasible approach.
 
 % TODO: VERY DEEP CONVOLUTIONAL NEURAL NETWORKS FOR RAW WAVEFORMS
 
@@ -546,7 +579,7 @@ Neural network-based speech enhancement algorithms can be categorised into four 
    The differnece between this and the Time-Domain Filtering approach is that the input is transformed into the frequency domain 
    (whether that be a Fourier Transform, or a Mel Spectrogram, Mel-Frequency Cepstral Coefficients (MFCCs), LPC, etc). The advantage of this 
    is that the dimensionality of the input is usually lower, and the representation is more robust to seperation of the speech and background noise.
-   This is also a popular approach in the speech enhancement literature \citep{hou_local_2023}.
+   This is also a popular approach in the speech enhancement literature \citep{tan18_interspeech,hou_local_2023}.
    \item \textbf{State-Dependent Model Switching} - The two mentioned approaches assumes that the speech signal and noise source are stationary. 
    This is too strong of an assumption, and so state-dependent model switching is a paradigm that has been explored. The main idea is 
    to have a class of models, each specialising in handling a different type of noise and to switch between them based on the 
@@ -597,60 +630,63 @@ using FLOPs as a metric is not only good from a reproducibility standpoint,
 but from a development standpoint as well. 
 
 \section{Criticism of Previous Work}
-We found out that the paper by \citet{Huwel2020HearDS} had 
-some issues which prompted us to do a more thorough analysis of the ASA 
-model they presented. Granted, the paper was more of an exploration of the applicability of the dataset rather than a thorough analysis of the 
-performance of the model, there was some issues with 
-the results and gaps in the analysis which we aim to address in this part of the dissertation. 
+\subsection{Acoustic Scene Analysis}
+In the ASA field, we will predominantly be using the HEAR-DS dataset introduced by \citet{Huwel2020HearDS}
+and a major part of this dissertation is to analyse and explore the model in more detail.
+The motivation behind the further exploration and analysis of the model is due 
+to the gaps in the analysis of the paper. Granted, the paper was more of an exploration of the applicability of the dataset 
+and so more `verbose' evaluations was not the scope of the paper. 
 Additionally, as will become clear, the reproduction of the results 
 was difficult and while we had to deviate from the paper's approach 
 in some aspects, in other cases, we had to make some assumptions 
-about the pipeline details of the paper.
-
-As the dataset is very likely to not be balanced, (as will become more clear in Chapter \ref{chap:acoustic-scene-classification})
-it was an odd decision for the authors 
-not to talk in detail about the splitting strategy of the dataset 
-and how they handled the imbalance. In particular, the metric 
-for the accuracies was what we believe to be quite a 
-naive approach to evaluating the model's performance (a simple accuracy score).
-It would have also been more informative to see how the model performs at various 
-SNRs (Signal-to-Noise Ratio) since it is possible that the model is performing poorly at low SNRs.
-So we will be extending the evaluation of the models to include these aspects. 
-More so, we will also incorporate precision, recall and F1 scores to get a more 
-holistic view of the model's performance. 
-
-Reproduction issues aside, the paper concludes that the 
-most complex model was able to compute the environment 
-with a latency of 0.4s. However, the paper uses 
-a computer-powered device to run the model, which 
-could potentially be more powerful than a HA device. 
-We will be taking a more thorough approach to
-investigating the viability of the models when used in a HA device 
-and be reporting FLOPs as per \citet{schwartz2019greenai}.
-The paper does mention that more verbose evaluation was not 
-the scope of the paper, and so this dissertation aims 
-to bring more insight into the viability of the models 
-when used in a HA device.
-
+about the pipeline details of the paper. 
+Below we outline some of the issues we found with the paper.
+\begin{itemize}
+   \item \textbf{Controlling for Imbalanced Dataset} - The lack of explanation on the data splitting strategy 
+   is a cause of concern, since as it will become clear in Chapter \ref{chap:acoustic-scene-classification},
+   the dataset is going to be severely imbalanced. As such, metrics such as accuracy are not going to be a good 
+   indicator of the model's performance. We will be extending the evaluation of the models to include 
+   precision, recall and F1 scores to get a more holistic view of the model's performance. 
+   \item \textbf{Claim on SGD Optimiser} - The paper claims that the Stochastic Gradient Descent (SGD) 
+   optimiser was used over the Adam optimiser due to the sensitivity of the Adam optimiser in 
+   initialisation. They cite this with a paper by \citet{} 
+   but after reading it, while it says 
+   Adam can lead to poor convergence in `\textit{some settings}'
+   so it would have been insightful to see from \citet{Huwel2020HearDS}
+   if this is the case for the ASA task.
+   \item \textbf{Feasibility} - Additionally, given that 
+   this is a dataset tailored for HA research, it would have been insightful 
+   to see the feasibility of the models when used in a HA device. While the paepr 
+   reports the elapsed real time of the models, this 
+   is inadequate due to the hardware-dependent nature of the metric. 
+   We will be reporting FLOPs and number of parameters to provide a more 
+   concrete and meaningful metric of the model's performance as per \citet{schwartz2019greenai}.
+\end{itemize}
 It is important to note that the intention is not to 
-be critical of the original authors, but rather to 
-bring more insight that was built from the work of the original authors.
+be critical of the valuable work done by the original authors, 
+but rather to bring more insight that was built from the work of the original authors.
 This is done by providing a deeper insight into the model's performance 
 and feasibility when used in a HA device. The challenges encountered 
 in reproducing the results underscore the need for more 
 detailed methodological documentation, and so this dissertation aims 
-to address this gap.
-
-In summary, while the previous study makes a valuable contribution
-to the field of HA research, a more thorough and systematic
-evaluation is necessary to fully assess the model's efficacy 
-in the task of ASA. This dissertation aims to contribute 
-to that venture by offering a comprehensive analysis
-of the model under conditions that more closely mirror real-world HA applications.
-Additionally, we want to take the paper's mission further and explore 
-other use-cases of the dataset, such as the task of Speech Enhancement 
-and how the two tasks (ASA and SE) can be combined to form a state-dependent model,
+to address this gap. We also want to take the author's 
+mission further and explore other use-cases of the dataset, 
+such as the task of Speech Enhancement and how the two tasks 
+(ASA and SE) can be combined to form a state-dependent model,
 all within the context of a HA device.
+
+\subsection{Speech Enhancement}
+In the SE field, and in this part of the dissertation, we will be 
+% In summary, while the previous study makes a valuable contribution
+% to the field of HA research, a more thorough and systematic
+% evaluation is necessary to fully assess the model's efficacy 
+% in the task of ASA. This dissertation aims to contribute 
+% to that venture by offering a comprehensive analysis
+% of the model under conditions that more closely mirror real-world HA applications.
+% Additionally, we want to take the paper's mission further and explore 
+% other use-cases of the dataset, such as the task of Speech Enhancement 
+% and how the two tasks (ASA and SE) can be combined to form a state-dependent model,
+% all within the context of a HA device.
 
 % and CHiMe 5 \cite{barker18_fifth_2018} datasets. However, only the CHiME 3 development set was used for mixing the speech into the background noise.
 % CHiME 5 was used for creating a new environment, 'Interferring Speakers', which are samples that contain speech from multiple speakers.
@@ -794,13 +830,7 @@ this is certainly the case for the HEAR-DS dataset.
 So on top of the accuracy metric, we will also be using precision, recall and F1 score metrics.
 These metrics are defined as follows:
 \[
-Precision = \frac{TP}{TP + FP},
-\]
-\[
-Recall = \frac{TP}{TP + FN},
-\] 
-\[
-F1 = 2 \cdot \frac{Precision \cdot Recall}{Precision + Recall},
+Precision = \frac{TP}{TP + FP}, \quad Recall = \frac{TP}{TP + FN}, \quad F1 = 2 \cdot \frac{Precision \cdot Recall}{Precision + Recall},
 \]
 where TP is the number of true positives, FP is the number of false positives, and FN is the number of false negatives.
 Intuitively, precision is how well the model is doing at correctly identifying the positive class,
