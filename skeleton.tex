@@ -1543,74 +1543,41 @@ without augmentation, as it indicates our implementation is fundamentally sound.
 leave it for future work to adopt the multi-resolution model into our framework and see 
 if we can get any improvements in performance.
 
-\section{Feasibiltiy} 
-% Before we do a cursory analysis of the speech enhancement task, we will summarise 
-% the results of the experiments we have done so far and end on a discussion of the 
-% feasibility of the task from a HA perspective.
-% We started off with a baseline implementation of the ASA that aimed to mimic the paper 
-% by \citet{Huwel2020HearDS} as closely as possible. We were getting a higher accuracy than the paper,
-% but it's most likely due to the difference in dataset used for speech mixing. We then investigated 
-% whether we can improve the generalisation of the model by utilising data augmentation at the speech 
-% mixing proces. The results were not as promising as we hoped from a performance perspective, but the 
-% training time was substantially reduced. Afterwards, we investigated the claim 
-% by \citet{Huwel2020HearDS} that the Adam optimiser is sensitive to the initialisation,
-% but applying the Adam optimiser to the same setup as the data augmentation approach, 
-% we were able to get comparable approach to that of using the SGD optimiser.
-% And to validate that our implementation is correct, we were able to get comparable 
-% performance to the paper by \citet{schindler_multi-temporal_2018}.
-
+\section{Feasibility} 
 We tested the feasibility of the task from a HA perspective by benchmarking 
-how many parameters and FLOPs each model has. For the calculation of the FLOPs, 
-we used a library called \texttt{thop}\footnote{\url{https://github.com/Lyken17/pytorch-OpCounter}} 
-which integrates with PyTorch to analyse how many operations a model performs. 
-Table \ref{tab:model-comparison} shows the FLOPs and parameters of the net-8, net-20 and net-32 models.
-Given that we know that the state of the art models of HAs have capabilities of 
-7,700 million FLOPS and processing models containing 5m parameters, 
-we can see that we are definitely below this which is a good starting point. 
-There is more work to be done in this area, for example, the overhead 
-of calculating the spectrogam is something worth investigating. We leave this 
-for part two of the dissertation to be investigated. However, based on these 
-results suggests that the DNN models could most likely be ran on a HA device.
+the model's parameter count and required floating point operations [FLOP(s)].
+Contrast this with FLOPs which is the number of FLOPs per second. Based on 
+FLOP(s) and FLOPs, we can calculate the theoretical inference time of the model.
+Table \ref{tab:model-comparison} shows the results for the net-8, net-20 and net-32 models.
+Given that the state of the art models of HAs have capabilities of 
+7,700 million FLOPs and models with 5 million parameters, our models are well within these limits.
+The theoretical inference times would all be well under the acceptable latency for HAs.
+Future work would be to investigate on a low-powered device that has similar 
+capabilities to that of HAs. 
 
-% table with the model (net-8, net-20, net-32) and the model size, FLOPS and number of parameters
 \begin{table}[h]
    \centering
    \begin{tabular}{lccc}
       \toprule
-      Model & FLOPS & Parameters \\
+      Model & FLOP(s) Count & Parameters & Theoretical Inference Time\footnotemark \\
       \midrule
-      net-8 & 13.550M & 7.951K \\
-      net-20 & 52.694M & 46.423K \\
-      net-32 & 114.421M & 116.623K \\
+      net-8 & 13.550M & 7.951K & 1.759 ms \\ % 0.0017597403 seconds
+      net-20 & 52.694M & 46.423K & 6.753 ms \\ % 0.0067532468 seconds 
+      net-32 & 114.421M & 116.623K & 14.805 ms \\ % 0.0148051949 seconds
       \bottomrule
    \end{tabular}
-   \caption{Comparison of the FLOPs and parameters of the net-8, net-20 and net-32 models.}
+   \caption{{Comparison of the FLOPs and parameters of the net-8, net-20 and net-32 models.}}
    \label{tab:model-comparison}
 \end{table}
-
-% \begin{table}[h]
-%    \centering
-%    \begin{tabular}{lccccc}
-%       \toprule
-%       Model & Network Size & Accuracy & Training Time & FLOPS & Parameters \\
-%       \midrule
-%       \multirow{3}{*}{SGD No Aug, 120} & 8 & 0.85 & 100 & 100 & 100 \\
-%       & 20 & 0.85 & 100 & 100 & 100 \\
-%       & 32 & 0.85 & 100 & 100 & 100 \\
-%       \midrule
-%       \multirow{3}{*}{SGD Aug, 120} & 8 & 0.85 & 100 & 100 & 100 \\
-%       & 20 & 0.85 & 100 & 100 & 100 \\
-%       & 32 & 0.85 & 100 & 100 & 100 \\
-%       \midrule 
-%       \multirow{3}{*}{Adam, Aug, 120} & 8 & 0.85 & 100 & 100 & 100 \\
-%       & 20 & 0.85 & 100 & 100 & 100 \\
-%       & 32 & 0.85 & 100 & 100 & 100 \\
-
-%       \bottomrule
-%    \end{tabular}
-%    \caption{Comparison of different network sizes using SGD with augmentation and 120 epochs.}
-%    \label{tab:model-comparison}
-% \end{table}
+\footnotetext{{Assumes a 7,700M FLOPs capable device and that the following formula is used: 
+\scriptsize{
+\[
+% \text{Inference Time (ms)} = \text{FLOP(s) Count}\div{\text{FLOPs}} \times 1000
+\text{Inference Time (ms)} = \frac{\text{FLOP(s) Count}}{\text{FLOPs}} \times 1000
+\]
+}
+}
+}
 
 \chapter{Speech Enhancement Experiments}
 We split the chapter into three parts. We first outline the data preperation processs 
@@ -1849,11 +1816,11 @@ would improve the performance of the model when using the CED model.
    \centering
    \begin{tabular}{lccc}
       \toprule
-      Model & FLOPS & Parameters \\
+      Model & FLOP(s) Count & Parameters & Theoretical Inference Time\footnotemark \\
       \midrule
-      CED (10s) & 25.244G & 17.579M \\
-      CED* (1s) & 2.524G & 1.758M \\
-      CED* (5s) & 12.622G & 8.790M \\
+      CED (10s) & 25.244G & 17.579M & 3.2784415584 seconds \\ % 3.2784415584 seconds
+      CED* (1s) & 2.524G & 1.758M & 327ms \\ % 0.3277922078
+      CED* (5s) & 12.622G & 8.790M & 1.639 seconds \\ % 1.6392207792
       \bottomrule
    \end{tabular}
    \caption{FLOPs and parameters of the CED model for different time segments.}
@@ -1864,8 +1831,10 @@ Table \ref{tab:ced-model-metrics} presents the FLOPs and parameter counts for 10
 indicating much higher complexity than the ASA task. While the model was trained on 10s samples 
 as mentioned in the beginning of this chapter, it is worth investigating the performance of the model 
 on shorter time segments. Accordingly, estimates for 1s and 5s samples are also provided, albeit 
-provisionally, since the STFT parameters have not been validated for these durations. Future work 
-will assess whether the same STFT settings can be maintained without compromising performance.
+provisionally, since the STFT parameters have not been validated for these durations. Nevertheless,
+these theoreitcal inference times are outside the acceptable latency for HAs so future work at 
+the first stage would be to reduce the FLOPs of the model of which we discuss more in Section \ref{sec:future-work}.
+\footnotetext{{As in ASA feasibility analysis, assumes a 7,700M FLOPs capable device.}}
 % Benchmarking CRNN on cpu...
 % --- thop results ---
 % [INFO] Register count_convNd() for <class 'torch.nn.modules.conv.Conv2d'>.
