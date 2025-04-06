@@ -17,6 +17,7 @@
 \usepackage{amsmath}
 \usepackage{url} % for better URL handling
 \urlstyle{tt} % use monospace font for URLs
+\usepackage{placeins}
 
 
 % Include any packages you need below, but don't include any that change the page
@@ -786,7 +787,7 @@ i.e. \(\hat{e} = \arg\max_{e_i \in \mathcal{E}} \sigma(x_i)\).
 For ASA, we need to have a dataset that contains audio signals along with their corresponding environmental labels. 
 Mathematically, we need to have a dataset of the form \(\mathcal{D} = \{(x_i, y_i)\}_{i=1}^{N}\), where \(x_i \in \mathbb{R}^{T}\) is the audio signal, and \(y_i \in \mathcal{E}\) is the environmental label.
 Then a loss function is needed to steer the model towards the correct mapping.
-It is important to note that the dataset $\mathcal{D}$ is not necessarily balanced,
+It is important to note that the dataset \(\mathcal{D}\) is not necessarily balanced,
 meaning that some environments may have more samples than others.
 This is a problem, as the model may learn to classify all samples as the most frequent class. 
 So to combat this, when using a loss function, we apply a weight to each sample based on the number of samples in the dataset.
@@ -985,7 +986,7 @@ Mathematically, the state-dependent model can be represented as follows:
 f: \mathbb{R}^{T} \to \mathbb{R}^{T},
 \]
 where \(T\) denotes the total number of samples. 
-Then, given a ASA model $g : \mathbb{R}^{T} \to \mathcal{E}$ and a family of SE models $h_{\epsilon} : \mathbb{R}^{T} \to \mathbb{R}^{T}$ for all $\epsilon \in \mathcal{E}$, 
+Then, given a ASA model $g : \mathbb{R}^{T} \to \mathcal{E}$ and a family of SE models $h_{\epsilon} : \mathbb{R}^{T} \to \mathbb{R}^{T}$ for all \(\epsilon \in \mathcal{E}\), 
 $f$ can be represented as a piecewise function:
 \begin{equation}
    f(x) = 
@@ -994,7 +995,7 @@ $f$ can be represented as a piecewise function:
       x & \text{otherwise}
    \end{cases}
 \end{equation}
-In other words, the state-dependent model $f$ will apply the SE model $h_{\epsilon}$ to the input $x$ if the ASA model $g$ maps $x$ to $\epsilon$.
+In other words, the state-dependent model $f$ will apply the SE model $h_{\epsilon}$ to the input $x$ if the ASA model $g$ maps $x$ to \(\epsilon\).
 For example, if a HA user is situated in anenvironment characterised as `Wind Turbulence and Speech',
 the state-dependent model will invoke the SE model that has been trained on this scenario to enhance the input signal $x$.
 The state-dependant model is inspired by the unveiling of the Spheric Clarity DNN model by Phonak \citep{Hasemann2024PhonakSphere} in late 2024
@@ -1141,6 +1142,9 @@ of the dissertation, so instead we will be using the CHiME 3 dataset \citep{bark
 We discuss this limitation in more detail in Section \ref{sec:future-work}.
 Otherwise, the speech mixing itself is done in a similar manner to the paper.
 Firstly, the paper mentions that they ensure that each mixed 10-second snippet contains at least 7.5 seconds of speech.
+The speakers are picked at random and for better generalisation, the speaker is also randomly 
+picked at each SNR level, so the same snippet of background noise is very likely 
+to have different speech signals mixed with it at different SNR levels.
 Given that we will be training and testing the model, the need for a training and test set is imperative. 
 % It was not clear how the researchers split the speakers for the mixed environments, so we will be splitting the speakers into two groups—one for training and one for testing.
 % Table \ref{tab:dataset-stats} shows that the CHiME 3 dataset contains 4 speakers, and conveniently enough an equal split of gender,
@@ -1231,7 +1235,7 @@ SNR levels that will be trained and tested for [-21, -18, -15, -12, -9, -6, -3, 
 Thirdly, as the CNN model excepts a logmel spectrogram as input, we need to convert the waveform
 to a logmel spectrogram. The paper decides to only use the ITC channel for the input, so we 
 will follow suit.
-As for the feature transformation $\phi$, we will be using the same approach as the paper. Namely, 
+As for the feature transformation \(\phi\), we will be using the same approach as the paper. Namely, 
 \begin{equation}
 \phi(x_l, x_r) = \frac{20\log_{10}\left(M X_{L}^{1} \right) + 20\log_{10}\left(M X_{R}^{1}\right)}{2}
 \label{eq:logmel}
@@ -1605,14 +1609,41 @@ results suggests that the DNN models could most likely be ran on a HA device.
 % \end{table}
 
 \chapter{Speech Enhancement Experiments}
-\section{Data Preparation}
-We incorporated the same data preparation approach as the ASA task, so consult Section \ref{sec:data-preparation} for more details. 
-We extended the data preparation to also normalise the spectrograms to have zero mean and unit variance so 
-that the MSE loss is stable. The following experiments all are done using the Adam optimiser with a learning rate of 0.001 
-and early stopping was applied when the loss does not improve after 5 epochs and with a batch size of 32.
+We split the chapter into three parts. We first outline the data preperation processs 
+and the deviations done from the ASA task. We then present the results of the speech 
+enhancement task on the HEAR-DS dataset. Afterwards, as a means of validation, we 
+validate the model on the VOICEBANK + DEMAND dataset and compare the results from 
+\citet{kim_specmix_2021}. Lastly, just as we did for the ASA task, we will be 
+discussing the feasibility of the task from a HA perspective.
 
-\section{One Model Approach}
-This is where we train a single model to enhance speech in all environments. 
+\section{Data Preparation}
+We for the most part incorporated the same data preparation approach as the ASA task, so consult Section \ref{sec:data-preparation} for 
+more in depth detail. The differences deviate in the feature transformation, 
+since we will now not use the logmel transformation, but instead use the standard 
+spectrogram. It is worth noting that in VOICEBANK + DEMAND, the samples 
+are mono, so we use them as is, but in HEAR-DS, the samples are dual-channel (left and right microphone), 
+so for exploration we just use the left channel. In a deployment scenario, we would train two models, one for the left 
+and one for the right channel and use the respective model in the respective HA device.
+% Furthermore, the requirement to store at least twice as many samples necessitates a proportional increase in memory capacity. Memory usage scales linearly with the number of SNR levels. Training on 15 SNR levels, as was done for the ASA task, proved infeasible for the present dissertation. Consequently, the speech signal was mixed with background noise at only 5 SNR levels—\([-10, -5, 0, 5, 10]\) dB—in order to avoid IO bottlenecks and degradation during model execution, given that the waveforms are stored in memory. For context, even with 5 SNR levels, approximately 50 GB of memory was required for the HEAR-DS training set. Although this range provides a robust basis for evaluating model performance, future work could investigate the impact of incorporating a broader range of SNR levels.
+Additionally, due to needing to load both the noisy and clean speech signals 
+during training, we need to twice as much compared to the ASA task.
+So training on 15 SNR levels was not feasible for this task 
+in this part of the dissertation. As such, we only 
+mix the speech signal with the background noise at 5 SNR levels - [-10, -5, 0, 5, 10] dB.
+To speed up training by reducing the IO bottleneck, we preload the waveforms into memory 
+rather than loading them on demand. So even with 5 SNR levels, 
+50 GB of memory is required for the training set for the HEAR-DS dataset.
+For future work, it would be interesting to see how the model performs with 
+more SNR levels.
+
+The Adam optimiser was used with a learning rate of 0.0006 and a batch size of 16.
+Early stopping was applied when the loss did not improve after 5 epochs.
+At each epoch, we employ a similar data augmentation approach as the ASA task, 
+namely, for each sample, we randomly pick a SNR level and mix the speech signal with the background noise 
+at that SNR level. 
+
+% \section{One Model Approach}
+% This is where we train a single model to enhance speech in all environments. 
 
 % Training Curve
 % STOI PESQ per SNR Table (Poorer results after enhancement)
@@ -1620,15 +1651,127 @@ This is where we train a single model to enhance speech in all environments.
 % spectrogram is removing the noise, but the speech is degraded which can be noted by the discontinuity in the formants 
 % 
 
-\section{Per Environment Model Approach}
-% Similar story
-TODO
+\section{HEAR-DS Results}
+We created 5 train+test splits of the HEAR-DS dataset as in the ASA task so we can 
+get a more insightful analysis of the model's performance. Since there 
+are 6 speech environments, we trained 6 SE models, one for each environment. 
+Since there are a different number of samples for each environment, 
+the convergence of the training curves are different. 
+Figure \ref{fig:hear-ds-training-curves} shows the training curves for the 
+6 SE models. Notably compared to the ASA task, the training curves for each 
+environment have more variance, which could be for numerous reasons such 
+as the initialisation of weights being an important factor. We leave this 
+for future work to investigate.
+
+\begin{figure}[h]
+   \centering
+   \includegraphics[width=0.9\textwidth]{se-hear-ds_training_losses.png}
+   \caption{The training curves for the 6 SE models.}
+   \label{fig:hear-ds-training-curves}
+\end{figure}
+
+In terms of how the model performs, we look at the STOI and PESQ scores at each SNR level.
+Table \ref{tab:hear-ds-baseline} shows the baseline (unprocessed) average STOI and PESQ scores for different environments at various SNR levels.
+Then after processing the speech signal, we get the results shown in Table \ref{tab:hear-ds-processed}.
+A few interesting observations can be made from the table. Firstly, the model 
+seems to perform better at lower SNR levels, i.e. 
+the difference in increase in STOI and PESQ scores is higher at lower SNR levels.
+This is a good sign as this is arguably the more challenging scenario 
+as the speech signal is more difficult to understand since the background noise 
+is more dominant. Secondly, there is a higher proportional increase in the STOI 
+scores compared to the PESQ scores. This suggests that the model is able 
+to remove more of the noise, but perhaps at the cost of speech distortion. 
+This is an important factor to consider and is certainly something we 
+will be investigating in future work and of which we elaborate more in Section \ref{sec:future-work}.
+Just to show an indication of the speech seperation, Figures \ref{fig:rev-spec}, \ref{fig:wind-spec}, \ref{fig:music-spec} and \ref{fig:in-vehicle-spec}
+show the spectrograms of the noisy, clean and enhanced speech signals for the Reverberant Environment, Wind Turbulence, Music and In Vehicle environments respectively.
+As can be seen, it is quite evident that the background noise is removed, though there's evidence 
+of some signals being left over in the enhanced speech signal (especially visibile in the starting and ending segments).
+But it is a great start to see that the model is able to remove the noise to some extent.
+\begin{table}[h]
+    \begin{subtable}{\textwidth}
+    \centering
+    \begin{tabular}{l|ccccc|ccccc}
+       \toprule
+       Environment & \multicolumn{5}{c|}{STOI} & \multicolumn{5}{c}{PESQ} \\
+       \cmidrule(lr){2-6} \cmidrule(lr){7-11}
+       SNR (dB) & -10 & -5 & 0 & 5 & 10 & -10 & -5 & 0 & 5 & 10 \\
+       \midrule
+       Music & \small{0.25} & \small{0.37} & \small{0.49} & \small{0.61} & \small{0.71} & \small{1.07} & \small{1.06} & \small{1.09} & \small{1.14} & \small{1.29} \\
+       WindTurbulence & \small{0.55} & \small{0.65} & \small{0.75} & \small{0.84} & \small{0.91} & \small{1.07} & \small{1.13} & \small{1.27} & \small{1.53} & \small{1.95} \\
+       InTraffic & \small{0.21} & \small{0.35} & \small{0.50} & \small{0.64} & \small{0.77} & \small{1.12} & \small{1.05} & \small{1.08} & \small{1.16} & \small{1.36} \\
+       InVehicle & \small{0.62} & \small{0.73} & \small{0.84} & \small{0.92} & \small{0.96} & \small{1.10} & \small{1.21} & \small{1.44} & \small{1.84} & \small{2.36} \\
+       QuietIndoors & \small{0.30} & \small{0.43} & \small{0.58} & \small{0.71} & \small{0.82} & \small{1.03} & \small{1.05} & \small{1.08} & \small{1.17} & \small{1.38} \\
+       ReverberantEnvironment & \small{0.22} & \small{0.35} & \small{0.49} & \small{0.63} & \small{0.77} & \small{1.17} & \small{1.08} & \small{1.12} & \small{1.23} & \small{1.47} \\
+       \bottomrule
+    \end{tabular}
+    \caption{Baseline (unprocessed) STOI and PESQ scores for different environments at various SNR levels.}
+    \label{tab:hear-ds-baseline}
+    \end{subtable}
+    \begin{subtable}{\textwidth}
+    \centering
+    \begin{tabular}{l|ccccc|ccccc}
+       \toprule
+       Environment & \multicolumn{5}{c|}{STOI} & \multicolumn{5}{c}{PESQ} \\
+       \cmidrule(lr){2-6} \cmidrule(lr){7-11}
+       SNR (dB) & -10 & -5 & 0 & 5 & 10 & -10 & -5 & 0 & 5 & 10 \\
+       \midrule
+       Music & \small{0.42} & \small{0.57} & \small{0.69} & \small{0.77} & \small{0.83} & \small{1.11} & \small{1.18} & \small{1.30} & \small{1.46} & \small{1.67} \\
+       WindTurbulence & \small{0.62} & \small{0.72} & \small{0.79} & \small{0.85} & \small{0.89} & \small{1.18} & \small{1.29} & \small{1.44} & \small{1.61} & \small{1.77} \\
+       InTraffic & \small{0.34} & \small{0.51} & \small{0.64} & \small{0.74} & \small{0.82} & \small{1.08} & \small{1.15} & \small{1.25} & \small{1.40} & \small{1.57} \\
+       InVehicle & \small{0.73} & \small{0.82} & \small{0.88} & \small{0.92} & \small{0.95} & \small{1.34} & \small{1.54} & \small{1.78} & \small{2.02} & \small{2.25} \\
+       QuietIndoors & \small{0.39} & \small{0.56} & \small{0.68} & \small{0.77} & \small{0.83} & \small{1.09} & \small{1.16} & \small{1.27} & \small{1.46} & \small{1.65} \\
+       ReverberantEnvironment & \small{0.28} & \small{0.43} & \small{0.58} & \small{0.71} & \small{0.80} & \small{1.08} & \small{1.10} & \small{1.17} & \small{1.29} & \small{1.38} \\
+       \bottomrule
+    \end{tabular}
+    \caption{Processed STOI and PESQ scores for different environments at various SNR levels.}
+    \label{tab:hear-ds-processed}
+    \end{subtable}
+    \caption{}
+\end{table}
+
+\FloatBarrier
+\begin{figure}[h]
+    \caption{Spectrograms of the noisy, clean and enhanced speech signals.}
+    \centering
+    \hspace{0pt}%
+    \begin{subfigure}{0.42\textwidth}
+        \centering
+        \includegraphics[width=\textwidth]{rev-spec.png}
+        \caption{Reverberant Environment}
+        \label{fig:rev-spec}
+    \end{subfigure}%
+    \hspace{0.02\textwidth}%
+    \begin{subfigure}{0.42\textwidth}
+        \centering
+        \includegraphics[width=\textwidth]{wind-spec.png}
+        \caption{Wind Turbulence}
+        \label{fig:wind-spec}
+    \end{subfigure}
+    \begin{subfigure}{0.42\textwidth}
+        \centering
+        \includegraphics[width=\textwidth]{music-spec.png}
+        \caption{Music}
+        \label{fig:music-spec}
+    \end{subfigure}%
+    \hspace{0.02\textwidth}%
+    \begin{subfigure}{0.42\textwidth}
+        \centering
+        \includegraphics[width=\textwidth]{in-vehicle-spec.png}
+        \caption{In Vehicle}
+        \label{fig:in-vehicle-spec}
+    \end{subfigure}
+\end{figure}
+\FloatBarrier
+
+
+
 \section{Validating against VOICEBANK + DEMAND}
-% Similar story
-TODO
-\section{Feasibility}
-% FLOPs and Parameters
-TODO
+Similar story
+% TODO
+% \section{Feasibility}
+% % FLOPs and Parameters
+% TODO
 
 \chapter{Conclusions}
 \section{Discussion}
