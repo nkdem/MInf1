@@ -1341,16 +1341,17 @@ The selection of net-8 and net-32 allows us to assess whether increased model co
    \begin{subfigure}[b]{0.48\textwidth}
       \centering
       \includegraphics[width=\textwidth]{net-8/FIXED-fixed-lr-sgd/snr_-21_performance.png}
-      \caption{The performance of the net-8 model at SNR -21.}
+      \caption{}
       \label{fig:fixed-lr-sgd-snr--21}
    \end{subfigure}
    \hfill
    \begin{subfigure}[b]{0.48\textwidth}
       \centering
       \includegraphics[width=\textwidth]{net-8/FIXED-fixed-lr-sgd/snr_21_performance.png}
-      \caption{The performance of the net-8 model at SNR 21.}
+      \caption{}
       \label{fig:fixed-lr-sgd-snr-21}
    \end{subfigure}
+   \caption{The performance of the net-8 model at SNR -21 (\subref{fig:fixed-lr-sgd-snr--21}) and 21 (\subref{fig:fixed-lr-sgd-snr-21}).}
 \end{figure}
 
 Figure \ref{fig:fixed-lr-sgd-snr--21} and \ref{fig:fixed-lr-sgd-snr-21} shows 
@@ -1372,16 +1373,17 @@ granted it seems to be more conflated in what environment the speech is coming f
    \begin{subfigure}[b]{0.48\textwidth}
       \centering
       \includegraphics[width=\textwidth]{net-32/FIXED-fixed-lr-sgd/snr_-21_performance.png}
-      \caption{The performance of the net-32 model at SNR -21.}
+      \caption{}
       \label{fig:fixed-lr-sgd-snr--21-net-32}
    \end{subfigure}
    \hfill
    \begin{subfigure}[b]{0.48\textwidth}  
          \centering
       \includegraphics[width=\textwidth]{net-32/FIXED-fixed-lr-sgd/snr_21_performance.png}
-      \caption{The performance of the net-32 model at SNR 21.}
+      \caption{}
       \label{fig:fixed-lr-sgd-snr-21-net-32}
    \end{subfigure}
+   \caption{The performance of the net-32 model at SNR -21 (\subref{fig:fixed-lr-sgd-snr--21-net-32}) and 21 (\subref{fig:fixed-lr-sgd-snr-21-net-32}).}
 \end{figure}
 
 Figure \ref{fig:fixed-lr-sgd-snr--21-net-32} and \ref{fig:fixed-lr-sgd-snr-21-net-32} shows 
@@ -1407,16 +1409,17 @@ in future work.
    \begin{subfigure}[b]{0.48\textwidth}
       \centering
       \includegraphics[width=\textwidth]{fixed-lr-sgd-AUG_training_losses.png}
-      \caption{The training curves for the net-8, net-20 and net-32 models when using the fixed learning rate SGD approach with data augmentation.}
+      \caption{}
       \label{fig:data-augmentation-losses}
    \end{subfigure}
    \hfill
    \begin{subfigure}[b]{0.48\textwidth}
       \centering
       \includegraphics[width=\textwidth]{fixed-lr-sgd-AUG_training_times.png}
-      \caption{The training curves for the net-8, net-20 and net-32 models when using the fixed learning rate SGD approach with data augmentation.}
+      \caption{}
       \label{fig:data-augmentation-times}
    \end{subfigure}
+   \caption{The training curves (\subref{fig:data-augmentation-losses}) and training times (\subref{fig:data-augmentation-times}) of the net-8, net-20 and net-32 models when using Data Augmentation.}
 \end{figure}
 Now that we have a baseline, the next step is to test the hypothesis 
 that utterance-level data augmentation is effective. More specifically, 
@@ -1486,16 +1489,17 @@ we will be taking this forward to investigate this.
    \begin{subfigure}[b]{0.48\textwidth}
       \centering
       \includegraphics[width=\textwidth]{adam-early-stop_training_losses.png}
-      \caption{The training curves for the net-8, net-20 and net-32 models when using the Adam optimiser.}
+      \caption{}
       \label{fig:adam-optimiser-losses}
    \end{subfigure}
    \hfill
    \begin{subfigure}[b]{0.48\textwidth}
       \centering
       \includegraphics[width=\textwidth]{adam-early-stop_training_times.png}
-      \caption{The training times for the net-8, net-20 and net-32 models when using the Adam optimiser.}
+      \caption{}
       \label{fig:adam-optimiser-times}
    \end{subfigure}
+   \caption{The training curves (\subref{fig:adam-optimiser-losses}) and training times (\subref{fig:adam-optimiser-times}) of the net-8, net-20 and net-32 models when using the Adam optimiser.}
 \end{figure}
 
 Figure \ref{fig:adam-optimiser-losses} and \ref{fig:adam-optimiser-times} shows 
@@ -1732,33 +1736,33 @@ But it is a great start to see that the model is able to remove the noise to som
 
 \FloatBarrier
 \begin{figure}[h]
-    \caption{Spectrograms of the noisy, clean and enhanced speech signals.}
+    \caption{Selected spectrograms of the noisy, clean and enhanced speech signals.}
     \centering
     \hspace{0pt}%
     \begin{subfigure}{0.42\textwidth}
         \centering
         \includegraphics[width=\textwidth]{rev-spec.png}
-        \caption{Reverberant Environment}
+        \caption{In a Reverberant Environment}
         \label{fig:rev-spec}
     \end{subfigure}%
     \hspace{0.02\textwidth}%
     \begin{subfigure}{0.42\textwidth}
         \centering
         \includegraphics[width=\textwidth]{wind-spec.png}
-        \caption{Wind Turbulence}
+        \caption{With Wind Turbulence}
         \label{fig:wind-spec}
     \end{subfigure}
     \begin{subfigure}{0.42\textwidth}
         \centering
         \includegraphics[width=\textwidth]{music-spec.png}
-        \caption{Music}
+        \caption{With Music}
         \label{fig:music-spec}
     \end{subfigure}%
     \hspace{0.02\textwidth}%
     \begin{subfigure}{0.42\textwidth}
         \centering
         \includegraphics[width=\textwidth]{in-vehicle-spec.png}
-        \caption{In Vehicle}
+        \caption{In Vehicle Environment}
         \label{fig:in-vehicle-spec}
     \end{subfigure}
 \end{figure}
