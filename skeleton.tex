@@ -518,6 +518,7 @@ to form a state-dependent model, we will briefly cover the related work for each
 Additionally, we will cover the idea of Green AI, and how it can be applied to the development of the models.
 
 \subsection{Acoustic Scene Analysis (ASA)}
+% TODO: Talk aobut why neural approach is better than classical maybe 
 We will give a more mathetmatical formulation of the ASA task in Chapter \ref{chap:acoustic-scene-classification}. 
 But conceptually, the task is to classify an input signal into one of the pre-defined scenes/classes.
 
@@ -568,6 +569,7 @@ On the other hand, Speech Enhancement aims to improve the perceptual quality of 
 has been degraded by an additive noise \citep{loizou_speech_2007}. 
 This enhancement is crucial in applications where speech intelligibility is essential, such as telecommunications, hearing aids, and speech recognition systems. Noise sources may include environmental disturbances (e.g., wind noise) as well as interference from multiple speakers (e.g., babble noise).
 
+% TODO: Talk about why we are using a neural-network based approach
 There are many different approaches to speech enhancement, from more traditional methods such as spectral subtraction, or Wiener filtering
 to more modern methods that incorporate neural-networks. In this dissertation, we will be using a neural-network based approach.
 But even within the neural-network based approach, there are different techniques that can be used to enhance the speech signal. 
@@ -856,8 +858,8 @@ and evaluating the model using the following metrics:
 \label{sec:methodology-se}
 \begin{figure}[h]
    \centering
-   \includegraphics[width=0.95\textwidth]{se-model-diagram.png}
-   \caption{The speech enhancement model architecture.}
+   \includegraphics[width=0.95\textwidth]{se-model-diagram-2.png}
+   \caption{A diagram of the Convolutional Encoder-Decoder model we will be using for the speech enhancement task.}
    \label{fig:speech-enhancement-model-architecture}
 \end{figure}
 Mathematically, let a noisy speech signal be represented by \(x \in \mathbb{R}^{T}\) and the corresponding clean speech signal by \(y \in \mathbb{R}^{T}\), where \(T\) denotes the total number of samples.
@@ -869,66 +871,81 @@ which takes a noisy speech signal \(x\) and produces an enhanced version \(f(x)\
 \[
 f(x) \approx y.
 \]
-Just as in the previous section, we will be using a Convolutional Neural Network (CNN) to implement \(f\).
+For this task, $f$ will be implemented by a Convolutional Encoder-Decoder model.
 \subsection{Model}
 \label{sec:se-model}
 As this is more of an exploration of the viability of using a DNN model for speech enhancement 
-and the establishment of a baseline which can be used to improve upon, we will start 
-with a simple 5-layer CNN model. The model is shown in Figure \ref{fig:speech-enhancement-model-architecture}.
-As we want to preserve the dimensionality of the input, we 
-have removed batch normalisation and pooling layers.
-For similar reasons, we have set the padding to $1\times 1$ which ensures that the output has the same dimensionality as the input
-and the kernel size is set to $3\times 3$. We kept the activation function as a ReLU.
-Since this model has 5 layers, it has 5 hyperparameters: the number of output channels for each layer ($C_1, C_2, C_3, C_4, C_5$).
-Table \ref{tab:speech-enhancement-model-params} shows the parameters of the model.
+and the establishment of a baseline which can be used to improve upon in future work, 
+we will take on board the work done by \citet{tan18_interspeech} and implement their baseline Convolutional Encoder-Decoder model.
+A simplified diagram of the model is shown in Figure \ref{fig:speech-enhancement-model-architecture}.
 
-\begin{table}[h]
-   \centering
-   \begin{tabular}{|c|c|}
-      \hline
-      Layer & Output Channels \\
-      \hline
-      $C_1$ & 64 \\
-      $C_2$ & 128 \\
-      $C_3$ & 64 \\
-      $C_4$ & 32 \\
-      $C_5$ & 40 \\
-      \hline
-   \end{tabular}
-   \caption{Model parameters for the speech enhancement model.}
-   \label{tab:speech-enhancement-model-params}
-\end{table}
+Instead of using the logmel spectrogram as in the ASA task, we will be using the magnitude spectrogram 
+as did the paper for consistency. So the output of the model is a magnitude spectrogram. 
 
-It is worth noting that the output of the model is a complex spectrogram, which would 
-not be suitable for a HA device. So we need to convert the output back to the time domain. 
-There are two approaches that we have seen in the literature:
-\begin{itemize}
-   \item \textbf{Inverse Short-Time Fourier Transform (ISTFT)} - As the name suggests, this approach takes the inverse of the Short-Time Fourier Transform (STFT) of the input signal.
-   So the input is a magnitude and phase spectrogram, and the output is a time domain signal. 
-   \item \textbf{Griffin-Lim} - This is an iterative algorithm that estimates the phase of the signal just from the magnitude spectrogram alone. 
-\end{itemize}
-For the purposes of this dissertation, the Griffin-Lim approach was adopted, as the initial implementation did not track phase information however,
-it is something that we may explore in the future.
+% \begin{table}[h]
+%    \centering
+%    \begin{tabular}{|c|c|}
+%       \hline
+%       Layer & Output Size \\
+%       \hline
+%       Encoder 1 & $16 \times T \times 80$ \\
+%       Encoder 2 & $32 \times T \times 39$ \\
+%       Encoder 3 & $64 \times T \times 19$ \\
+%       Encoder 4 & $128 \times T \times 9$ \\
+%       Encoder 5 & $256 \times T \times 4$ \\
+%       LSTM & $T \times 1024$ \\
+%       Decoder 1 & $128 \times T \times 9$ \\
+%       Decoder 2 & $64 \times T \times 19$ \\
+%       Decoder 3 & $32 \times T \times 39$ \\
+%       Decoder 4 & $16 \times T \times 80$ \\
+%       Decoder 5 & $T \times 161$ \\
+%       \hline
+%    \end{tabular}
+%    \caption{The output sizes of the layers in the Convolutional Encoder-Decoder model.}
+%    \label{tab:speech-enhancement-output-sizes}
+% \end{table}
+It will be helpful for this and forthcoming sections to introduce some notation.
+Let $x$ be the input (noisy) signal, $y$ be the clean speech signal. 
+STFT is a function that maps a noisy signal $x$ to a tuple of magnitude and phase spectrograms $(X^{1}, <X^{f})$.
+The sizes of the magnitude and phase spectrograms will be $T \times F$ where $T$ is the number of time frames which is 
+determined by the length of the signal and the hop size of the STFT. The number of frequency bins $F$ is determined by the 
+number of bins specified during the algorithm.
+So after applying STFT to $x$, we get $X^{1}$ and $<X^{f}$ and for the clean speech signal $y$, we get $Y^{1}$ and $<Y^{f}$.
+The input to the model is $X^{1}$ and the output is $\hat{X}^{1}$. For this to be possible, we need to ensure that the size of the 
+magnitude spectrogram is preserved through the model. This is done by fixing the time dimension of the input to the model 
+so that no time frames are dropped, but the frequency dimension will change however it will return to its original size after the last layer.
+So the stride of the convolutions is set to $(1 \times 2)$ throughout, and the kernel size is set to $(2 \times 3)$. 
+This has the effect of reducing the frequency dimension by a factor of 2 during encoding, and increasing it by a factor of 2 during decoding.
+\citet{tan18_interspeech} introduced a Long-Short Term Memory (LSTM) between the encoder and decoder to help with 
+the temporal dynamics of speech. So a 2-layer LSTM with 1024 units is used between the encoder and decoder. This 
+does require the need to reshape the output of the LSTM before it is passed into the decoder.
+% Table \ref{tab:speech-enhancement-output-sizes} shows the output sizes of the layers in the model assuming 
+% that 161 frequency bins are used, so an input of size $T \times 161$ is used.
 
+In terms of what operations are used in the encoder and decoder, after the convolutions (or transposed convolutions in the case of the decoder),
+a batch normalisation layer is used. Afterwards, the Exponential Linear Unit (ELU) activation function is used 
+as the authors cite that it results in faster convergence and better generalisation. Skip connections 
+are also used in the decoder, so the input to each decoder layer is the concatenation of the output of the previous decoder layer 
+and the output of the corresponding encoder layer (see Figure \ref{fig:speech-enhancement-model-architecture}).
 
-\subsection{Training}
-We will adopt the Adam optimiser instead of SGD as one of the experiments I will be doing 
-is to validate if the claim made in \citet{Huwel2020HearDS} that a fixed learning rate SGD approach
-is better than an Adam optimiser approach. As will be discussed in Chapter \ref{} 
-we found that the Adam optimiser converged faster than the SGD optimiser and still resulted in a comparable 
-performance. Additionally, from the ASA experiments, we also found that adopting an early stopping criterion 
-once the training loss plateaued, sped up the training process at no loss of performance. So we will be adopting 
-this approach for the speech enhancement experiments as well. More specifically, we will be using a learning rate of $0.001$
-and early stopping once the training loss stops improving after 5 epochs.
-
-The way the model is trained is by comparing the ground truth speech signal with the enhanced speech signal. 
-As such, we have used the Mean Squared Error (MSE) loss function to train the model. The loss function is defined as follows:
+Since the output of the model is a magnitude spectrogram, we need to convert it back to the time domain. 
+The paper by \citet{tan18_interspeech} did not specify what method was used to convert the magnitude spectrogram back to the time domain.
+We assume that the authors used the common approach of using inverse STFT (ISTFT) \citep{xu_regression_2015},whereby the noisy phase spectrogram 
+is combined with the predicted magnitude spectrogram to reconstruct the time domain signal $\hat{x}$. In other words,
 \[
-L(y, \hat{y}) = \frac{1}{T} \sum_{t=1}^{T} (y_t - \hat{y}_t)^2,
+\hat{x} = \text{ISTFT}(\hat{X}^{1}, <X^{f}).
 \]
-where \(y_t\) is the ground truth speech signal and \(\hat{y}_t\) is the enhanced speech signal.
-For model stability we have ensured that the spectrograms are normalised to have zero mean and unit variance.
-This normalisation ensures that the loss function operates within a range from 0 (optimal) to 1 (suboptimal).
+\subsection{Training}
+The training itself will be done using the Adam optimiser just like in the paper \citep{tan18_interspeech}.
+Since the datasets we will be using have noisy and clean speech signals, we can use the noisy speech signal ($x$) as the input
+and the clean speech signal ($y$) as the ground truth.
+Then, the objective of the training is to minimise the loss between the enhanced magnitude spectrogram ($\hat{X}^{1}$) 
+and the ground truth magnitude spectrogram ($Y^{1}$).
+Therefore, the loss function is defined as follows:
+\[
+L(X^{1}, Y^{1}) = \frac{1}{T} \sum_{t=1}^{T} (X^{1}_t - Y^{1}_t)^2,
+\]
+This is the same loss function used in \citet{tan18_interspeech} and is the Mean Squared Error (MSE) loss function.
 
 \subsection{Evaluation}
 The evaluation of the speech enhancement model in this part of the dissertation will be 
@@ -1009,11 +1026,11 @@ Once that's done, the reader will be in a position to now analyse the results of
    We hypothesise that the methodological approach detailed in Section \ref{sec:se-model} to 
    create a speech enhancement model will be able to enhance the speech signal by 
    cutting out the background noise. 
-   \item \textbf{Superiority of State-Specific Training}
-   As the end-goal of this dissertation is to create a state-dependent model, we hypothesise that
-   training a model on each environment will result in a better performing model than training on all environments.
-   We believe this could be due to the fact that with a shallower model, the parameters of the models 
-   are less likely to be able to be fitted in such a way that all environments are catered for. 
+   % \item \textbf{Superiority of State-Specific Training}
+   % As the end-goal of this dissertation is to create a state-dependent model, we hypothesise that
+   % training a model on each environment will result in a better performing model than training on all environments.
+   % We believe this could be due to the fact that with a shallower model, the parameters of the models 
+   % are less likely to be able to be fitted in such a way that all environments are catered for. 
    \item \textbf{Feasibility of Deployment on Hearing Aid Devices}.
    With the evaluation of the models with respect to the number of FLOPs and the size of the models,
    we aim to show that the models we implement are able to be deployed on HA devices. 
@@ -1030,28 +1047,26 @@ Once that's done, the reader will be in a position to now analyse the results of
 \section{Datasets}
 \label{sec:datasets}
 
-\begin{table}[h]
-   \centering
-   \begin{tabular}{|c|c|c|c|}
-      \hline
-      Dataset & \rotatebox{90}{Environments} & \rotatebox{90}{No. of Speakers} & \rotatebox{90}{Hours of Data} \\
-      \hline
-   HEAR-DS \citep{Huwel2020HearDS} & 6 & - & 21 hours \\ % TODO: The hours is wrong, find the correct number
-      CHiME 3 (booth dev. set) \citep{barker_third_2015} & - & 4 & 10 hours \\
-      CHiME 6 (train + dev + eval) \citep{barker18_fifth_2018} & - & 48 & 50 hours \\
-      TUT Acoustic Scenes 2016 \citep{mesaros_tut_2016} & 10 & - & 10 hours \\
-      \hline
-   \end{tabular}
-   \caption{Dataset statistics.}
-   \label{tab:dataset-stats}
-\end{table}
+% \begin{table}[h]
+%    \centering
+%    \begin{tabular}{|c|c|c|c|}
+%       \hline
+%       Dataset & \rotatebox{90}{Environments} & \rotatebox{90}{No. of Speakers} & \rotatebox{90}{Hours of Data} \\
+%       \hline
+%    HEAR-DS \citep{Huwel2020HearDS} & 6 & - & 21 hours \\ % TODO: The hours is wrong, find the correct number
+%       CHiME 3 (booth dev. set) \citep{barker_third_2015} & - & 4 & 10 hours \\
+%       CHiME 6 (train + dev + eval) \citep{barker18_fifth_2018} & - & 48 & 50 hours \\
+%       TUT Acoustic Scenes 2016 \citep{mesaros_tut_2016} & 10 & - & 10 hours \\
+%       \hline
+%    \end{tabular}
+%    \caption{Dataset statistics.}
+%    \label{tab:dataset-stats}
+% \end{table}
 
 \subsection{HEAR-DS}
 \label{sec:hear-ds}
-Given how much this dissertation revolves around the HEAR-DS dataset, we dedicate a section solely 
-to the dataset. 
 HEAR-DS is a dataset created by \citet{Huwel2020HearDS} which is specially tailored for Hearing Aid (HA) research. 
-It consists of recordings captured on a dummy head equipped with Pinnae models and three microphones per side: one In-The-Canal (ITC) [in the ear] and two Behind-The-Ear (BTE) microphones (front and rear).
+It consists of recordings captured on a dummy head equipped with three microphones per side: one In-The-Canal (ITC) [in the ear] and two Behind-The-Ear (BTE) microphones (front and rear).
 Each sample is recorded in either the left or right channel and decomposed into its respective microphone channels (BTE\_front, BTE\_rear, ITC), available in 48kHz/32bit format.
 In the paper, the researchers used only the ITC samples, so for the scope of this project, we will only use the ITC samples as well. 
 As the researchers were based in Germany, any recordings that they took were situated in Germany.
@@ -1134,14 +1149,14 @@ Given that we will be training and testing the model, the need for a training an
 \subsection{CHiME3}
  As mentioned earlier, we opted for using the CHiME 3 dataset to mix the speech signal with the background noise. 
 CHiME 3 is a dataset published in 2015 for ASR tasks, and was dedicated to improving the performance of mobile devices 
-in everyday, noisy environments. The vocabulary of the speech samples is taken from a subset of the Wall Street Journal (WSJ0) corupus \cite{TODO}.
+in everyday, noisy environments. The vocabulary of the speech samples is taken from a subset of the Wall Street Journal (WSJ0) corupus \cite{wsj0}.
 For brevity, we won't go into the details of the environments, as we 
 are only interested in the speech samples. 
 We use the development set for the mixing process,
 and since this dataset contains noisy samples, we will only use clean speech samples 
 which is the BOOTH environment.
 
-As can be seen from Table \ref{tab:dataset-stats}, it contains 10 hours of data from 4 speakers. This could be a problem in both tasks (ASA and Speech Enhancements), in the former
+It contains 10 hours of data from 4 speakers. This could be a problem in both tasks (ASA and Speech Enhancements), in the former
 we could be overfitting to the data due to the Pigeon-hole principle i.e. we have much more background samples than speech samples, 
 and in the latter, the enhancement model may not generalise well to real-world scenarios due to the small size of the dataset. 
 
@@ -1161,7 +1176,7 @@ however, they did provide a table of number of samples in each environment. From
 were able to deduce that they must have used the training, development and evaluation sets for the creation of the \textit{Interfering Speakers} environment.
 As mentioned in Section \ref{sec:hear-ds}, there is a slight discrepancy in the number of samples in the \textit{Interfering Speakers} environment, 
 that we obtained and the number of samples reported in the paper. We hypothesise that this is due to the aforementioned alignment issues in the CHiME 5 dataset.
-From Table \ref{tab:dataset-stats}, we can see that the dataset contains almost 50 hours of data from 48 speakers. 
+The dataset itself contains 50 hours of data from 48 speakers.
 
 \subsection{TUT Acoustic Scenes 2016}
 As mentioned in the previous chapter, I came across better results than the baseline model in the paper by \citet{Huwel2020HearDS} 
@@ -1170,14 +1185,15 @@ In particular, I will comparing the results by \citet{schindler_multi-temporal_2
 the authors have used the development set of the TUT Acoustic Scenes 2016 dataset for their experiments. It is worth stressing 
 that this dataset contains background noise only, and the paper does not evaluate it with speech, so when we use it to validate 
 the model, we will maintain the same approach as the paper.
-Table \ref{tab:dataset-stats} shows that the TUT Acoustic Scenes 2016 dataset contains 10 hours of data from 10 environments.
+The TUT Acoustic Scenes 2016 dataset contains 10 hours of data from 10 environments.
 For brevity, we skip the details of the environments, and focus on the results we obtained, though consult the paper for more details.
 
 \subsection{VOICEBANK + DEMAND}
 Just as with the motivation of using TUT Acoustic Scenes 2016 for validating the model's performance in ASA,
 we will be doing model validaton of speech enhancement. 
 For this, we have chosen a dataset collated here at Edinburgh University by \citet{valentini-botinhao_speech_2016}. 
-As the name of the dataset suggests, it is a culimination of the VOICEBANK \cite{TODO} (clean speech) and DEMAND \cite{TODO} (noisy background) datasets.
+As the name of the dataset suggests, it is a culimination of the VOICEBANK \citep{voicebank} and DEMAND \citep{demand} datasets, 
+where the former contains clean speech samples and the latter contains noisy background samples.
 We have chosen in particular to use the paper by \citet{kim_specmix_2021} to validate the model's performance.
 The reason is two-fold. Besides the paper also using the VOICEBANK + DEMAND dataset, the paper proposes a novel data augmentation technique
 `SpecMix' that was found to improve the performance of the model on ASA and SE tasks. This will be something I will be exploring in the 
@@ -1215,16 +1231,16 @@ SNR levels that will be trained and tested for [-21, -18, -15, -12, -9, -6, -3, 
 Thirdly, as the CNN model excepts a logmel spectrogram as input, we need to convert the waveform
 to a logmel spectrogram. The paper decides to only use the ITC channel for the input, so we 
 will follow suit.
-As for the transformation, the logmel was calculated as follows:
+As for the feature transformation $\phi$, we will be using the same approach as the paper. Namely, 
 \begin{equation}
-\text{logmel} = \frac{20\log_{10}\left(M|x_{ITC-L, f_n}|\right) + 20\log_{10}\left(M|x_{ITC-R, f_n}|\right)}{2}
+\phi(x_l, x_r) = \frac{20\log_{10}\left(M X_{L}^{1} \right) + 20\log_{10}\left(M X_{R}^{1}\right)}{2}
 \label{eq:logmel}
 \end{equation}
 which is the arithmetic mean of the logmel spectrogram of the left and right channels of the ITC microphone.
-$M$ is the mel filter bank matrix, and $x_{ITC-L, f_n}$ and $x_{ITC-R, f_n}$ are
-the STFT Coefficients of the left and right channels of the ITC microphone respectively.
-In terms of how STFT was computed, we adopt the same approach as the paper. Namely, 
-a FFT window length of 1024 samples with a window length of 40ms and a hop length of 20ms. It is 
+$M$ is the mel filter bank matrix, and $X_{L}^{1}$ and $X_{R}^{1}$ are
+the resulting magnitude spectrograms after doing STFT on the left and right channels of the ITC microphone respectively ($x_l$ and $x_r$).
+
+In terms of the parameters of the STFT, we will be using a FFT window length of 1024 samples with a window length of 40ms and a hop length of 20ms. It is 
 unclear which window function was used, but we will be using a Hann window as is standard in the literature.
 After computing the STFT, we then do a mel filter bank transformation to get the mel filter bank coefficients. 
 Of which we extract 40 mel bands. For a 10s snippet of audio, the resulting tensor is of shape $40 \times 500$.
