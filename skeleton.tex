@@ -134,6 +134,7 @@ from the Informatics Research Ethics committee.
 \begin{acknowledgements}
 First and foremost, I would like to solemly thank my supervisor, Hao Tang for 
 his enthusiasm in guiding me through this self-proposed dissertation. I am eternally grateful for his wisdom, guidance, and patience throughout the project.
+His expertise in the fields of Automatic Speech Recognition and Machine Learning has been invaluable, and his enthusiasm for the subject matter has profoundly influenced my research.
 
 I would like to also thank my friends, for their support and encouragement throughout the project. 
 
@@ -185,7 +186,7 @@ in prioritising speech in noisy environments. The idea is to
 first train a deep neural network (DNN) to perform acoustic scene analysis (ASA) to classify the environment.
 Afterwards, a speech enhancement model will be trained to enhance the speech in the environment.
 From now on, we will refer to the chaining of the ASA and SE models together as a state-dependent model
-as inspired by \citet{katagiri_handbook_2000}'s categorisation of SE techniques (see \ref{sec:background:se} for more details).
+as inspired by \citet{katagiri_handbook_2000}'s categorisation of SE techniques (see \ref{sec:se-methods} for more details).
 
 In this project, we will be using a novel dataset proposed by \citet{Huwel2020HearDS}.
 This dataset (called HEAR-DS) is unique because it is specially tailored for HA signal processing and contains
@@ -240,19 +241,12 @@ Going forward, the dissertation will be structured as follows:
    We briefly also cover the two techniques that will be used in this project: Acoustic Scene Analysis (ASA) and Speech Enhancement
    and some of the related work done in the field. Lastly, I mention the criticism of the paper by \citet{Huwel2020HearDS} 
    that I will be exploring in this project.
-   \item \textbf{Chapter \ref{ch:methodology}} - lorem ipsum
-   TODO
-   % \item \label{ch:Methodology} - This chapter will give a high level overview of the 
-   % methodology used in this project. It will cover the datasets that will be used, the baseline models that will be used, and the hypotheses that will be tested.
-   % \item \label{ch:Results} - This chapter will cover the results of the experiments.
-   % \item \label{ch:Discussion} - This chapter will discuss the results of the experiments and the implications of the results.
-   % \item \textbf{Experimental Setup} - This chapter will cover the datasets that will be used in this project, the baseline models that will be used, and the hypotheses that will be tested.
-   % \item We then move onto the results of the experiments.
-   % \begin{itemize}
-   %    \item \textbf{Acoustic Scene Classification} - This section will cover the results of the experiments pertaining to the ASA task.
-   %    \item \textbf{Speech Enhancement} - This section will cover the results of the experiments pertaining to the speech enhancement task.
-   % \end{itemize}
-   % \item \textbf{Discussion/Conclusion} - This chapter will discuss the results of the experiments and the implications of the results.
+   \item \textbf{Chapter \ref{ch:methodology}} - This chapter will give a high level overview of the two models that will be developed in this project: Acoustic Scene Analysis (ASA) and Speech Enhancement (SE)
+   which ultimately could be chained together to form a state-dependent model.
+   \item \textbf{Chapter \ref{ch:experimental_setup}} - This chapter will establish the hypotheses based on the methodological choices made in Chapter \ref{ch:methodology}. After which, the datasets to 
+   validate the hypotheses will be discussed.
+   \item \textbf{Chapter \ref{chap:asa-experiments} + \ref{chap:se-experiments}} - This chapter will cover the experiments conducted to validate the hypotheses established in Chapter \ref{ch:experimental_setup}.
+   \item \textbf{Chapter \ref{ch:conclusion}} - This chapter will conclude the dissertation by discussing the results of the experiments and the implications of the results. Future work will also be discussed.
 \end{itemize}
  
 
@@ -492,27 +486,31 @@ Commonly, 16-bit depth is used, which is capable of representing an amplitude ra
 \subsection{Engineered Acoustic Features}
 The prevalance of engineering acoustic features in previous work relating to my project and speech processing in general,
 warrants a high level overview of this concept to better understand its usage. 
-Given some signal $x(t)$, an engineered feature $f(x(t))$ is a function that transforms the signal in some way.
-In this project we will be feeding the models the log mel spectrogram of the signal. To obtain the log mel spectrogram, 
-we first need to convert the signal (waveform) into the frequency domain (spectrogram) [Figure \ref{fig:waveform-spectrogram}].
+Given some signal $x(t)$, an engineered feature $\phi(x(t))$ is a function that transforms the signal in some way.
+
+In this project, we will be working with spectrograms, which are a type of engineered feature.
+To obtain the spectrogram, we first need to convert the signal (waveform) into the frequency domain (Figure \ref{fig:waveform-spectrogram}).
 The process of converting the signal into the frequency domain is done by utilising 
-the Fourier Transform. We will technically be using the Fast Fourier Transform (FFT) 
-due to efficiency, and the main hyperparameters for the FFT are the window length $w$ 
+the Fourier Transform. We will technically be using the Short-Time Fourier Transform (STFT) 
+due to efficiency, and the main hyperparameters for the STFT are the window length $w$ 
 and the hop length $h$. The window length is the length of the window that is used to 
 split the signal into frames, and the hop length is the number of samples between the 
 start of each frame. Additionally, there is a choice of a window function and we will 
-be using the most common one, the Hann window. Once we apply the FFT, we will be 
+be using the most common one, the Hann window. Once we apply the STFT, we will be 
 left with a complex valued vector of length $w$ and the magnitude of this vector 
 gives us the amplitude of the signal at different frequencies. 
-We can then apply a Mel Filterbank - a filterbank that is used to mimic the human auditory system. 
-Afterwards, we take the logarithm of the filterbank outputs and we are left with the log mel spectrogram 
-which mimics the human perception of loudness. Diagram \ref{fig:log-mel-spectrogram} shows the process to make it more clear.
 
-The reason it is worthwhile to use an engineered feature is for many reasons, but one of the main ones is that 
-it is a compact representation of the signal which reduces the amount of memory and computational resources required 
-to process the signal which is especially important for embedded devices such as HAs. 
-Additionally, the log mel spectrogram enhances the distinction between speech and background noise, which 
-may make a model more effective at ASA and speech enhancement tasks.
+From there, various transformations can be applied to the spectrogram 
+to enhance its suitablity ofr specific tasks. For the ASA task, we utilise the 
+log mel spectrogram, which is obtained by applying a Mel Filterbank to the spectrogram 
+and taking the logarithm of the outputs - which mimics the human perception 
+of loudness and is a popular choice in the speech processing literature. 
+For SE, the conventional spectrogram is employed by popular choice in the speech enhancement literature.
+
+These engineered acoustic features offer a compact representation of the signal, thereby 
+reducing memory and computational demands, which is crucial for embedded devices such as 
+HAs, and they often enhance the distinction between speech and background noise, 
+which is a desirable property for speech processing tasks such as ASA and SE.
 \section{Related Work}
 As this project will chain two algorithms—Acoustic Speech Analysis (ASA) and Speech Enhancement, 
 to form a state-dependent model, we will briefly cover the related work for each task.
@@ -520,7 +518,7 @@ Additionally, we will cover the idea of Green AI, and how it can be applied to t
 
 \subsection{Acoustic Scene Analysis (ASA)}
 % TODO: Talk aobut why neural approach is better than classical maybe 
-We will give a more mathetmatical formulation of the ASA task in Chapter \ref{chap:acoustic-scene-classification}. 
+We will give a more mathetmatical formulation of the ASA task in section \ref{sec:methodology-asa}. 
 But conceptually, the task is to classify an input signal into one of the pre-defined scenes/classes.
 
 Typically, the two approaches to ASA are to either 
@@ -539,8 +537,7 @@ in the frequency domain.
 While in this part of the dissertation we will be using the frequency domain approach,
 we will be exploring the time domain approach in part 2 of this dissertation. 
 The motivation for this is to determine whether the overhead of constructing engineered features is too high compared to operating on the raw waveform. 
-Though, it could also be that the larger input size in the model counterbalances the overhead of the engineered features, so 
-for future work, it would be interesting to explore this from a HA perspective.
+Alternatively, the increased input dimensionality may counterbalance this overhead. Future research should explore this trade-off from a HA perspective.
 % There is also a compendium of ASA challenges occuring in the literaturem such 
 % as the DCASE 2017 Acoustic Scenes Challenge \citep{DCASE2017challenge}, where 
 % researchers such as \citet{schindler_multi-temporal_2018} have participated in the challenge 
@@ -574,7 +571,8 @@ This enhancement is crucial in applications where speech intelligibility is esse
 There are many different approaches to speech enhancement, from more traditional methods such as spectral subtraction, or Wiener filtering
 to more modern methods that incorporate neural-networks. In this dissertation, we will be using a neural-network based approach.
 But even within the neural-network based approach, there are different techniques that can be used to enhance the speech signal. 
-Neural network-based speech enhancement algorithms can be categorised into four primary types, as described in \cite{katagiri_handbook_2000}:
+Neural network-based speech enhancement algorithms are categorised into four primary types \cite{katagiri_handbook_2000}:
+\label{sec:se-methods}
 \begin{itemize}
    \item \textbf{Time-Domain Filtering} - Trains a neural network with noisy inputs (background + speech) and clean targets (speech only). 
    This involves working with the waveform directly, however it is not without its challenges which is still an active area of research \citep{saleem_time_2024}.
@@ -646,7 +644,7 @@ about the pipeline details of the paper.
 Below we outline some of the issues we found with the paper.
 \begin{itemize}
    \item \textbf{Controlling for Imbalanced Dataset} - The lack of explanation on the data splitting strategy 
-   is a cause of concern, since as it will become clear in Chapter \ref{chap:acoustic-scene-classification},
+   is a cause of concern, since as it will become clear in Chapter \ref{chap:asa-experiments},
    the dataset is going to be severely imbalanced. As such, metrics such as accuracy are not going to be a good 
    indicator of the model's performance. We will be extending the evaluation of the models to include 
    precision, recall and F1 scores to get a more holistic view of the model's performance. 
@@ -677,6 +675,7 @@ mission further and explore other use-cases of the dataset,
 such as the task of Speech Enhancement and how the two tasks 
 (ASA and SE) can be combined to form a state-dependent model,
 all within the context of a HA device.
+\newpage
 
 \subsection{Speech Enhancement}
 In the SE field, and in this part of the dissertation, we will be 
@@ -697,7 +696,7 @@ In the SE field, and in this part of the dissertation, we will be
 % from 4 speakers. So a model trained on this dataset may not generalise well to real world scenarios, due to the rich variability of 
 % speech from different speakers. Nevertheless, we continue with the paper's approach to set up a baseline. Another odd decision was 
 % in the use of a fixed learning rate scheduler, and the use of a high epoch count without what appears to be no early stopping. This 
-% will be discussed in more detail in Chapter \ref{chap:acoustic-scene-classification}. We still thank the authors for their work on the dataset 
+% will be discussed in more detail in Chapter \ref{chap:asa-experiments}. We still thank the authors for their work on the dataset 
 % as it is a promising dataset for the future of HA research. Additionally, given that the dataset 
 % has the potential to be used for HA devices, there is not any mention on the viability of the models 
 % when used in a HA device. So a significant aspect of this project is to investigate the feasibility of 
@@ -817,41 +816,44 @@ could yield better results. So we will be exploring a different approach to lear
 It will be found that the Adam optimiser converges faster than the SGD optimiser and still results in a comparable 
 performance. 
 \subsection{Evaluation}
-The evaluation of the ASA model will be done with a few metrics. 
-We will adopt the accuracy metric which is something the paper by \citet{Huwel2020HearDS} also used.
-The accuracy is defined as follows:
+The ASA model will be evaluated using the accuracy metric which is something the paper by \citet{Huwel2020HearDS} also used.
 \[
 Accuracy = \frac{1}{N} \sum_{i=1}^{N} \mathbb{I}(y_i = \hat{y}_i),
 \]
 where \(N\) is the total number of samples, \(y_i\) is the one-hot encoded environmental label, and \(\hat{y}_i\) is the predicted environmental label
 and \(\mathbb{I}\) is the indicator function which is a piecewise function that returns 1 if the condition is true and 0 otherwise.
 
-However, the issue with accuracy is that taking it 
-at face value can be misleading, even more so in the case of an imbalanced dataset 
-which as will become clear when we discuss the dataset in Chapter \ref{chap:dataset},
-this is certainly the case for the HEAR-DS dataset. 
-So on top of the accuracy metric, we will also be using precision, recall and F1 score metrics.
-These metrics are defined as follows:
+% However, the issue with accuracy is that taking it 
+% at face value can be misleading, even more so in the case of an imbalanced dataset 
+% which as will become clear when we discuss the dataset in Chapter \ref{chap:dataset},
+% this is certainly the case for the HEAR-DS dataset. 
+% So on top of the accuracy metric, we will also be using precision, recall and F1 score metrics.
+% These metrics are defined as follows:
+Given the imbalanced nature of the HEAR-DS dataset (see Section \ref{sec:hear-ds-dataset}),
+we accuracy is supplemented with precision, recall and F1 score:
 \[
 Precision = \frac{TP}{TP + FP}, \quad Recall = \frac{TP}{TP + FN}, \quad F1 = 2 \cdot \frac{Precision \cdot Recall}{Precision + Recall},
 \]
 where TP is the number of true positives, FP is the number of false positives, and FN is the number of false negatives.
-Intuitively, precision is how well the model is doing at correctly identifying the positive class,
-while recall is how well the model is doing at correctly identifying all positive samples.
-The F1 score is the harmonic mean of precision and recall.
+% Intuitively, precision is how well the model is doing at correctly identifying the positive class,
+% while recall is how well the model is doing at correctly identifying all positive samples.
+% The F1 score is the harmonic mean of precision and recall.
 
-Another aspect that we will be looking at is how the models peform at various SNRs. 
-This is because given some noisy sample, the model may perform differently depending on the SNR of the sample.
-It will be interesting to see how the model performs at the lowest SNR,
-as this is where the speech is quite faint and the background noise is quite strong. 
-Given that the model we will be training uses background and background+speech environments,
-it is possible that the model may conflate the two classes at the lowest SNRs.
+The model performance is further examined across various SNRs to assess robustness
+where on the low SNR side, the model may perform poorly due to the speech signal being quite faint. 
+Conversely, on the high SNR side, the model may perform poorly due to the background noise being quite strong. 
 
 
-From a feasibility perspective, we will be adopting the Green AI principles \citep{schwartz2019greenai} 
-and evaluating the model using the following metrics:
+Aligned with the Green AI principles \citep{schwartz2019greenai}, and the ultimate goal of this 
+dissertation is to develop models that could be deployed on a HA device, we also evaluate the model 
+based on: 
 \begin{itemize}
-   \item \textbf{Floating Point Operations (FLOPs)}/\textbf{Multiply Accumulate (MACs)} - This will be done by looking at the number of operations the model performs.
+   \item \textbf{Floating Point Operations needed for inference [FLOP(s)]} - This will be done by looking at the number of operations the model performs in the forward pass.
+   \item \textbf{Theoretical inference time} - Knowing FLOP(s) and FLOP/s we can calculate the theoretical inference time of the model as 
+   \begin{equation}
+   \text{Theoretical inference time} = \frac{\text{FLOP(s)}}{\text{FLOP/s}}.
+   \label{eq:inference-time}
+   \end{equation}
    \item \textbf{Number of Parameters} - This will be done by looking at the number of trainable parameters in the model.
 \end{itemize}
 
@@ -949,11 +951,14 @@ L(X^{1}, Y^{1}) = \frac{1}{T} \sum_{t=1}^{T} (X^{1}_t - Y^{1}_t)^2,
 This is the same loss function used in \citet{tan18_interspeech} and is the Mean Squared Error (MSE) loss function.
 
 \subsection{Evaluation}
-The evaluation of the speech enhancement model in this part of the dissertation will be 
-done by assessing two artificial metrics. The other approach to evaluation is 
-to use subjective listening tests, which is a gold standard for evaluating speech enhancement models.
-However, as with all gold standard methods, they are time consuming and expensive to conduct. 
-Artificial metrics aim to be a proxy for the gold standard methods. 
+The speech enhancement model's performance is evaluated using two artificial metrics, 
+serving as proxies for the gold standard of subjective listening tests, which, 
+due to the time and cost constraints, are not conducted in this part of the dissertation.
+% The evaluation of the speech enhancement model in this part of the dissertation will be 
+% done by assessing two artificial metrics. The other approach to evaluation is 
+% to use subjective listening tests, which is a gold standard for evaluating speech enhancement models.
+% However, as with all gold standard methods, they are time consuming and expensive to conduct. 
+% Artificial metrics aim to be a proxy for the gold standard methods. 
 
 Firstly, the Short-Time Objective Intelligibility (STOI) \citep{taal_algorithm_2011} metric will be used to assess the intelligibility of the enhanced speech signal.
 It is a function of the noisy speech signal $s_n$ and the degraded speech signal $s_d$ after enhancement.
@@ -970,6 +975,7 @@ A valid question to ask is why the model is not trained to directly optimise for
 which is a problem for gradient-based optimisation frameworks. However, there are methods to approximate the gradients of non-differentiable functions, and it is an active area of research.
 For future work, this avenue may be explored. 
 
+Feasibility analysis mirrors that of the ASA model, focusing on FLOP(s), parameter count and theoretical inference time.
 \section{Laying the Groundwork for State-Dependent Models}
 \begin{figure}[h] \centering
    \includegraphics[width=0.9\textwidth]{state-model-diagram.png}
@@ -1009,7 +1015,7 @@ While we hinted at some of those hypotheses in the preceding chapters and sectio
 we will be outlining the hypotheses again here and in more detail so that the reader can have a comprehensive understanding of 
 both the objectives and the rationale behind the experiments we will be doing.
 Once we outline the hypotheses, another section is dedicated towards the datasets that will be used to validate the hypotheses.
-Once that's done, the reader will be in a position to now analyse the results of the experiments which will be presented in Chapters \ref{} and \ref{}.
+Once that's done, the reader will be in a position to now analyse the results of the experiments which will be presented in Chapters \ref{chap:asa-experiments} and \ref{chap:se-experiments}.
 \section{Hypotheses}
 \label{sec:hypotheses}
 \begin{enumerate}
@@ -1097,7 +1103,7 @@ In any case, the way this environment was created is unclear from the paper, but
 
 To prevent the model from overfitting and increase the diversity of the data, the researchers provided multiple REC-SITs (Recording Situations) for each environment.
 In the case of the \textit{Music} environment, each REC-SIT represents a different genre of music. This has some potential to cause issues 
-and we discuss this in more detail once we aim to reproduce the results of the paper (Chapter \ref{chap:acoustic-scene-classification}).  % TODO: Explain the issue later
+and we discuss this in more detail once we aim to reproduce the results of the paper (Chapter \ref{chap:asa-experiments}).  % TODO: Explain the issue later
 As for the artificially created \textit{Interfering Speakers} environment, it is unclear how they define REC-SITs for this environment. 
 What I did was to extract the session ID from the CHiME 6 dataset and use that as the REC-SIT, which 
 gives us a total of 16 REC-SITs for this environment.
@@ -1199,13 +1205,10 @@ For this, we have chosen a dataset collated here at Edinburgh University by \cit
 As the name of the dataset suggests, it is a culimination of the VOICEBANK \citep{voicebank} and DEMAND \citep{demand} datasets, 
 where the former contains clean speech samples and the latter contains noisy background samples.
 We have chosen in particular to use the paper by \citet{kim_specmix_2021} to validate the model's performance.
-The reason is two-fold. Besides the paper also using the VOICEBANK + DEMAND dataset, the paper proposes a novel data augmentation technique
-`SpecMix' that was found to improve the performance of the model on ASA and SE tasks. This will be something I will be exploring in the 
-second part of the dissertation so I thought it would be apt to use the dataset for validation.
-Table \ref{tab:dataset-stats} shows that the dataset contains X hours of data from X speakers.
-
+The reason is two-fold. Besides the paper also using the VOICEBANK + DEMAND dataset, there is 
+potential for future work to employ the data augmentation technique `SpecMix' proposed in the paper.
 \chapter{Acoustic Scene Analysis Experiments}
-\label{chap:acoustic-scene-classification}
+\label{chap:asa-experiments}
 \section{Data Preparation}
 \label{sec:data-preparation}
 As one of our hypotheses is to be able to replicate the results of the paper by \citet{Huwel2020HearDS}, 
@@ -1569,17 +1572,10 @@ capabilities to that of HAs.
    \caption{{Comparison of the FLOPs and parameters of the net-8, net-20 and net-32 models.}}
    \label{tab:model-comparison}
 \end{table}
-\footnotetext{{Assumes a 7,700M FLOPs capable device and that the following formula is used: 
-\scriptsize{
-\[
-% \text{Inference Time (ms)} = \text{FLOP(s) Count}\div{\text{FLOPs}} \times 1000
-\text{Inference Time (ms)} = \frac{\text{FLOP(s) Count}}{\text{FLOPs}} \times 1000
-\]
-}
-}
-}
+\footnotetext{{Assumes a 7,700M FLOPs capable device and that the formula in \ref{eq:inference-time} is used.}}
 
 \chapter{Speech Enhancement Experiments}
+\label{chap:se-experiments}
 We split the chapter into three parts. We first outline the data preperation processs 
 and the deviations done from the ASA task. We then present the results of the speech 
 enhancement task on the HEAR-DS dataset. Afterwards, as a means of validation, we 
@@ -1818,7 +1814,7 @@ would improve the performance of the model when using the CED model.
       \toprule
       Model & FLOP(s) Count & Parameters & Theoretical Inference Time\footnotemark \\
       \midrule
-      CED (10s) & 25.244G & 17.579M & 3.2784415584 seconds \\ % 3.2784415584 seconds
+      CED (10s) & 25.244G & 17.579M & 3.278 seconds \\ % 3.2784415584 seconds
       CED* (1s) & 2.524G & 1.758M & 327ms \\ % 0.3277922078
       CED* (5s) & 12.622G & 8.790M & 1.639 seconds \\ % 1.6392207792
       \bottomrule
@@ -1834,7 +1830,7 @@ on shorter time segments. Accordingly, estimates for 1s and 5s samples are also 
 provisionally, since the STFT parameters have not been validated for these durations. Nevertheless,
 these theoreitcal inference times are outside the acceptable latency for HAs so future work at 
 the first stage would be to reduce the FLOPs of the model of which we discuss more in Section \ref{sec:future-work}.
-\footnotetext{{As in ASA feasibility analysis, assumes a 7,700M FLOPs capable device.}}
+\footnotetext{{Assumes a 7,700M FLOPs capable device and that the formula in \ref{eq:inference-time} is used.}}
 % Benchmarking CRNN on cpu...
 % --- thop results ---
 % [INFO] Register count_convNd() for <class 'torch.nn.modules.conv.Conv2d'>.
