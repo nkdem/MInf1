@@ -1661,6 +1661,10 @@ get a more insightful analysis of the model's performance. Since there
 are 6 speech environments, we trained 6 SE models, one for each environment. 
 Since there are a different number of samples for each environment, 
 the convergence of the training curves are different. 
+It is worth noting that for HEAR-DS all of the samples are 10s long,
+so during testing we also use 10s samples. Investigating 
+the performance at shorter time segments is left for future work.
+
 Figure \ref{fig:hear-ds-training-curves} shows the training curves for the 
 6 SE models. Notably compared to the ASA task, the training curves for each 
 environment have more variance, which could be for numerous reasons such 
@@ -1688,10 +1692,14 @@ to remove more of the noise, but perhaps at the cost of speech distortion.
 This is an important factor to consider and is certainly something we 
 will be investigating in future work and of which we elaborate more in Section \ref{sec:future-work}.
 Just to show an indication of the speech seperation, Figures \ref{fig:rev-spec}, \ref{fig:wind-spec}, \ref{fig:music-spec} and \ref{fig:in-vehicle-spec}
-show the spectrograms of the noisy, clean and enhanced speech signals for the Reverberant Environment, Wind Turbulence, Music and In Vehicle environments respectively.
-As can be seen, it is quite evident that the background noise is removed, though there's evidence 
-of some signals being left over in the enhanced speech signal (especially visibile in the starting and ending segments).
-But it is a great start to see that the model is able to remove the noise to some extent.
+show the spectrograms of the clean, noisy and enhanced speech signals for a selection of environments.
+Although the enhanced signals demonstrate significant noise reduction, residual noise is 
+observable in the initial and final segments. Nonetheless, these initial results 
+represent a promising start in prioritising speech over noise.
+.
+% As can be seen, it is quite evident that the background noise is removed, though there's evidence 
+% of some signals being left over in the enhanced speech signal (especially visibile in the starting and ending segments).
+% But it is a great start to see that the model is able to remove the noise to some extent.
 \begin{table}[h]
     \begin{subtable}{\textwidth}
     \centering
@@ -1736,7 +1744,7 @@ But it is a great start to see that the model is able to remove the noise to som
 
 \FloatBarrier
 \begin{figure}[h]
-    \caption{Selected spectrograms of the noisy, clean and enhanced speech signals.}
+    \caption{Selected spectrograms of the clean, noisy and enhanced speech signals}
     \centering
     \hspace{0pt}%
     \begin{subfigure}{0.42\textwidth}
@@ -1771,11 +1779,122 @@ But it is a great start to see that the model is able to remove the noise to som
 
 
 \section{Validating against VOICEBANK + DEMAND}
-Similar story
-% TODO
-% \section{Feasibility}
-% % FLOPs and Parameters
-% TODO
+In order to validate the implementation of the proposed model, we compare the results 
+against the work by \citet{kim_specmix_2021} who proposed the SpecMix technique. 
+Although a direct comparison with the original CED model reported by \citet{tan18_interspeech} 
+would have been ideal, practical constraints — notably the extensive dataset requirements 
+(exceeding 500\,h of data) and the reproducibility challenges discussed in Section \ref{sec:criticism} — 
+required an alternative comparison. Consequently, the evaluation was performed against the work 
+introducing the SpecMix technique, which has been applied to a range of audio-related 
+tasks, including speech enhancement \citep{kim_specmix_2021}. Consistent with the study 
+by \citet{kim_specmix_2021}, the VOICEBANK + DEMAND dataset was employed for experimental 
+validation. The paper itself compares against other tehcniques including Mixup \citep{zhang_mixup_2017},
+CutMix \citep{yun_cutmix_2019} and SpecAugment \citep{park_specaugment_2019}. In terms 
+of the model that \citet{kim_specmix_2021} used, for the SE task, they 
+took inspiration from the U-Net \citep{ronneberger_unet_2015} architecture.
+It has similarities to the CED model that is employed in this dissertation 
+since it also uses an encoder-decoder architecture. But the main difference 
+lies in its final layer which is another neural network called the 
+'Phase Sensitive Mask'. Suffice to say, the complexity of the model 
+is likely higher than the CED model so we should expect the model 
+to perform better.
+
+\begin{figure}[h]
+   \centering
+   \includegraphics[width=0.9\textwidth]{se-VOICEBANK-training-losses.png}
+   \caption{The training curves for the SE model on the VOICEBANK + DEMAND dataset.}
+   \label{fig:se-voicebank-training-losses}
+\end{figure}
+As a dataset already contains the noisy and clean speech signals, we do not 
+have the luxury of having control over the SNR levels, which as a 
+consequence means we cannot analyse the performance of the model at different 
+SNR levels. But given that this is a validation of the model's implementation, 
+we can at least compare the results against the paper which proposed the SpecMix technique.
+Additionally, the dataset is split into a training and test set, so no 
+manual splitting was needed here. 
+After training the model 5 times, we get the resulting training curve shown in Figure \ref{fig:se-voicebank-training-losses}.
+No early stopping was applied here, so the model was trained for 120 epochs which was the maximum number of epochs set however,
+by observing the training curves, we can see that the model has converged by then. 
+
+After testing the model on the test set, we get the results shown in Table \ref{tab:voice_enhancement_metrics}.
+\citet{kim_specmix_2021} did not report the STOI metric, so we only compare the PESQ scores.
+But as we can see, the model is just about on par with the reported results from the paper.
+This is a reassuring sign that not only the model's implementation is correct, but also
+that the model is able to generalise to a new dataset. For future work it would 
+be interesting to see if employing the techniques mentioned and proposed by \citet{kim_specmix_2021}
+would improve the performance of the model when using the CED model. 
+
+
+\begin{table}[h]
+   \centering
+   \begin{tabular}{l|cc}                                                                               
+   \toprule
+   Condition & STOI & PESQ \\
+   \midrule
+   Noisy (Unenhanced) & 0.79 & 2.01 \\   
+   SpecMix No Augmentation \citep{kim_specmix_2021} & - & 2.5 \\
+   SpecMix \citep{kim_specmix_2021} & - & 2.54 \\
+   Mixup \citep{zhang_mixup_2017} & - & 2.50 \\
+   CutMix \citep{yun_cutmix_2019} & - & 2.52 \\
+   SpecAugment \citep{park_specaugment_2019} & - & 2.41 \\
+   \textbf{Our method (CED)} & 0.82 & 2.44 \\
+   \bottomrule
+   \end{tabular}
+   \caption{Average STOI and PESQ scores for noisy and enhanced speech. Mixup, CutMix and SpecAugment results are taken 
+   from \citet{kim_specmix_2021}.}
+   \label{tab:voice_enhancement_metrics}
+\end{table} 
+\section{Feasibility}
+\begin{table}[h]
+   \centering
+   \begin{tabular}{lccc}
+      \toprule
+      Model & FLOPS & Parameters \\
+      \midrule
+      CED (10s) & 25.244G & 17.579M \\
+      CED* (1s) & 2.524G & 1.758M \\
+      CED* (5s) & 12.622G & 8.790M \\
+      \bottomrule
+   \end{tabular}
+   \caption{FLOPs and parameters of the CED model for different time segments.}
+   \label{tab:ced-model-metrics}
+\end{table}
+To evaluate the SE task from a hardware perspective, we look at the FLOPs and parameters of the CED model.
+Table \ref{tab:ced-model-metrics} presents the FLOPs and parameter counts for 10 second samples, 
+indicating much higher complexity than the ASA task. While the model was trained on 10s samples 
+as mentioned in the beginning of this chapter, it is worth investigating the performance of the model 
+on shorter time segments. Accordingly, estimates for 1s and 5s samples are also provided, albeit 
+provisionally, since the STFT parameters have not been validated for these durations. Future work 
+will assess whether the same STFT settings can be maintained without compromising performance.
+% Benchmarking CRNN on cpu...
+% --- thop results ---
+% [INFO] Register count_convNd() for <class 'torch.nn.modules.conv.Conv2d'>.
+% [INFO] Register count_normalization() for <class 'torch.nn.modules.batchnorm.BatchNorm2d'>.
+% [INFO] Register count_lstm() for <class 'torch.nn.modules.rnn.LSTM'>.
+% [INFO] Register count_convNd() for <class 'torch.nn.modules.conv.ConvTranspose2d'>.
+% FLOPs: 25.244G, Parameters: 17.579M
+
+% --- Inference time measurement ---
+% Average inference time: 502.79 ms (±67.39 ms)
+% Operations per second: 50.21 GOPS
+% Operations per parameter: 2856.02
+
+% ==================================================
+% MODEL METRICS
+% ==================================================
+
+% PARAMETER COUNTS:
+%   Total Parameters:      17,579,459.0
+
+% INFERENCE PERFORMANCE:
+%   Avg Inference Time:    502.79 ms
+%   Std Inference Time:    67.39 ms
+%   FLOPs per Inference:   25,243,615,716.0
+%   Operations per Second: 50.21 GOPS
+%   OPS per Parameter:     2856.02
+
+% ==================================================
+
 
 \chapter{Conclusions}
 \section{Discussion}
@@ -1786,34 +1905,6 @@ Similar story
 TODO
 \section{Future Work}
 TODO
-
-
-
-
-
-
-
-
-
-% \chapter{Conclusions}
-
-% \section{Final Reminder}
-
-% The body of your dissertation, before the references and any appendices,
-% \emph{must} finish by page~40. The introduction, after preliminary material,
-% should have started on page~1.
-
-% You may not change the dissertation format (e.g., reduce the font size, change
-% the margins, or reduce the line spacing from the default single spacing). Be
-% careful if you copy-paste packages into your document preamble from elsewhere.
-% Some \LaTeX{} packages, such as \texttt{fullpage} or \texttt{savetrees}, change
-% the margins of your document. Do not include them!
-
-% Over-length or incorrectly-formatted dissertations will not be accepted and you
-% would have to modify your dissertation and resubmit. You cannot assume we will
-% check your submission before the final deadline and if it requires resubmission
-% after the deadline to conform to the page and style requirements you will be
-% subject to the usual late penalties based on your final submission time.
 
 \bibliography{mybibfile}
 

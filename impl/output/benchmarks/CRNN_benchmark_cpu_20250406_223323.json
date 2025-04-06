@@ -1,0 +1,11 @@
+{
+    "flops": 25243615716.0,
+    "params": 17579459.0,
+    "flops_readable": "25.244G",
+    "params_readable": "17.579M",
+    "avg_time_ms": 502.78740882873535,
+    "std_time_ms": 67.39391329905665,
+    "ops_per_second": 50207334696.00218,
+    "ops_per_second_readable": "50.21 GOPS",
+    "ops_per_parameter": 2856.0227419969056
+}
