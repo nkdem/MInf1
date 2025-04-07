@@ -19,10 +19,17 @@
 \urlstyle{tt} % use monospace font for URLs
 \usepackage{placeins}
 
+\usepackage{xspace}  % For proper spacing after commands
 
 % Include any packages you need below, but don't include any that change the page
 % layout or style of the dissertation. By including the ugcheck package above,
 % you should catch most accidental changes of page layout though.
+
+% define a macro for the text VOICEBANK + DEMAND
+\newcommand{\heards}{\textit{HEAR-DS}\xspace}
+\newcommand{\chime}[1]{\textit{CHiME-#1}\xspace}
+\newcommand{\tut}{\textit{TUT}\xspace}
+\newcommand{\vbd}{\textit{VOICEBANK\,+\,DEMAND}\xspace}
 
 \usepackage{natbib}  % For \citet
 \usepackage{hyperref}  % For hyperlinks
@@ -1072,7 +1079,7 @@ Once that's done, the reader will be in a position to now analyse the results of
 
 \subsection{HEAR-DS}
 \label{sec:hear-ds}
-HEAR-DS is a dataset created by \citet{Huwel2020HearDS} which is specially tailored for Hearing Aid (HA) research. 
+\heards is a dataset created by \citet{Huwel2020HearDS} which is specially tailored for Hearing Aid (HA) research. 
 It consists of recordings captured on a dummy head equipped with three microphones per side: one In-The-Canal (ITC) [in the ear] and two Behind-The-Ear (BTE) microphones (front and rear).
 Each sample is recorded in either the left or right channel and decomposed into its respective microphone channels (BTE\_front, BTE\_rear, ITC), available in 48kHz/32bit format.
 In the paper, the researchers used only the ITC samples, so for the scope of this project, we will only use the ITC samples as well. 
@@ -1087,32 +1094,33 @@ The dataset provides 7 environments:
    \item \textbf{Reveberant} - Samples in highly reverberant environments such as a railway station hall, staircases or a church. 
    \item \textbf{Music} - The data is actually taken from the GTZAN dataset \cite{tzanetakis_musical_2002} and is used to test the model's ability to classify music.
 \end{itemize}
-Additionally, the researchers artificially created a new environment, \textit{Interfering Speakers}, which are samples that contain speech from multiple speakers. 
-This is done by taking speech samples from the CHiME 5 dataset \cite{barker18_fifth_2018}. This environment is supposed to mimic the 
-typical conversational speech that occurs in a real-world scenario. We however, decided to use the CHiME 6 dataset which 
-supercedes the CHiME 5 dataset \cite{barker18_fifth_2018} by correcting the alignment of audio channels and the researchers 
-recommend the use of the CHiME 6 dataset instead of CHiME 5 for any new research so we will use that instead. This could 
-be an important factor as the methodology of creating the \textit{Interfering Speakers} environment is by finding 10s 
+Additionally, the researchers artificially created a new environment, \textit{Interferring Speakers}, which are samples that contain speech from multiple speakers. 
+This is done by taking speech samples from the 
+\chime{5} dataset \cite{barker18_fifth_2018}. This environment is supposed to mimic the 
+typical conversational speech that occurs in a real-world scenario. We however, decided to use the \chime{6} dataset which 
+supercedes the \chime{5} dataset \cite{barker18_fifth_2018} by correcting the alignment of audio channels and the researchers 
+recommend the use of the \chime{6} dataset instead of \chime{5} for any new research so we will use that instead. This could 
+be an important factor as the methodology of creating the \textit{Interferring Speakers} environment is by finding 10s 
 segments of speech that contain multiple speakers, so if the alignment of audio channels is not correct, the recordings 
 may have a delay between the left and right channels which could have potentialy affected the results of the paper. We will discuss the dataset in more detail in section \ref{}.
 In any case, the way this environment was created is unclear from the paper, but we do the following approach to create the environment:
 \begin{enumerate}
-   \item The code processes CHiME6 sessions to find 10-second segments containing overlapping speech from multiple speakers.
+   \item The code processes \chime{6} sessions to find 10-second segments containing overlapping speech from multiple speakers.
    \item For each segment, it extracts audio from the reference speaker's microphone and saves both left and right channels.
 \end{enumerate}
 
 To prevent the model from overfitting and increase the diversity of the data, the researchers provided multiple REC-SITs (Recording Situations) for each environment.
 In the case of the \textit{Music} environment, each REC-SIT represents a different genre of music. This has some potential to cause issues 
 and we discuss this in more detail once we aim to reproduce the results of the paper (Chapter \ref{chap:asa-experiments}).  % TODO: Explain the issue later
-As for the artificially created \textit{Interfering Speakers} environment, it is unclear how they define REC-SITs for this environment. 
-What I did was to extract the session ID from the CHiME 6 dataset and use that as the REC-SIT, which 
+As for the artificially created \textit{Interferring Speakers} environment, it is unclear how they define REC-SITs for this environment. 
+What I did was to extract the session ID from the \chime{6} dataset and use that as the REC-SIT, which 
 gives us a total of 16 REC-SITs for this environment.
 
 At the REC-SIT level, the raw dataset comprises multiple cuts, with each cut not necessarily of uniform duration.
 In accordance with the methodology of the original study, each cut was segmented into 10s snippets.
 Table \ref{tab:hear-ds-stats} presents the distribution of samples across the various environments after segmentation.
-Overall, our statistics are largely consistent with the original report, albeit with minor discrepancies in the \textit{Interfering Speakers} and \textit{Cocktail Party} environments.
-Specifically, our version of the \textit{Interfering Speakers} environment comprises 1,364 samples compared to the 1,481 reported originally, a difference that may be attributable to the aforementioned alignment issues in the CHiME 5 dataset.
+Overall, our statistics are largely consistent with the original report, albeit with minor discrepancies in the \textit{Interferring Speakers} and \textit{Cocktail Party} environments.
+Specifically, our version of the \textit{Interferring Speakers} environment comprises 1,364 samples compared to the 1,481 reported originally, a difference that may be attributable to the aforementioned alignment issues in the CHiME 5 dataset.
 Similarly, the \textit{Cocktail Party} environment contains 716 samples in our dataset as opposed to 667 in the original report—a discrepancy that could potentially result from a typographical error in the original document. 
 
 \begin{table}[h]
@@ -1128,10 +1136,10 @@ Similarly, the \textit{Cocktail Party} environment contains 716 samples in our d
       Quiet Indoors & 951 \\ 
       Reveberant & 1007 \\ 
       Music & 2991 \\
-      Interfering Speakers & 1364 \\
+      Interferring Speakers & 1364 \\
       \hline
    \end{tabular}
-   \caption{HEAR-DS dataset statistics after cutting each environment's cuts into 10s snippets.}
+   \caption{\heards dataset statistics after cutting each environment's cuts into 10s snippets.}
    \label{tab:hear-ds-stats}
 \end{table}
 
@@ -1157,8 +1165,8 @@ Given that we will be training and testing the model, the need for a training an
 % thus we ensured for generalisability that each set contained a male and female speaker. 
 
 \subsection{CHiME3}
- As mentioned earlier, we opted for using the CHiME 3 dataset to mix the speech signal with the background noise. 
-CHiME 3 is a dataset published in 2015 for ASR tasks, and was dedicated to improving the performance of mobile devices 
+ As mentioned earlier, we opted for using the \chime{3} dataset to mix the speech signal with the background noise. 
+\chime{3} is a dataset published in 2015 for ASR tasks, and was dedicated to improving the performance of mobile devices 
 in everyday, noisy environments. The vocabulary of the speech samples is taken from a subset of the Wall Street Journal (WSJ0) corupus \cite{wsj0}.
 For brevity, we won't go into the details of the environments, as we 
 are only interested in the speech samples. 
@@ -1175,16 +1183,16 @@ and in the latter, the enhancement model may not generalise well to real-world s
 % Nevertheless, we will continue with the paper's approach to set up a baseline. The data was already in 16KHz so we did not need to 
 % resample it. 
 
-\subsection{CHiME5/CHiME6}
-In the paper by \citet{Huwel2020HearDS}, the authors used the CHiME 5 dataset to create the \textit{Interfering Speakers} environment for the HEAR-DS dataset.
-However, since the CHiME 6 dataset supersedes CHiME 5 with improved audio channel alignment, we opted to use CHiME 6 for our implementation.
-CHiME 6 (and CHiME 5) was a dataset created for the Speech Seperation and Recognition Challenge in 2020. It 
+\subsection{CHiME 5/CHiME 6}
+In the paper by \citet{Huwel2020HearDS}, the authors used the \chime{5} dataset to create the \textit{Interferring Speakers} environment for the \heards dataset.
+However, since the \chime{6} dataset supersedes \chime{5} with improved audio channel alignment, we opted to use \chime{6} for our implementation.
+\chime{6} (and \chime{5}) was a dataset created for the Speech Seperation and Recognition Challenge in 2020. It 
 focuses on conversational speech in everyday home environments and particular emphasis was placed on 
 eliciting a 'dinner party' scenario i.e. a mixture of speech from multiple speakers. It was not 
-clear from the paper what sets were used for the creation of the \textit{Interfering Speakers} environment 
+clear from the paper what sets were used for the creation of the \textit{Interferring Speakers} environment 
 however, they did provide a table of number of samples in each environment. From the table, we 
-were able to deduce that they must have used the training, development and evaluation sets for the creation of the \textit{Interfering Speakers} environment.
-As mentioned in Section \ref{sec:hear-ds}, there is a slight discrepancy in the number of samples in the \textit{Interfering Speakers} environment, 
+were able to deduce that they must have used the training, development and evaluation sets for the creation of the \textit{Interferring Speakers} environment.
+As mentioned in Section \ref{sec:hear-ds}, there is a slight discrepancy in the number of samples in the \textit{Interferring Speakers} environment, 
 that we obtained and the number of samples reported in the paper. We hypothesise that this is due to the aforementioned alignment issues in the CHiME 5 dataset.
 The dataset itself contains 50 hours of data from 48 speakers.
 
@@ -1205,7 +1213,7 @@ For this, we have chosen a dataset collated here at Edinburgh University by \cit
 As the name of the dataset suggests, it is a culimination of the VOICEBANK \citep{voicebank} and DEMAND \citep{demand} datasets, 
 where the former contains clean speech samples and the latter contains noisy background samples.
 We have chosen in particular to use the paper by \citet{kim_specmix_2021} to validate the model's performance.
-The reason is two-fold. Besides the paper also using the VOICEBANK + DEMAND dataset, there is 
+The reason is two-fold. Besides the paper also using the \vbd dataset
 potential for future work to employ the data augmentation technique `SpecMix' proposed in the paper.
 \chapter{Acoustic Scene Analysis Experiments}
 \label{chap:asa-experiments}
@@ -1578,8 +1586,8 @@ capabilities to that of HAs.
 \label{chap:se-experiments}
 We split the chapter into three parts. We first outline the data preperation processs 
 and the deviations done from the ASA task. We then present the results of the speech 
-enhancement task on the HEAR-DS dataset. Afterwards, as a means of validation, we 
-validate the model on the VOICEBANK + DEMAND dataset and compare the results from 
+enhancement task on the \heards dataset. Afterwards, as a means of validation, we 
+validate the model on the \vbd dataset and compare the results from 
 \citet{kim_specmix_2021}. Lastly, just as we did for the ASA task, we will be 
 discussing the feasibility of the task from a HA perspective.
 
@@ -1587,8 +1595,8 @@ discussing the feasibility of the task from a HA perspective.
 We for the most part incorporated the same data preparation approach as the ASA task, so consult Section \ref{sec:data-preparation} for 
 more in depth detail. The differences deviate in the feature transformation, 
 since we will now not use the logmel transformation, but instead use the standard 
-spectrogram. It is worth noting that in VOICEBANK + DEMAND, the samples 
-are mono, so we use them as is, but in HEAR-DS, the samples are dual-channel (left and right microphone), 
+spectrogram. It is worth noting that in \vbd, the samples 
+are mono, so we use them as is, but in \heards, the samples are dual-channel (left and right microphone), 
 so for exploration we just use the left channel. In a deployment scenario, we would train two models, one for the left 
 and one for the right channel and use the respective model in the respective HA device.
 % Furthermore, the requirement to store at least twice as many samples necessitates a proportional increase in memory capacity. Memory usage scales linearly with the number of SNR levels. Training on 15 SNR levels, as was done for the ASA task, proved infeasible for the present dissertation. Consequently, the speech signal was mixed with background noise at only 5 SNR levels—\([-10, -5, 0, 5, 10]\) dB—in order to avoid IO bottlenecks and degradation during model execution, given that the waveforms are stored in memory. For context, even with 5 SNR levels, approximately 50 GB of memory was required for the HEAR-DS training set. Although this range provides a robust basis for evaluating model performance, future work could investigate the impact of incorporating a broader range of SNR levels.
@@ -1599,7 +1607,7 @@ in this part of the dissertation. As such, we only
 mix the speech signal with the background noise at 5 SNR levels - [-10, -5, 0, 5, 10] dB.
 To speed up training by reducing the IO bottleneck, we preload the waveforms into memory 
 rather than loading them on demand. So even with 5 SNR levels, 
-50 GB of memory is required for the training set for the HEAR-DS dataset.
+50 GB of memory is required for the training set for the \heards dataset.
 For future work, it would be interesting to see how the model performs with 
 more SNR levels.
 
@@ -1619,12 +1627,12 @@ at that SNR level.
 % 
 
 \section{HEAR-DS Results}
-We created 5 train+test splits of the HEAR-DS dataset as in the ASA task so we can 
+We created 5 train+test splits of the \heards dataset as in the ASA task so we can 
 get a more insightful analysis of the model's performance. Since there 
 are 6 speech environments, we trained 6 SE models, one for each environment. 
 Since there are a different number of samples for each environment, 
 the convergence of the training curves are different. 
-It is worth noting that for HEAR-DS all of the samples are 10s long,
+It is worth noting that for \heards all of the samples are 10s long,
 so during testing we also use 10s samples. Investigating 
 the performance at shorter time segments is left for future work.
 
@@ -1750,7 +1758,7 @@ would have been ideal, practical constraints — notably the extensive dataset r
 required an alternative comparison. Consequently, the evaluation was performed against the work 
 introducing the SpecMix technique, which has been applied to a range of audio-related 
 tasks, including speech enhancement \citep{kim_specmix_2021}. Consistent with the study 
-by \citet{kim_specmix_2021}, the VOICEBANK + DEMAND dataset was employed for experimental 
+by \citet{kim_specmix_2021}, the \vbd dataset was employed for experimental 
 validation. The paper itself compares against other tehcniques including Mixup \citep{zhang_mixup_2017},
 CutMix \citep{yun_cutmix_2019} and SpecAugment \citep{park_specaugment_2019}. In terms 
 of the model that \citet{kim_specmix_2021} used, for the SE task, they 
@@ -1765,7 +1773,7 @@ to perform better.
 \begin{figure}[h]
    \centering
    \includegraphics[width=0.9\textwidth]{se-VOICEBANK-training-losses.png}
-   \caption{The training curves for the SE model on the VOICEBANK + DEMAND dataset.}
+   \caption{The training curves for the SE model on the \vbd dataset.}
    \label{fig:se-voicebank-training-losses}
 \end{figure}
 As a dataset already contains the noisy and clean speech signals, we do not 
