@@ -92,7 +92,7 @@
    The primary objective of this dissertation is to develop machine learning models capable of prioritising 
    speech in noisy environments whilst remaining computationally feasible for implementation in HAs.
    The vision is to chain the ASA and SE models together to form a state-dependent model, 
-   which leverages a-priori knowledge of the acoustic scene to suitably enhance the speech in the environment.
+   which leverages a priori knowledge of the acoustic scene to suitably enhance the speech in the environment.
 
    While there is a growing trend in academia to use deep neural networks (DNNs) for ASA and SE, 
    they often overlook the computational constraints of the devices 
@@ -156,8 +156,7 @@ And to my parents, without whose sacrifices I would not have been able to pursue
 
 \chapter{Introduction}
 \section{Motivations}
-Hearing loss is a prevalent condition affecting as much as 
-430 million people - or 1 in 18 people. This is expected 
+Hearing loss is a prevalent condition that affects up to 430 million people, or 1 in 18 people. This is expected 
 to rise to 1 in 10 by 2050 \citep{WHO2024deafness}.
 The most common treatment for hearing loss is the 
 provision of hearing technology - such as Hearing Aids (HAs) or cochlear implants.
@@ -183,7 +182,7 @@ preserving speech.
 various techniques that could be used to reduce the wind noise in hearing aids -
 from modulation-based noise reduction algorithms (Wiener filtering),
 adaptive filtering algorithms, to machine learning techniques.
-The paper mentions that the the proposed ML technique:
+The paper mentions that the proposed ML technique:
 Long Short-Term Memory (LSTM) neural networks provided
 modest improvements in wind noise reduction, however, it did highlight
 that ML techniques may still have utility through further research 
@@ -236,24 +235,24 @@ to evaluate the quality of the speech enhancement model.
 Additionally, informed by current state-of-the-art HA configurations, the project will also assess model feasibility by analysing the number of Floating Point Operations Per Second (FLOPs) and number of parameters
 in the models.
 
-The project is predominantly aimed at the hearing aid industry. 
+The project is primarily at the hearing aid industry. 
 Moreover, there is potential to extend the work to other fields that deal with audio signal processing,
-such as mainstream wearables like headphones or microphones. Lastly, the project aims to make HA research more accessible 
-in fields like ML and ASR to further promote research in the field.
+such as mainstream wearables such as headphones or microphones. Lastly, the project aims to make HA research more accessible 
+in fields such as ML and ASR to further promote research in the field.
 
 
 \section{Structure}
 Going forward, the dissertation will be structured as follows:
 \begin{itemize}  
-   \item \textbf{Chapter \ref{ch:background}} - This chapter will give a high level overview of hearing loss, the auditory system, and the speech processing concepts needed to understand the project.
+   \item \textbf{Chapter \ref{ch:background}} - This chapter will give a high-level overview of hearing loss, the auditory system, and the speech processing concepts needed to understand the project.
    We briefly also cover the two techniques that will be used in this project: Acoustic Scene Analysis (ASA) and Speech Enhancement
    and some of the related work done in the field. Lastly, I mention the criticism of the paper by \citet{Huwel2020HearDS} 
    that I will be exploring in this project.
-   \item \textbf{Chapter \ref{chap:methodology}} - This chapter will give a high level overview of the two models that will be developed in this project: Acoustic Scene Analysis (ASA) and Speech Enhancement (SE)
+   \item \textbf{Chapter \ref{chap:methodology}} - This chapter will give a high-level overview of the two models that will be developed in this project: Acoustic Scene Analysis (ASA) and Speech Enhancement (SE),
    which ultimately could be chained together to form a state-dependent model.
    \item \textbf{Chapter \ref{chap:experimental_setup}} - This chapter will establish the hypotheses based on the methodological choices made in Chapter \ref{chap:methodology}. After which, the datasets to 
    validate the hypotheses will be discussed.
-   \item \textbf{Chapter \ref{chap:asa-experiments} + \ref{chap:se-experiments}} - This chapter will cover the experiments conducted to validate the hypotheses established in Chapter \ref{chap:experimental_setup}.
+   \item \textbf{Chapter \ref{chap:asa-experiments} + \ref{chap:se-experiments}} - This chapter will cover the experiments carried out to validate the hypotheses established in Chapter \ref{chap:experimental_setup}.
    \item \textbf{Chapter \ref{chap:conclusions}} - This chapter will conclude the dissertation by discussing the results of the experiments and the implications of the results. Future work will also be discussed.
 \end{itemize}
  
@@ -263,19 +262,19 @@ Going forward, the dissertation will be structured as follows:
 
 \section{Hearing Loss}
 To fully appreciate the topic of this dissertation,
-we will give a high level overview of the auditory system 
+we will give a high-level overview of the auditory system 
 which is ultimately responsible for our ability to hear.
-We will then cover how hearing loss can occur, and 
+We will then cover how hearing loss can occur and 
 what solutions have been developed to help those with hearing loss.
 \subsection{Auditory System}
-For sound to be registered by humans, it has to travel through the ear to transform them into
-what is known as a neural impulse which is then trasmitted to the brain. We will 
-give a high level overview of how this process occurs which was collated by the phonetics textbook from \citet{Wayland2018Phonetics},
+For sound to be registered by humans, it has to travel through the ear to transform it into
+what is known as a neural impulse which is then transmitted to the brain. We will 
+give a high-level overview of how this process occurs which was collated by the phonetics textbook from \citet{Wayland2018Phonetics},
  but for further reading, refer to the textbook. 
 
- This process of sound to be registered by humans, is all done in what's known as the Auditory System.
- Figure \ref{fig:ear} shows a birds eye view of the auditory system, and it can be split into three segments
- that we will explore below.
+ This process of sound to be registered by humans is all done in what is known as the Auditory System.
+ Figure \ref{fig:ear} shows a bird's eye view of the auditory system, and it can be divided into three segments
+ that we will explore in the following.
 
 \begin{figure}[h]
    \centering
@@ -287,19 +286,17 @@ give a high level overview of how this process occurs which was collated by the 
 \subsubsection{The Outer Ear}
 The outer ear (sometimes referred to as the External Ear) is responsible for channeling sound waves to the tympanic membrane (ear drum). Firstly,
 sound waves reach the Pinna (the part of the ear that we can see and touch) which funnels it through the auditory canal, and at the end of the canal 
-is the ear drum, at which point the sound waves collide with the ear drum which causes the ear drum to vibrate. 
-The vibrations are passed along to the middle ear.
+is the ear drum, at which point the sound waves collide with the eardrum which causes the eardrum to vibrate. 
+The vibrations are passed through the middle ear.
 
 \subsubsection{The Middle Ear}
 Zooming into the middle ear (Figure \ref{fig:middle-ear}), there are three bony structures: the Malleus, Incus, and Stapes,
 and together they make up a lever system. 
-It is worth pointing out that when transmitting the energy from the ear drum to the middle ear, there is bound to be some energy 
-loss which can be as high as 40\%. The lever system's mechanical advantage 
-allows for the sound energy to be amplified so the loss of energy is compensated. 
+It is worth pointing out that when energy is transmitted from the eardrum to the middle ear, there is bound to be some energy loss which can be as high as 40\%. The lever system's mechanical advantage 
+allows for the sound energy to be amplified, so the loss of energy is compensated. 
 
-The Stapes also has an additional function besides passing over the sound vibrations to the inner ear. The Stapes 
-is connected by a muscle, the Stapedius muscle, and in response to loud noises, it temporarily increases the stifness
-of the bones in the middle ear, which temporarily prevents the acoustic energy to be amplified. This 
+The Stapes also has an additional function in addition to passing over the sound vibrations to the inner ear. That is,
+the Stapes is connected by a muscle, the Stapedius muscle, and in response to loud noises, it temporarily increases the stiffness of the bones in the middle ear, which temporarily prevents the acoustic energy from being amplified. This 
 protects the inner ear from loud noises.
 
 \begin{figure}[h]
@@ -310,21 +307,21 @@ protects the inner ear from loud noises.
 \end{figure}
 
 \subsubsection{The Inner Ear}
-One of the parts of the inner ear, is the Cohlea, and it is what gives humans the ability to hear sounds.
-The cohlea is a bony structure that resemblers that of a snail shell \footnote{'Cohlea' in Latin translates to snail shell!}.
-If the cohlea was unrolled its length would be about 3.5cm, and it is subdivided into various parts (see Figure \ref{fig:cohlear}).
-For our purposes, it suffices to know that in the Basilar membrane are a collection of cells, called 
+One of the parts of the inner ear is the Cohlea, which gives humans the ability to hear sounds.
+The Cochlear is a bony structure that resembles that of a snail shell \footnote{'Cochlear' in Latin translates to snail shell!}.
+If the Cochlear was unrolled its length would be about 3.5cm, and it is subdivided into various parts (see Figure \ref{fig:cohlear}).
+For our purposes, it suffices to know that in the Basilar membrane is a collection of cells, called 
 the Organ of Corti, which contain hair cells, and that different hair cells register different frequencies.
-Figure \ref{fig:corti} shows the frequency responses shows the various areas of the corti 
+Figure \ref{fig:corti} shows the frequency responses and the various areas of the corti 
 and its response to different frequencies. The Organ of Corti is linked to the audtiory nerves and 
-so the oscillations that pass through it get coverted to neural impulses and transmitted to the brain.
+so the oscillations that pass through it get converted to neural impulses and transmitted to the brain.
 
 \begin{figure}[h]
    \centering
    \begin{minipage}{0.4\textwidth}
       \centering
       \includegraphics[width=\textwidth]{wayland-cohlear.png}
-      \caption{'Unrolled' cohlear from \citet{Wayland2018Phonetics}}
+      \caption{'Unrolled' Cochlear from \citet{Wayland2018Phonetics}}
       \label{fig:cohlear}
    \end{minipage}
    \hfill
@@ -343,18 +340,17 @@ so the oscillations that pass through it get coverted to neural impulses and tra
 % \subsection{Ageing}
 % TODO
 \subsection{Hair Cell Loss and Hearing Loss}
-As we have seen, the hair cells play a major role in allowing humans to register sound. Unfortunately,
-it is the major cause of hearing loss since those hair cells are suspectible to damage.
-The cause of hair cell loss is complex, since it could be due to many factors such as 
-genetic abnormalities (congenital hearing loss), infection, diseases or extrinistic factors such as exposure to loud noises.
-It can also occur due to aging, which could be due to the reasons mentioned above, but also 
-could be triggered due to age related hearing loss genes. To make matters worse, hair cell loss is unrecoverable in humans \citep{Furness2015HairCell}.
-Hearing loss is a spectrum, and varies from mild (26-40dB loss), moderate (41-60dB loss), severe (61-80dB loss) to profound($>80$dB loss) \citep{Nieman2020HearingLoss}.
-Moreover, hearing loss may occur in one ear (unilateral) or in both ears (binaural). 
+As we have seen, hair cells play a major role in allowing humans to register sound. Unfortunately,
+it is the main cause of hearing loss, as those hair cells are susceptible to damage.
+The cause of hair cell loss is complex since it could be due to many factors such as 
+genetic abnormalities (congenital hearing loss), infection, diseases, or extrinsic factors such as exposure to loud noises.
+It can also occur due to ageing, which could be due to the reasons mentioned above, but could also be triggered due to age-related hearing loss genes. To make matters worse, hair cell loss is unrecoverable in humans \citep{Furness2015HairCell}.
+Hearing loss is a spectrum and varies from mild (26-40dB loss), moderate (41-60dB loss), severe (61-80dB loss) to profound($>80$dB loss) \citep{Nieman2020HearingLoss}.
+In addition, hearing loss can occur in one ear (unilateral) or in both ears (binaural). 
 
 \section{Hearing Loss Treatment}
 
-We now know how the auditory system works, and how hearing loss can occur.
+We now know how the auditory system works and how hearing loss can occur.
 Hearing solutions have come a long way, 
 from acoustic devices to modern digital devices. 
 As this dissertation is focused on 
@@ -372,20 +368,20 @@ refer to the paper by \citet{levitt_historical_2007}.
 \subsection{Hearing Technology}
 As mentioned in the Introduction, the most common treatment for hearing loss 
 is the provision of hearing technology. There are two common approaches 
-to fitting of hearing technology: the equipment of a Hearing Aid (HA) 
-or the fitting of a Cohlear Implant. There are similarities in the 
-two, and both can be used to fit users that are experiencing profound hearing loss, 
-though typically cohlear implants are only considered if the user is experiencing 
-a severe hearing loss or further. While we 
+to the fitting of hearing technology: the equipment of a Hearing Aid (HA) 
+or the fitting of a Cochlear Implant. There are similarities between the 
+two, and both can be used to fit users who experiencing profound hearing loss, 
+although Cochlear implants are only considered if the user is experiencing 
+a severe hearing loss or more. While we 
 focus on the HA, the concepts we explore can be applied to the CI.
 The components of a HA vary widely, but at the very least, 
 it contains a microphone, amplifier, receiver, and battery \citep{schuster-bruce_conventional_2025}.
 A microphone is a device that converts acoustic sound waves into electrical signals. 
 The electrical signals are then amplified by the amplifier, and the receiver converts the electrical 
-signals back into the acoustic waves. The battery is used to power the device. 
-Depending on the user, they may either be fitted with a hearing aid on each 
-ear (binaural) or a single hearing aid on one ear (unilateral). 
-Typically, the hearing aid contains multiple microphones, and the microphones 
+signals back into acoustic waves. The battery is used to power the device. 
+Depending on the user, they may be fitted with a hearing aid in each 
+ear (binaural) or a single hearing aid in one ear (unilateral). 
+Typically, the hearing aid contains multiple microphones and the microphones 
 are placed in different locations on the device. 
 % Figure \ref{fig:hearing-aid} shows an image 
 % of a hearing aid.
@@ -406,37 +402,35 @@ are placed in different locations on the device.
 % These findings underscore a fundamental trade-off in hearing aid design: while the application of DNNs can significantly elevate the performance of auditory devices, it concurrently imposes strict energy requirements that may compromise battery longevity.
 % Future research should therefore focus on optimising power efficiency to better balance computational performance with practical usability.
 
-As discussed in the Introduction, the increasing demand for HAs is not only 
-driving the development of more sophisticated HAs, but also the entry of big tech 
+As discussed in the Introduction, the increasing demand for HAs is driving not only 
+the development of more sophisticated HAs, but also the entry of big tech 
 companies like Apple to the hearing aid market, and the developments from established 
 manufacturers like Phonak who are starting to incorporate DNNs into their devices.
 
-Another trend is that of the shift towards rechargable hearing aids (Lithium Ion Batteries).
-These devices not only offer the practical benefit of eliminating battery replacement but also support higher peak power consumption 
-which could explain the correlation in the sudden interest in using DNNs in HAs.
-In contrast, hearing aids before the shift towards rechargable hearing aids were using Zinc-air batteries 
+Another trend is that of the shift towards rechargeable hearing aids (Lithium Ion Batteries).
+These devices not only offer the practical benefit of eliminating battery replacement, but also support higher peak power consumption, which could explain the correlation in the sudden interest in using DNNs in HAs.
+In contrast, hearing aids before the transition to rechargeable hearing aids were using Zinc-air batteries 
 (\cite{sparkes_study_1997}; \cite{mir_evaluation_2023})
-which are non-rechargable.
-A recent study by \citet{thomas_zincair_2024} which 
+that are non-rechargeable.
+A recent study by \citet{thomas_zincair_2024}, which 
 experiments with various Zinc-air manufacturers, shows that the average battery life 
-under high power conditions is 50-80 hours. Contrast this with the average battery life of 
-rechargable hearing aids which is typically in the region of 15-30 hours and 
+under high-power conditions is 50-80 hours. Contrast this with the average battery life of 
+rechargeable hearing aids which is typically in the region of 15-30 hours and 
 features such as Phonak's Speech Enhancer (the DNN based feature) can drop the battery life 
 to below 6 hours. 
 
-These findings highlight an important trade-off in hearing aid design: 
-while there is loads of potential to improve the performance of HAs (DNNs or otherwise)
+These findings highlight an important trade-off in hearing aid design. While there is loads of potential to improve the performance of HAs (DNNs or otherwise),
 it can come at the cost of battery life and possibly constrains 
-the types of models that can be used. 
+the types of model that can be used. 
 
-Due to the proprietary nature of the devices, it is unclear what sort of 
-algorithms are used in the devices. Though, from Phonak's white paper on Spheric Speech Clarity \cite{Hasemann2024PhonakSphere}
+Due to the proprietary nature of the devices, it is unclear what kind of 
+algorithms are used in the devices. However, from Phonak's white paper on Spheric Speech Clarity \cite{Hasemann2024PhonakSphere}
 we can deduce that the devices use a combination of ASA and speech enhancement techniques.
 From the paper, before signal processing begins, the sound is fed into Autosense OS which 
-performs 'scene classification' so in the context of this project, this can be 
+performs `scene classification' so in the context of this project, this can be 
 considered as an acoustic scene analysis (ASA) algorithm. More specifically, if 
 the signal is classified as 'Speech in Loud Noise', then the signal is fed into a 
-deep neural network which outputs a mask that seperates the speech signal from the background noise 
+deep neural network which outputs a mask that separates the speech signal from the background noise 
 which is then applied to the signal. 
 
 
@@ -785,7 +779,7 @@ Table \ref{tab:cnn-model-params} shows the parameters of the models we will be t
 
 \begin{figure}[h]
    \centering
-   \includegraphics[width=0.95\textwidth]{cnn-diagram.png}
+   \includegraphics[width=0.95\textwidth]{cnn-diagram2.png}
    \caption{The baseline ASA model architecture.}
    \label{fig:cnn-model-architecture}
 \end{figure}
