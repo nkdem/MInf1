@@ -116,7 +116,8 @@
    Furthermore, preliminary work on convolutional encoder-decoder (CED) 
    models in the speech enhancement is adopted to various datasets 
    including HEAR-DS. We evaluate the performance of the model 
-   using artificial intelligibility and quality metrics such as STOI and PESQ. 
+   using objective intelligibility metrics (OIMs) such as STOI and 
+   metrics used to evaluate the quality of the speech such as PESQ. 
    Notably, there appears to be a lack of comprehensive feasibility analyses in 
    the SE literature within the context of HAs, so we aim to fill this gap. 
    Preliminary results, while modest, indicate that further research is required 
@@ -191,7 +192,7 @@ and careful algorithmic choices.
 This project aims to investigate the effectiveness of machine learning techniques 
 in prioritising speech in noisy environments. The idea is to 
 first train a deep neural network (DNN) to perform acoustic scene analysis (ASA) to classify the environment.
-Afterwards, a speech enhancement model will be trained to enhance the speech in the environment.
+Afterwards, a speech enhancement (SE) model will be trained to enhance the speech in the environment.
 From now on, we will refer to the chaining of the ASA and SE models together as a state-dependent model
 as inspired by \citet{katagiri_handbook_2000}'s categorisation of SE techniques (see \ref{sec:se-methods} for more details).
 
@@ -229,9 +230,9 @@ Prior research suggests that a delay of up to 30 milliseconds (ms), and ideally 
 is unaffected by the delay \citep{Stone2002Delays}. Therefore, the project will be mindful in its algorithmic choices to ensure that the model
 is computationally efficient and feasible for real-time deployment.
 
-The main evaluation metrics we will consider in this part of the dissertation 
-are artificial metrics such as short-time objective intelligibility (STOI) and perceptual evaluation of speech quality (PESQ) 
-which give an indication of the quality of the speech enhancement model.
+We will use Objective Intelligibility Metrics (OIMs) such as STOI 
+and the commonly used metric Perceptual Evaluation of Speech Quality (PESQ)  
+to evaluate the quality of the speech enhancement model.
 Additionally, informed by current state-of-the-art HA configurations, the project will also assess model feasibility by analysing the number of Floating Point Operations Per Second (FLOPs) and number of parameters
 in the models.
 
@@ -685,7 +686,24 @@ all within the context of a HA device.
 \newpage
 
 \subsection{Speech Enhancement}
-In the SE field, and in this part of the dissertation, we will be 
+\heards has not been used for SE before, and so we will be 
+exploring the feasibility of using the dataset for SE.
+We will be taking heavy inspiration from the paper by \citet{tan18_interspeech}
+who discussed a convolutional encoder-decoder (CED) model. While the 
+paper has 'real-time speech enhancement' in its title, there 
+is no evaluation on the performance of the model in terms of 
+real-time inference or the feasibility of the model in a HA device.
+This was unfortunately a common theme in the SE literature, and so we will be 
+and various papers that introduce SE models and a lot of them address thta 
+SE models applications include HAs, and yet there is little 
+discussion on the feasibility of the models in a HA device. 
+This could be due to the little amout of research 
+on the capabilities of HA devices, and so we wish 
+to contribute to this area of research since 
+there is some new insight to be had from reading 
+the market's capabilities.
+
+
 % In summary, while the previous study makes a valuable contribution
 % to the field of HA research, a more thorough and systematic
 % evaluation is necessary to fully assess the model's efficacy 
@@ -958,7 +976,7 @@ L(X^{1}, Y^{1}) = \frac{1}{T} \sum_{t=1}^{T} (X^{1}_t - Y^{1}_t)^2,
 This is the same loss function used in \citet{tan18_interspeech} and is the Mean Squared Error (MSE) loss function.
 
 \subsection{Evaluation}
-The speech enhancement model's performance is evaluated using two artificial metrics, 
+The speech enhancement model's performance is evaluated using PESQ and STOI,
 serving as proxies for the gold standard of subjective listening tests, which, 
 due to the time and cost constraints, are not conducted in this part of the dissertation.
 % The evaluation of the speech enhancement model in this part of the dissertation will be 
@@ -979,8 +997,8 @@ PESQ compares $s_c$ and $\hat{s}_e$, yielding a score between 1 (indicating poor
 As with STOI, the intricate details of the PESQ metric are not discussed here; the reader is encouraged to consult \citet{rix_perceptual_2001} for a comprehensive description.
 
 A valid question to ask is why the model is not trained to directly optimise for both metrics. The primary challenge lies in the fact that both STOI and PESQ are non-differentiable,
-which is a problem for gradient-based optimisation frameworks. However, there are methods to approximate the gradients of non-differentiable functions, and it is an active area of research.
-For future work, this avenue may be explored. 
+which is a problem for gradient-based optimisation frameworks. 
+For more details, we discuss this in more detail in section \ref{sec:future-work}.
 
 Feasibility analysis mirrors that of the ASA model, focusing on FLOP(s), parameter count and theoretical inference time.
 \section{Laying the Groundwork for State-Dependent Models}
@@ -1167,7 +1185,7 @@ Given that we will be training and testing the model, the need for a training an
 \subsection{CHiME-3}
  As mentioned earlier, we opted for using the \chime{3} dataset to mix the speech signal with the background noise. 
 \chime{3} is a dataset published in 2015 for ASR tasks, and was dedicated to improving the performance of mobile devices 
-in everyday, noisy environments. The vocabulary of the speech samples is taken from a subset of the Wall Street Journal (WSJ0) corupus \cite{wsj0}.
+in everyday, noisy environments. The vocabulary of the speech samples is taken from a subset of the Wall Street Journal (WSJ0) corupus \citep{wsj0}.
 For brevity, we won't go into the details of the environments, as we 
 are only interested in the speech samples. 
 We use the development set for the mixing process,
@@ -1870,14 +1888,117 @@ the first stage would be to reduce the FLOPs of the model of which we discuss mo
 
 
 \chapter{Conclusions}
-\section{Discussion}
-% Hypotheses' pertaining to ASA achieved 
-% SE task is more difficult, and more work is needed. Given that the FLOP count is low, we can look into much 
-% deeper models 
-% 
-TODO
+\section{Review}
+In this part of the dissertation we explored the novel datatset \heards by \citet{Huwel2020HearDS}.
+The very first hypothesis was to see if the ASA model shown by \citet{Huwel2020HearDS} 
+could be reproduced. We were not able to fully reproduce the accuracies that the paper 
+reports and we attribute this to a small deviation
+in the speech mixing dataset, and the omission of 
+the HRTF during speech mixing in the paper. We also 
+extended the analysis of the model's performance 
+by considering precision, recall and F1 scores 
+due to the inherent imbalance in the dataset.
+
+Secondly, we hypothesised that the ASA model 
+would be able to generalise and be trained 
+faster if utterance-level data augmentation was utilised. 
+While the training times were reduced, the performance 
+of the model was found to be slighly worse. 
+
+Thirdly, we decided to see if the claim by \citet{Huwel2020HearDS} 
+that the use of the Adam optimiser was not suited 
+for the ASA task was valid. We found that the model 
+trained using the Adam optimiser received 
+comparable results to the model trained using the 
+SGD optimiser, and at a slightly faster convergence.
+
+As a means of validation, and the doubt raised 
+by the higher accuracies in our results compared 
+to the paper by \citet{Huwel2020HearDS}, we 
+performed a validation of the model's implementation
+against the work by \citet{schindler_multi-temporal_2018} 
+who used the TUT Acoustic Scenes 2016 dataset to 
+train an ASA model. Through this validation, we 
+found that the model's implementation is correct 
+and that the model is also able to generalise to 
+a new dataset which is a good sign.
+
+Lastly on the ASA front, 
+the hypothesis aof the feasibility 
+of the ASA model being used in a HA was 
+evaluated. We did this by considering 
+the state of the art HAs capability, and through that, 
+it suggests that the ASA model is capable of being used 
+in a HA.
+
+To date we have not found any publications on 
+using the \heards dataset for the SE task, so we 
+took it upon ourselves to create a SE model 
+for the dataset. Inspired by \citet{katagiri_handbook_2000}'s
+categorisation of SE models, we created a SE model that can 
+be called a state dependent model. Our final hypothesis was 
+that of pertaining of whether the SE model inspired 
+by \citet{tan18_interspeech} would be able to 
+generalise to the \heards dataset. This was found 
+to be possible but there is certainly room for improvement 
+from a performance perspective. Due to the model's 
+complexity, we validated the model's implementation 
+against the work by \citet{kim_specmix_2021} who proposed 
+the SpecMix technique. We found that the model is 
+able to generalise to the \vbd dataset and that the 
+performance seems comparable to the paper.
+
+Lastly, the feasibility of the SE model being used 
+in a HA was evaluated. This was found to be rejected 
+with absolute certainty. The model's latency is too high and 
+it is because of the high number of parameters and 
+consequently high FLOPs required to process the 
+signal in an acceptable manner for a HA user to not 
+notice the delay.
+
 \section{Future Work}
-TODO
+\label{sec:future-work}
+This dissertation opens several promising avenues for future exploration.
+First, the current SE model is unsuitable for state-dependent deployment
+in hearing aids. A potential solution is to develop a model trained on
+shorter speech segments, possibly coupled with efforts to reduce the model
+FLOP count as suggested by \citet{liu_simple_2023}. In addition, refining
+hyperparameter settings or reconsidering the model architecture may be 
+beneficial such as considering time domain/end-to-end models.
+
+There is also an exciting area of research in 
+the speech community to train neural models 
+that take into account human preferences \citep{Zhang2024SpeechAlignAS}.
+Moreover, Phonak's white paper further elucidates
+this approach \citep{Hasemann2024PhonakSphere}.
+These methods share similarities to the Generative Adversarial Network (GAN)  
+as described in \citet{Bai2022PerceptualLoss}. 
+In this context, \citet{Fu2018QualityNet} introduced 
+QualityNet, an end-to-end network for estimating PESQ scores without a clean
+reference. They then presented the applicability of the model to the SE task
+to build a GAN based framework called MetricGAN.
+Building on this, \citet{Bai2022PerceptualLoss} extended QualityNet
+to also learn STOI, resulting in the PESQ-STOI-QualityNet (PSQN) framework.
+It could be interesting to see if the SE model could be trained using 
+this framework to improve the performance of the model.
+
+On the topic of human preferences, 
+the incorporation of a metric 
+that takes into account HA's user's preferences
+such as the Hearing-Aid Speech Perception Index (HASPI)
+proposed by \citet{Kates2021HASPI} would be interesting.
+
+Currently, the feasibility of the models is done by 
+assuming that the latency of a model can be 
+calculated by considering the FLOP(s) of the device 
+benchmarking the model. It would be interesting to see 
+if this actually holds on lower powered devices 
+such as a microcontroller or a Raspberry Pi.
+
+Lastly for reproducibility, mixing the \heards dataset 
+with the \chime{2} dataset and the incorporation of 
+a HRTF is something that could be investigated in the future.
+
 
 \bibliography{mybibfile}
 
