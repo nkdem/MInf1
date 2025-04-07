@@ -249,12 +249,12 @@ Going forward, the dissertation will be structured as follows:
    We briefly also cover the two techniques that will be used in this project: Acoustic Scene Analysis (ASA) and Speech Enhancement
    and some of the related work done in the field. Lastly, I mention the criticism of the paper by \citet{Huwel2020HearDS} 
    that I will be exploring in this project.
-   \item \textbf{Chapter \ref{ch:methodology}} - This chapter will give a high level overview of the two models that will be developed in this project: Acoustic Scene Analysis (ASA) and Speech Enhancement (SE)
+   \item \textbf{Chapter \ref{chap:methodology}} - This chapter will give a high level overview of the two models that will be developed in this project: Acoustic Scene Analysis (ASA) and Speech Enhancement (SE)
    which ultimately could be chained together to form a state-dependent model.
-   \item \textbf{Chapter \ref{ch:experimental_setup}} - This chapter will establish the hypotheses based on the methodological choices made in Chapter \ref{ch:methodology}. After which, the datasets to 
+   \item \textbf{Chapter \ref{chap:experimental_setup}} - This chapter will establish the hypotheses based on the methodological choices made in Chapter \ref{chap:methodology}. After which, the datasets to 
    validate the hypotheses will be discussed.
-   \item \textbf{Chapter \ref{chap:asa-experiments} + \ref{chap:se-experiments}} - This chapter will cover the experiments conducted to validate the hypotheses established in Chapter \ref{ch:experimental_setup}.
-   \item \textbf{Chapter \ref{ch:conclusion}} - This chapter will conclude the dissertation by discussing the results of the experiments and the implications of the results. Future work will also be discussed.
+   \item \textbf{Chapter \ref{chap:asa-experiments} + \ref{chap:se-experiments}} - This chapter will cover the experiments conducted to validate the hypotheses established in Chapter \ref{chap:experimental_setup}.
+   \item \textbf{Chapter \ref{chap:conclusions}} - This chapter will conclude the dissertation by discussing the results of the experiments and the implications of the results. Future work will also be discussed.
 \end{itemize}
  
 
@@ -639,6 +639,7 @@ using FLOPs as a metric is not only good from a reproducibility standpoint,
 but from a development standpoint as well. 
 
 \section{Criticism of Previous Work}
+\label{sec:criticism}
 \subsection{Acoustic Scene Analysis}
 In the ASA field, we will predominantly be using the HEAR-DS dataset introduced by \citet{Huwel2020HearDS}
 and a major part of this dissertation is to analyse and explore the model in more detail.
@@ -686,22 +687,33 @@ all within the context of a HA device.
 \newpage
 
 \subsection{Speech Enhancement}
-\heards has not been used for SE before, and so we will be 
-exploring the feasibility of using the dataset for SE.
-We will be taking heavy inspiration from the paper by \citet{tan18_interspeech}
-who discussed a convolutional encoder-decoder (CED) model. While the 
-paper has 'real-time speech enhancement' in its title, there 
-is no evaluation on the performance of the model in terms of 
-real-time inference or the feasibility of the model in a HA device.
-This was unfortunately a common theme in the SE literature, and so we will be 
-and various papers that introduce SE models and a lot of them address thta 
-SE models applications include HAs, and yet there is little 
-discussion on the feasibility of the models in a HA device. 
-This could be due to the little amout of research 
-on the capabilities of HA devices, and so we wish 
-to contribute to this area of research since 
-there is some new insight to be had from reading 
-the market's capabilities.
+Although the \heards dataset has not been previously employed 
+for SE, this dissertation investigates its potential in this domain.
+Our methodology is inspired by the paper by \citet{tan18_interspeech}
+who presented a convolutional encoder-decoder (CED) model.
+Despite the claim of `real-time speech enhancement', the paper 
+lacks an evaluation on the model's real-time inference capabilities 
+and does not address the feasibility of the model in a HA device. 
+Given that HA applicability was mentioned as part of their abstract,
+it appears that the original authors were at least partly 
+aware of the potential of the model in such contexts. But 
+no further elaboration was given in the paper.
+
+This is a common trend in the SE literature, where multiple papers
+introduce SE models that highlight applications for HAs without 
+thoroughly discussing the computational constraints of HA devices. 
+Although recent publications \citep{DuSpiking2024,Sach2023EffCRNAE,Wang2025ZipEnhancerDD} 
+have begun reporting floating point operations (FLOPs) as a measure of model complexity,
+they exhibit two significant limitations. Firstly, they do not utilise HA-specific datasets 
+such as \heards. Secondly, and more importantly, to the best of our knowledge
+none of these studies compare the model FLOPs to the computational capacity 
+of HA devices, leaving a critical gap in assessing practical feasibility. 
+This dissertation aims to bridge this gap by introducing an approach 
+for evaluating the feasibility of SE models on HA devices, informed by 
+recent insights into their computational constraints.
+
+% Additionally, there is much less discussion of SE models when considering multiple 
+% environments, which could be due to limited datasets that cover a wide range of environments 
 
 
 % In summary, while the previous study makes a valuable contribution
@@ -729,6 +741,7 @@ the market's capabilities.
 
 
 \chapter{Methodology}
+\label{chap:methodology}
 
 % The model presented in the paper assumed a sampling rate of 16KHz, so we resampled the HEAR-DS dataset to 16KHz. Additionally, 
 % the model expected a log-mel spectrogram of 10s segments, and the HEAR-DS dataset provided longer segments. We therefore 
@@ -854,7 +867,7 @@ and \(\mathbb{I}\) is the indicator function which is a piecewise function that 
 % this is certainly the case for the HEAR-DS dataset. 
 % So on top of the accuracy metric, we will also be using precision, recall and F1 score metrics.
 % These metrics are defined as follows:
-Given the imbalanced nature of the HEAR-DS dataset (see Section \ref{sec:hear-ds-dataset}),
+Given the imbalanced nature of the HEAR-DS dataset (see Section \ref{sec:hear-ds}),
 we accuracy is supplemented with precision, recall and F1 score:
 \[
 Precision = \frac{TP}{TP + FP}, \quad Recall = \frac{TP}{TP + FN}, \quad F1 = 2 \cdot \frac{Precision \cdot Recall}{Precision + Recall},
@@ -886,7 +899,7 @@ based on:
 \label{sec:methodology-se}
 \begin{figure}[h]
    \centering
-   \includegraphics[width=0.95\textwidth]{se-model-diagram-2.png}
+   \includegraphics[width=0.95\textwidth]{se-model-diagram-3.png}
    \caption{A diagram of the Convolutional Encoder-Decoder model we will be using for the speech enhancement task.}
    \label{fig:speech-enhancement-model-architecture}
 \end{figure}
@@ -1029,7 +1042,7 @@ $f$ can be represented as a piecewise function:
 In other words, the state-dependent model $f$ will apply the SE model $h_{\epsilon}$ to the input $x$ if the ASA model $g$ maps $x$ to \(\epsilon\).
 For example, if a HA user is situated in anenvironment characterised as `Wind Turbulence and Speech',
 the state-dependent model will invoke the SE model that has been trained on this scenario to enhance the input signal $x$.
-The state-dependant model is inspired by the unveiling of the Spheric Clarity DNN model by Phonak \citep{Hasemann2024PhonakSphere} in late 2024
+The state-dependent model is inspired by the unveiling of the Spheric Clarity DNN model by Phonak \citep{Hasemann2024PhonakSphere} in late 2024
 in which if the HA user is faced in a 'Speech in Loud Noise' environment, the input signal $x$ will be passed through their Spheric Clarity DNN model.
 
 
@@ -1067,8 +1080,8 @@ Once that's done, the reader will be in a position to now analyse the results of
    With the evaluation of the models with respect to the number of FLOPs and the size of the models,
    we aim to show that the models we implement are able to be deployed on HA devices. 
    This is a really important hypothesis to validate, otherwise any work 
-   we do would not allow us to create a state-dependent model if the dependant models 
-   are not able to be deployed on HA devices. (implication)
+   we do would not allow us to create a state-dependent model if the dependent models 
+   are not able to be deployed on HA devices.
    \item \textbf{Comparative Performance of the Adam Optimiser.}
    It is hypothesised that using the Adam optimiser will result in a faster convergence with comparable performance to that of using a fixed learning rate Stochastic Gradient Descent (SGD) method, as employed in \citet{Huwel2020HearDS}.
    Validating this hypothesis will speed up the development process going forward, 
@@ -1120,7 +1133,7 @@ supercedes the \chime{5} dataset \cite{barker18_fifth_2018} by correcting the al
 recommend the use of the \chime{6} dataset instead of \chime{5} for any new research so we will use that instead. This could 
 be an important factor as the methodology of creating the \textit{Interferring Speakers} environment is by finding 10s 
 segments of speech that contain multiple speakers, so if the alignment of audio channels is not correct, the recordings 
-may have a delay between the left and right channels which could have potentialy affected the results of the paper. We will discuss the dataset in more detail in section \ref{}.
+may have a delay between the left and right channels which could have potentialy affected the results of the paper. 
 In any case, the way this environment was created is unclear from the paper, but we do the following approach to create the environment:
 \begin{enumerate}
    \item The code processes \chime{6} sessions to find 10-second segments containing overlapping speech from multiple speakers.
@@ -1888,6 +1901,7 @@ the first stage would be to reduce the FLOPs of the model of which we discuss mo
 
 
 \chapter{Conclusions}
+\label{chap:conclusions}
 \section{Review}
 In this part of the dissertation we explored the novel datatset \heards by \citet{Huwel2020HearDS}.
 The very first hypothesis was to see if the ASA model shown by \citet{Huwel2020HearDS} 
