@@ -750,7 +750,7 @@ Consider an audio signal \(x \in \mathbb{R}^{T}\), where \(T\) denotes the numbe
 f: \mathbb{R}^{T} \rightarrow \mathcal{E},
 \]
 which assigns each audio signal to one of the environments in \(\mathcal{E}\). In this project, \(f\) is implemented as a neural network
-and in this first part of the dissertation, we will be using a Convolutional Neural Network (CNN) to implement \(f\).
+and in this first part of the dissertation, we will use a Convolutional Neural Network (CNN) to implement \(f\).
 
 \subsection{Model}
 \label{sec:asa-model}
@@ -768,12 +768,12 @@ and in this first part of the dissertation, we will be using a Convolutional Neu
    \caption{Model parameters for the net-X models.}
    \label{tab:cnn-model-params}
 \end{table}
-As our baseline model, we will be using the CNN model presented in the paper by \citet{Huwel2020HearDS}. 
-The model has three hyperparameters: the number of output channels for the first and second convolutional layers ($CNN_1$ and $CNN_2$),
+As our baseline model, we will use the CNN model presented in the paper by \citet{Huwel2020HearDS}. 
+The model has three hyper-parameters: the number of output channels for the first and second convolutional layers ($CNN_1$ and $CNN_2$),
 and the number of neurons in the fully connected layer ($FC$). The researchers investigated the effect of different model parameters, 
 and in the paper, they train the dataset on 7 different models, where they vary the number of output channels in intervals of 4, thereby training 7 different models.
-Due to the time constraints, we will be training 3 models, as we're mostly interested in seeing if we're getting similar results to the paper.
-Table \ref{tab:cnn-model-params} shows the parameters of the models we will be training.
+Due to the time constraints, we will be training 3 models, as we are mostly interested in seeing if we are getting similar results to the paper.
+Table \ref{tab:cnn-model-params} shows the parameters of the models we will train.
 
 \begin{figure}[h]
    \centering
@@ -785,49 +785,49 @@ The model architecture is shown in Figure \ref{fig:cnn-model-architecture}. As
 mentioned earlier the models operate on the frequency domain, and 
 we stuck with the paper's approach of using a Mel Spectrogram as the 
 frequency domain representation for reasons mentioned in the background section. 
-As per the paper, all the convulaotional layers use a $7 \times 7$ kernel
-with a stride of $1 \times 1$ and padding of $3 \times 3$. After the convoluational operation, 
-batch normalisation is applied which can help with the stability of forward propagation 
+According to the paper, all the convolutional layers use a $7 \times 7$ kernel
+with a stride of $1 \times 1$ and a padding of $3 \times 3$. After the convolutional operation, 
+batch normalisation is applied, which can help with the stability of forward propagation 
 and can act as a regulariser which can help prevent overfitting \citep{prince2023understanding}.
 The choice of activation function is a Rectified Linear Unit (ReLU) which is computionally 
 efficient and reduces the risk of the vanishing gradient problem \citep{prince2023understanding}.
-As the preceding operations can increase the dimensionality of the input, a form of down-sampling is applied by using a max-pooling operation which helps in achieving 
+As the preceding operations can increase the dimensionality of the input, a form of down-sampling is applied by using a max-pooling operation, which helps in achieving 
 translation invariance and reducing computational complexity for the following layers. Something worth considering for 
 part 2 of this dissertation is to explore the use of other down-sampling techniques, and in particular,
 \citet{liu_simple_2023} have proposed a family of simple pooling front-ends (SimPFs) 
-which in some cases reduce the number of FLOPs as much as 75\% in acoustic scene classification tasks. 
-Lastly, dropout of 0.3 is applied after the max-pooling operation which can help with 
+which in some cases reduce the number of FLOP(s) as much as 75\% in acoustic scene classification tasks. 
+Lastly, a dropout of 0.3 is applied after the max-pooling operation which can help with 
 the model generalisation \citep{prince2023understanding}.
 Applying convolutions is not enough for ASA, 
 as we need to have a way to compare the output of the CNN with the set of environments \(\mathcal{E}\).
-This is where the fully connected layer comes in, as it will output a vector of size \(N\), where \(N\) is the number of environments.
-The values of the vectors are logits, and so during training and inference, we use a softmax function to convert them into probabilities.
-The softmax function is defined as follows:
+This is where the fully connected layer comes into play, as it will output a vector of size \(N\), where \(N\) is the number of environments.
+The values of the vectors are logits, and so during training and inference, we use a soft-max function to convert them into probabilities.
+The soft-max function is defined as follows:
 \[
 \sigma(x_i) = \frac{\exp(x_i)}{\sum_{j=1}^{N} \exp(x_j)},
 \]
 where \(x_i\) is the \(i\)-th element of the vector.
-The environment with the highest probability is then chosen as the predicted environment 
-i.e. \(\hat{e} = \arg\max_{e_i \in \mathcal{E}} \sigma(x_i)\).
+The environment with the highest probability is then chosen as the predicted environment, 
+that is \(\hat{e} = \arg\max_{e_i \in \mathcal{E}} \sigma(x_i)\).
 
 
 
 \subsection{Training}
-For ASA, we need to have a dataset that contains audio signals along with their corresponding environmental labels. 
-Mathematically, we need to have a dataset of the form \(\mathcal{D} = \{(x_i, y_i)\}_{i=1}^{N}\), where \(x_i \in \mathbb{R}^{T}\) is the audio signal, and \(y_i \in \mathcal{E}\) is the environmental label.
+For ASA, we need a dataset that contains audio signals along with their corresponding environmental labels. 
+Mathematically, we need to have a dataset of the form \(\mathcal{D} = \{(x_i, y_i)\}_{i=1}^{N}\), where \(x_i \in \mathbb{R}^{T}\) is the audio signal and \(y_i \in \mathcal{E}\) is the environmental label.
 Then a loss function is needed to steer the model towards the correct mapping.
 It is important to note that the dataset \(\mathcal{D}\) is not necessarily balanced,
 meaning that some environments may have more samples than others.
 This is a problem, as the model may learn to classify all samples as the most frequent class. 
-So to combat this, when using a loss function, we apply a weight to each sample based on the number of samples in the dataset.
+So, to combat this, when using a loss function, we apply a weight to each sample based on the number of samples in the dataset.
 The weight is defined as follows:
 \[
 w_i = \frac{n_{samples}}{n_{classes} \cdot n_i}
 \]
 where \(n_{samples}\) is the total number of samples, \(n_{classes}\) is the number of unique classes, and \(n_i\) is the number of samples in the \(i\)-th environment.
 This balanced weighting scheme ensures that the weights sum up to \(n_{samples}/n_{classes}\).
-So a vector of weights \(\mathbf{w} \in \mathbb{R}^{N}\) is created, where \(N\) is the number of environments
-So we have a vector of weights \(\mathbf{w} \in \mathbb{R}^{N}\) which we can use to weight the loss function accordingly.
+So, a vector of weights \(\mathbf{w} \in \mathbb{R}^{N}\) is created, where \(N\) is the number of environments.
+So, we have a vector weight \(\mathbf{w} \in \mathbb{R}^{N}\) that we can use to weight the loss function accordingly.
 This is consistent with the paper by \citet{Huwel2020HearDS} where they did ``weighted update steps for each target environment depending on the number of samples in each environment.''
 On the topic of the loss function, the paper by \citet{Huwel2020HearDS} does 
 not explicitly mention the loss function they used, but we assume that they used the weighted cross-entropy loss function.
@@ -841,17 +841,17 @@ Once we have the loss function, we can use it to train the model. There are many
 and for reproducibility (and as a baseline), we will be using the paper's approach of using Stochastic Gradient Descent (SGD) with a fixed learning rate.
 The learning rate was decreased every 40 epochs in a quasi-logarithmic manner: [0.05, 0.01, 0.001, 0.0005, 0.0002, 0.0001].
 This leads to a total of 240 epochs of training. 
-However one of objectives of this part of the dissertation was to explore if a different approach to learning rate scheduling
+However, one of objectives of this part of the dissertation was to explore if a different approach to learning rate scheduling
 could yield better results. So we will be exploring a different approach to learning rate scheduling in the experiments.
 It will be found that the Adam optimiser converges faster than the SGD optimiser and still results in a comparable 
 performance. 
 \subsection{Evaluation}
-The ASA model will be evaluated using the accuracy metric which is something the paper by \citet{Huwel2020HearDS} also used.
+The ASA model will be evaluated using the accuracy metric, which is also used by \citet{Huwel2020HearDS}:
 \[
 Accuracy = \frac{1}{N} \sum_{i=1}^{N} \mathbb{I}(y_i = \hat{y}_i),
 \]
-where \(N\) is the total number of samples, \(y_i\) is the one-hot encoded environmental label, and \(\hat{y}_i\) is the predicted environmental label
-and \(\mathbb{I}\) is the indicator function which is a piecewise function that returns 1 if the condition is true and 0 otherwise.
+where \(N\) is the total number of samples, \(y_i\) is the one-hot encoded environmental label and \(\hat{y}_i\) is the predicted environmental label
+and \(\mathbb{I}\) is the indicator function, which is a piecewise function that returns 1 if the condition is true and 0 otherwise.
 
 % However, the issue with accuracy is that taking it 
 % at face value can be misleading, even more so in the case of an imbalanced dataset 
@@ -860,7 +860,7 @@ and \(\mathbb{I}\) is the indicator function which is a piecewise function that 
 % So on top of the accuracy metric, we will also be using precision, recall and F1 score metrics.
 % These metrics are defined as follows:
 Given the imbalanced nature of the HEAR-DS dataset (see Section \ref{sec:hear-ds}),
-we accuracy is supplemented with precision, recall and F1 score:
+the accuracy is supplemented with precision, recall and F1 score:
 \[
 Precision = \frac{TP}{TP + FP}, \quad Recall = \frac{TP}{TP + FN}, \quad F1 = 2 \cdot \frac{Precision \cdot Recall}{Precision + Recall},
 \]
@@ -870,13 +870,13 @@ where TP is the number of true positives, FP is the number of false positives, a
 % The F1 score is the harmonic mean of precision and recall.
 
 The model performance is further examined across various SNRs to assess robustness
-where on the low SNR side, the model may perform poorly due to the speech signal being quite faint. 
+where on the low SNR side, the model may perform poorly because the speech signal being quite faint. 
 Conversely, on the high SNR side, the model may perform poorly due to the background noise being quite strong. 
 
 
 Aligned with the Green AI principles \citep{schwartz2019greenai}, and the ultimate goal of this 
-dissertation is to develop models that could be deployed on a HA device, we also evaluate the model 
-based on: 
+dissertation is to develop models that could be deployed on an HA device, we also evaluate the model 
+based on the following: 
 \begin{itemize}
    \item \textbf{Floating Point Operations needed for inference [FLOP(s)]} - This will be done by looking at the number of operations the model performs in the forward pass.
    \item \textbf{Theoretical inference time} - Knowing FLOP(s) and FLOP/s we can calculate the theoretical inference time of the model as 
@@ -900,7 +900,7 @@ Speech enhancement is therefore concerned with determining a mapping
 \[
 f: \mathbb{R}^{T} \to \mathbb{R}^{T},
 \]
-which takes a noisy speech signal \(x\) and produces an enhanced version \(f(x)\) that is as close as possible to the clean speech signal \(y\) i.e.
+which takes a noisy speech signal \(x\) and produces an enhanced version \(f(x)\) that is as close to the clean speech signal \(y\) i.e.
 \[
 f(x) \approx y.
 \]
@@ -909,11 +909,11 @@ For this task, $f$ will be implemented by a Convolutional Encoder-Decoder model.
 \label{sec:se-model}
 As this is more of an exploration of the viability of using a DNN model for speech enhancement 
 and the establishment of a baseline which can be used to improve upon in future work, 
-we will take on board the work done by \citet{tan18_interspeech} and implement their baseline Convolutional Encoder-Decoder model.
+we will take into account the work done by \citet{tan18_interspeech} and implement their baseline Convolutional Encoder-Decoder model.
 A simplified diagram of the model is shown in Figure \ref{fig:speech-enhancement-model-architecture}.
 
-Instead of using the logmel spectrogram as in the ASA task, we will be using the magnitude spectrogram 
-as did the paper for consistency. So the output of the model is a magnitude spectrogram. 
+Instead of using the logmel spectrogram as in the ASA task, we will be using the magnitude spectrogram, 
+as did the paper, for consistency. So, the output of the model is a magnitude spectrogram. 
 
 % \begin{table}[h]
 %    \centering
@@ -937,21 +937,21 @@ as did the paper for consistency. So the output of the model is a magnitude spec
 %    \caption{The output sizes of the layers in the Convolutional Encoder-Decoder model.}
 %    \label{tab:speech-enhancement-output-sizes}
 % \end{table}
-It will be helpful for this and forthcoming sections to introduce some notation.
-Let $x$ be the input (noisy) signal, $y$ be the clean speech signal. 
+It will be helpful for this and the forthcoming sections to introduce some notation.
+Let $x$ be the input signal (noisy), and let $y$ be the clean speech signal. 
 STFT is a function that maps a noisy signal $x$ to a tuple of magnitude and phase spectrograms $(X^{1}, <X^{f})$.
 The sizes of the magnitude and phase spectrograms will be $T \times F$ where $T$ is the number of time frames which is 
 determined by the length of the signal and the hop size of the STFT. The number of frequency bins $F$ is determined by the 
 number of bins specified during the algorithm.
 So after applying STFT to $x$, we get $X^{1}$ and $<X^{f}$ and for the clean speech signal $y$, we get $Y^{1}$ and $<Y^{f}$.
-The input to the model is $X^{1}$ and the output is $\hat{X}^{1}$. For this to be possible, we need to ensure that the size of the 
+The input of the model is $X^{1}$ and the output is $\hat{X}^{1}$. For this to be possible, we need to ensure that the size of the 
 magnitude spectrogram is preserved through the model. This is done by fixing the time dimension of the input to the model 
-so that no time frames are dropped, but the frequency dimension will change however it will return to its original size after the last layer.
-So the stride of the convolutions is set to $(1 \times 2)$ throughout, and the kernel size is set to $(2 \times 3)$. 
-This has the effect of reducing the frequency dimension by a factor of 2 during encoding, and increasing it by a factor of 2 during decoding.
+so that no time frames are dropped, but the frequency dimension will change; however, it will return to its original size after the last layer.
+So, the stride of the convolutions is set to $(1 \times 2)$ throughout and the kernel size is set to $(2 \times 3)$. 
+This has the effect of reducing the frequency dimension by a factor of 2 during encoding and increasing it by a factor of 2 during decoding.
 \citet{tan18_interspeech} introduced a Long-Short Term Memory (LSTM) between the encoder and decoder to help with 
 the temporal dynamics of speech. So a 2-layer LSTM with 1024 units is used between the encoder and decoder. This 
-does require the need to reshape the output of the LSTM before it is passed into the decoder.
+requires the need to reshape the output of the LSTM before it is passed into the decoder.
 % Table \ref{tab:speech-enhancement-output-sizes} shows the output sizes of the layers in the model assuming 
 % that 161 frequency bins are used, so an input of size $T \times 161$ is used.
 
@@ -962,15 +962,15 @@ are also used in the decoder, so the input to each decoder layer is the concaten
 and the output of the corresponding encoder layer (see Figure \ref{fig:speech-enhancement-model-architecture}).
 
 Since the output of the model is a magnitude spectrogram, we need to convert it back to the time domain. 
-The paper by \citet{tan18_interspeech} did not specify what method was used to convert the magnitude spectrogram back to the time domain.
-We assume that the authors used the common approach of using inverse STFT (ISTFT) \citep{xu_regression_2015},whereby the noisy phase spectrogram 
+The paper by \citet{tan18_interspeech} did not specify which method was used to convert the magnitude spectrogram back to the time domain.
+We assume that the authors used the common approach of using inverse STFT (ISTFT) \citep{xu_regression_2015} i.e. the noisy phase spectrogram 
 is combined with the predicted magnitude spectrogram to reconstruct the time domain signal $\hat{x}$. In other words,
 \[
 \hat{x} = \text{ISTFT}(\hat{X}^{1}, <X^{f}).
 \]
 \subsection{Training}
-The training itself will be done using the Adam optimiser just like in the paper \citep{tan18_interspeech}.
-Since the datasets we will be using have noisy and clean speech signals, we can use the noisy speech signal ($x$) as the input
+The training itself will be performed using the Adam optimiser just as in the paper \citep{tan18_interspeech}.
+Since the datasets we will be using have clean and noisy speech signals, we can use the noisy speech signal ($x$) as input
 and the clean speech signal ($y$) as the ground truth.
 Then, the objective of the training is to minimise the loss between the enhanced magnitude spectrogram ($\hat{X}^{1}$) 
 and the ground truth magnitude spectrogram ($Y^{1}$).
@@ -981,7 +981,7 @@ L(X^{1}, Y^{1}) = \frac{1}{T} \sum_{t=1}^{T} (X^{1}_t - Y^{1}_t)^2,
 This is the same loss function used in \citet{tan18_interspeech} and is the Mean Squared Error (MSE) loss function.
 
 \subsection{Evaluation}
-The speech enhancement model's performance is evaluated using PESQ and STOI,
+The performance of the speech enhancement model is evaluated using PESQ and STOI,
 serving as proxies for the gold standard of subjective listening tests, which, 
 due to the time and cost constraints, are not conducted in this part of the dissertation.
 % The evaluation of the speech enhancement model in this part of the dissertation will be 
@@ -993,19 +993,19 @@ due to the time and cost constraints, are not conducted in this part of the diss
 Firstly, the Short-Time Objective Intelligibility (STOI) \citep{taal_algorithm_2011} metric will be used to assess the intelligibility of the enhanced speech signal.
 It is a function of the noisy speech signal $s_n$ and the degraded speech signal $s_d$ after enhancement.
 The STOI metric computes a value in the range \([0, 1]\), which can be interpreted as an approximation of the average percentage of correctly understood words in $s_d$. 
-For the sake of brevity, we will not be going into the details of the STOI metric, but for interested reader, we refer them to \citet{taal_algorithm_2011}.
+For the sake of brevity, we will not go into the details of the STOI metric, but for the interested reader, we refer them to \citet{taal_algorithm_2011}.
 
 Secondly, the Perceptual Evaluation of Speech Quality (PESQ) \citep{rix_perceptual_2001} metric will be 
 used to assess the perceptual quality of the enhanced speech signal. 
 This metric is a function of the clean speech signal $s_c$ and the enhanced speech signal $\hat{s}_e$.
 PESQ compares $s_c$ and $\hat{s}_e$, yielding a score between 1 (indicating poor quality) and 4.5 (indicating near distortion-free quality). 
-As with STOI, the intricate details of the PESQ metric are not discussed here; the reader is encouraged to consult \citet{rix_perceptual_2001} for a comprehensive description.
+As with STOI, the intricate details of the PESQ metric are not discussed here; the reader is encouraged to consult \citet{rix_perceptual_2001} for a complete description.
 
 A valid question to ask is why the model is not trained to directly optimise for both metrics. The primary challenge lies in the fact that both STOI and PESQ are non-differentiable,
 which is a problem for gradient-based optimisation frameworks. 
 For more details, we discuss this in more detail in section \ref{sec:future-work}.
 
-Feasibility analysis mirrors that of the ASA model, focusing on FLOP(s), parameter count and theoretical inference time.
+Feasibility analysis mirrors that of the ASA model, focusing on FLOP(s), parameter count, and theoretical inference time.
 \section{Laying the Groundwork for State-Dependent Models}
 \begin{figure}[h] \centering
    \includegraphics[width=0.9\textwidth]{state-model-diagram.png}
@@ -1015,8 +1015,7 @@ Feasibility analysis mirrors that of the ASA model, focusing on FLOP(s), paramet
 In the preceding sections, we have established the groundwork for the two tasks that we will be doing in this part of the dissertation.
 The reason we are devising these two tasks in the first place is to set the groundwork for the next part of the dissertation which 
 will be focused on the implementation of a state-dependent model. We hypothesise that a feasible state-dependent model can be created 
-by chaining the two models together. Figure \ref{fig:state-dependent-model} shows the vision we have for the state-dependent model 
-of which we aim to implement in the next part of the dissertation.
+by chaining the two models together. Figure \ref{fig:state-dependent-model} shows the vision we have for the state-dependent model which we aim to implement fully in the next part of the dissertation.
 Mathematically, the state-dependent model can be represented as follows:
 \[
 f: \mathbb{R}^{T} \to \mathbb{R}^{T},
@@ -1032,7 +1031,7 @@ $f$ can be represented as a piecewise function:
    \end{cases}
 \end{equation}
 In other words, the state-dependent model $f$ will apply the SE model $h_{\epsilon}$ to the input $x$ if the ASA model $g$ maps $x$ to \(\epsilon\).
-For example, if a HA user is situated in anenvironment characterised as `Wind Turbulence and Speech',
+For example, if an HA user is situated in an environment characterised as `Wind Turbulence and Speech',
 the state-dependent model will invoke the SE model that has been trained on this scenario to enhance the input signal $x$.
 The state-dependent model is inspired by the unveiling of the Spheric Clarity DNN model by Phonak \citep{Hasemann2024PhonakSphere} in late 2024
 in which if the HA user is faced in a 'Speech in Loud Noise' environment, the input signal $x$ will be passed through their Spheric Clarity DNN model.
