@@ -140,7 +140,7 @@ from the Informatics Research Ethics committee.
 
 
 \begin{acknowledgements}
-First and foremost, I would like to solemly thank my supervisor, Hao Tang for 
+First and foremost, I would like to solemnly thank my supervisor, Hao Tang for 
 his enthusiasm in guiding me through this self-proposed dissertation. I am eternally grateful for his wisdom, guidance, and patience throughout the project.
 His expertise in the fields of Automatic Speech Recognition and Machine Learning has been invaluable, and his enthusiasm for the subject matter has profoundly influenced my research.
 
@@ -206,7 +206,7 @@ and whether speech is present.
 % elementary example of how the dataset can be used: to classify the environment -
 The paper also presents an example of a task that can be performed on the dataset, 
 namely, ASA. It showcases the use of a convolutional neural network (CNN) to classify the environment.
-This dissertation will be extending the paper by looking at how HEAR-DS can be used 
+This dissertation will extend the paper by looking at how HEAR-DS can be used 
 to additionally train a speech enhancement model 
 and to ultimately chain the ASA and SE models together to form a state-dependent model.
 
@@ -215,18 +215,18 @@ power required in HA is limited. It is difficult to pinpoint the exact computati
 due to the proprietary nature of the devices. In August 2024,
 Phonak (Sonova Holding AG) released a new HA which is their first AI 
 equipped HA. The device is said to be capable of handling 7,700 Million 
-Operations Per Second to accommmodate its neural network with 4.5 million parameters \citep{Hasemann2024PhonakSphere}.  Contrast this with a paper 
+Operations Per Second to accommodate its neural network with 4.5 million parameters \citep{Hasemann2024PhonakSphere}.  Contrast this with a paper 
 from 2021 investigating techniques in VAD for hearing aids 
 quotes that it `rarely exceeds 5 million instructions per second` \citep{Gomez2021MIPS}.
 Moreover, Apple's release of a FDA approved hearing aid in which was previously a mainstream earphone wearable,
-Apple Airpods, also shows that there's more interest in this area \citep{Apple2025Airpods}.
-So suffice to say, the computational power of hearing aids is accelerating 
+Apple Airpods, also shows that there is more interest in this area \citep{Apple2025Airpods}.
+So, suffice it to say that the computational power of hearing aids is accelerating 
 and is most likely going to continue to grow given the increasing demand 
 for HAs.
 
 Delay constraints also play a critical role in HA performance, as real-time speech perception is essential for user satisfaction.
-Prior research suggests that a delay of up to 30 milliseconds (ms), and ideally less than 20ms, the user
-is unaffected by the delay \citep{Stone2002Delays}. Therefore, the project will be mindful in its algorithmic choices to ensure that the model
+Previous research suggests that with a delay of up to 30 milliseconds (ms), and ideally less than 20ms, the user
+is unaffected by the delay \citep{Stone2002Delays}. Therefore, the project will be mindful of its algorithmic choices to ensure that the model
 is computationally efficient and feasible for real-time deployment.
 
 We will use Objective Intelligibility Metrics (OIMs) such as STOI 
@@ -235,22 +235,22 @@ to evaluate the quality of the speech enhancement model.
 Additionally, informed by current state-of-the-art HA configurations, the project will also assess model feasibility by analysing the number of Floating Point Operations Per Second (FLOPs) and number of parameters
 in the models.
 
-The project is primarily at the hearing aid industry. 
+The project is primarily targeted at the hearing aid industry. 
 Moreover, there is potential to extend the work to other fields that deal with audio signal processing,
-such as mainstream wearables such as headphones or microphones. Lastly, the project aims to make HA research more accessible 
-in fields such as ML and ASR to further promote research in the field.
+such as mainstream wearables such as headphones or microphones. Lastly, the project aims to make HA research more accessible in fields such as ML and ASR to further promote research in the field.
 
 
 \section{Structure}
 Going forward, the dissertation will be structured as follows:
 \begin{itemize}  
    \item \textbf{Chapter \ref{ch:background}} - This chapter will give a high-level overview of hearing loss, the auditory system, and the speech processing concepts needed to understand the project.
-   We briefly also cover the two techniques that will be used in this project: Acoustic Scene Analysis (ASA) and Speech Enhancement
-   and some of the related work done in the field. Lastly, I mention the criticism of the paper by \citet{Huwel2020HearDS} 
-   that I will be exploring in this project.
-   \item \textbf{Chapter \ref{chap:methodology}} - This chapter will give a high-level overview of the two models that will be developed in this project: Acoustic Scene Analysis (ASA) and Speech Enhancement (SE),
+   We briefly also cover the two techniques that will be used in this project: Acoustic Scene Analysis (ASA) and Speech Enhancement (SE),
+   and some of the related work done in the field. Lastly, we discuss prevalent shortcomings in the previous 
+   research on ASA and SE, and motivates further the existence of this dissertation.
+   \item \textbf{Chapter \ref{chap:methodology}} - This chapter will give extend the reader's
+   understanding of ASA and SE, and connect back the two to formulate a model
    which ultimately could be chained together to form a state-dependent model.
-   \item \textbf{Chapter \ref{chap:experimental_setup}} - This chapter will establish the hypotheses based on the methodological choices made in Chapter \ref{chap:methodology}. After which, the datasets to 
+   \item \textbf{Chapter \ref{chap:experimental_setup}} - This chapter will establish the hypotheses based on the methodological choices made in Chapter \ref{chap:methodology}. After that, the datasets to 
    validate the hypotheses will be discussed.
    \item \textbf{Chapter \ref{chap:asa-experiments} + \ref{chap:se-experiments}} - This chapter will cover the experiments carried out to validate the hypotheses established in Chapter \ref{chap:experimental_setup}.
    \item \textbf{Chapter \ref{chap:conclusions}} - This chapter will conclude the dissertation by discussing the results of the experiments and the implications of the results. Future work will also be discussed.
@@ -262,18 +262,18 @@ Going forward, the dissertation will be structured as follows:
 
 \section{Hearing Loss}
 To fully appreciate the topic of this dissertation,
-we will give a high-level overview of the auditory system 
+we will give a high-level overview of the auditory system, 
 which is ultimately responsible for our ability to hear.
 We will then cover how hearing loss can occur and 
 what solutions have been developed to help those with hearing loss.
 \subsection{Auditory System}
-For sound to be registered by humans, it has to travel through the ear to transform it into
+For sound to be recorded by humans, it has to travel through the ear to transform it into
 what is known as a neural impulse which is then transmitted to the brain. We will 
-give a high-level overview of how this process occurs which was collated by the phonetics textbook from \citet{Wayland2018Phonetics},
+give a high-level overview of how this process occurs which was collated by the phonetic textbook from \citet{Wayland2018Phonetics},
  but for further reading, refer to the textbook. 
 
- This process of sound to be registered by humans is all done in what is known as the Auditory System.
- Figure \ref{fig:ear} shows a bird's eye view of the auditory system, and it can be divided into three segments
+ This process of sound that humans record is all done in what is known as the Auditory System.
+ Figure \ref{fig:ear} shows a bird's eye view of the auditory system, and can be divided into three segments
  that we will explore in the following.
 
 \begin{figure}[h]
@@ -285,8 +285,8 @@ give a high-level overview of how this process occurs which was collated by the 
 
 \subsubsection{The Outer Ear}
 The outer ear (sometimes referred to as the External Ear) is responsible for channeling sound waves to the tympanic membrane (ear drum). Firstly,
-sound waves reach the Pinna (the part of the ear that we can see and touch) which funnels it through the auditory canal, and at the end of the canal 
-is the ear drum, at which point the sound waves collide with the eardrum which causes the eardrum to vibrate. 
+sound waves reach the Pinna (the part of the ear that we can see and touch), which funnels it through the auditory canal, and at the end of the canal 
+is the ear drum, at which point the sound waves collide with the eardrum, which causes the eardrum to vibrate. 
 The vibrations are passed through the middle ear.
 
 \subsubsection{The Middle Ear}
@@ -313,7 +313,7 @@ If the Cochlear was unrolled its length would be about 3.5cm, and it is subdivid
 For our purposes, it suffices to know that in the Basilar membrane is a collection of cells, called 
 the Organ of Corti, which contain hair cells, and that different hair cells register different frequencies.
 Figure \ref{fig:corti} shows the frequency responses and the various areas of the corti 
-and its response to different frequencies. The Organ of Corti is linked to the audtiory nerves and 
+and its response to different frequencies. The Organ of Corti is linked to the auditory nerves and 
 so the oscillations that pass through it get converted to neural impulses and transmitted to the brain.
 
 \begin{figure}[h]
@@ -370,11 +370,11 @@ As mentioned in the Introduction, the most common treatment for hearing loss
 is the provision of hearing technology. There are two common approaches 
 to the fitting of hearing technology: the equipment of a Hearing Aid (HA) 
 or the fitting of a Cochlear Implant. There are similarities between the 
-two, and both can be used to fit users who experiencing profound hearing loss, 
+two, and both can be used to fit users who experience profound hearing loss, 
 although Cochlear implants are only considered if the user is experiencing 
 a severe hearing loss or more. While we 
 focus on the HA, the concepts we explore can be applied to the CI.
-The components of a HA vary widely, but at the very least, 
+The components of a HA vary widely, but at least, 
 it contains a microphone, amplifier, receiver, and battery \citep{schuster-bruce_conventional_2025}.
 A microphone is a device that converts acoustic sound waves into electrical signals. 
 The electrical signals are then amplified by the amplifier, and the receiver converts the electrical 
@@ -408,7 +408,7 @@ companies like Apple to the hearing aid market, and the developments from establ
 manufacturers like Phonak who are starting to incorporate DNNs into their devices.
 
 Another trend is that of the shift towards rechargeable hearing aids (Lithium Ion Batteries).
-These devices not only offer the practical benefit of eliminating battery replacement, but also support higher peak power consumption, which could explain the correlation in the sudden interest in using DNNs in HAs.
+These devices offer not only the practical benefit of eliminating battery replacement, but also support higher peak power consumption, which could explain the correlation in the sudden interest in using DNNs in HAs.
 In contrast, hearing aids before the transition to rechargeable hearing aids were using Zinc-air batteries 
 (\cite{sparkes_study_1997}; \cite{mir_evaluation_2023})
 that are non-rechargeable.
@@ -419,12 +419,12 @@ rechargeable hearing aids which is typically in the region of 15-30 hours and
 features such as Phonak's Speech Enhancer (the DNN based feature) can drop the battery life 
 to below 6 hours. 
 
-These findings highlight an important trade-off in hearing aid design. While there is loads of potential to improve the performance of HAs (DNNs or otherwise),
+These findings highlight an important trade-off in hearing aid design. While there is lot of potential to improve the performance of HAs (DNNs or otherwise),
 it can come at the cost of battery life and possibly constrains 
 the types of model that can be used. 
 
 Due to the proprietary nature of the devices, it is unclear what kind of 
-algorithms are used in the devices. However, from Phonak's white paper on Spheric Speech Clarity \cite{Hasemann2024PhonakSphere}
+algorithms are used on the devices. However, from Phonak's white paper on Spheric Speech Clarity \cite{Hasemann2024PhonakSphere}
 we can deduce that the devices use a combination of ASA and speech enhancement techniques.
 From the paper, before signal processing begins, the sound is fed into Autosense OS which 
 performs `scene classification' so in the context of this project, this can be 
@@ -471,7 +471,7 @@ To be able to perform speech processing on a device containing a chip/processor 
 to have some sort of digital representation of the sound wave. A waveform is just that, a digital representation 
 of the sound we hear [Figure \ref{fig:waveform-spectrogram}]. A microphone is a device that converts those sound waves into a representation of the 
 waveform. Conceptually, this is done by measuring the relative air pressure at different points in time, and 
-this is represented as a waveform or a time series of amplitudes. Digital devices can't have infinite precision, so the signal produced by the sound will 
+this is represented as a waveform or a time series of amplitudes. Digital devices cannot have infinite precision, so the signal produced by the sound will 
 be divided into discrete samples, and the rate at which this occurs is known as the sampling rate. Additionally,
 the precision of the amplitude of the signal will be quantized into discrete numbers, and the precision is 
 dictated by the bit depth (or the quantization rate).
@@ -479,15 +479,15 @@ dictated by the bit depth (or the quantization rate).
 The selection of these two parameters is determined by the nature of the speech task and the Nyquist-Shannon Sampling Theorem.
 This theorem states that the sampling rate should be at least twice the highest frequency present in the signal. 
 That is, for a signal containing frequencies up to 8KHz, the minimum required sampling rate would be $f_s \ge 16$KHz.
-Otherwise, aliasing will occur, which is the phenomenon in which high frequency components could be misinterpreted as lower frequencies,
+Otherwise, aliasing will occur, which is the phenomenon in which high-frequency components could be misinterpreted as lower frequencies,
 which could be undesirable in both tasks we are trying to perform. Typically, datasets will have a sampling rate 
-of 44KHz, and generally for ASA tasks, a sampling rate of 16KHz is acceptable. 
-With regards to bit depth, it is selected based on the dynamic range required to capture speech signal variations. 
+of 44KHz, and, generally, for ASA tasks, a sampling rate of 16KHz is acceptable. 
+With regard to bit depth, it is selected based on the dynamic range required to capture speech signal variations. 
 Commonly, 16-bit depth is used, which is capable of representing an amplitude range of approximately 96dB, thereby ensuring sufficient resolution in amplitude representation.
 
 \subsection{Engineered Acoustic Features}
-The prevalence of engineering acoustic features in previous work relating to my project and speech processing in general
-warrants a high level overview of this concept to better understand its usage. 
+The prevalence of engineering acoustic features in previous work related to my project and speech processing in general
+warrants a high-level overview of this concept to better understand its usage. 
 Given some signal $x(t)$, an engineered feature $\phi(x(t))$ is a function that transforms the signal in some way.
 
 In this project, we will be working with spectrograms, which are a type of engineered feature.
@@ -503,7 +503,7 @@ left with a complex-valued vector of length $w$ and the magnitude of this vector
 gives us the amplitude of the signal at different frequencies. 
 
 From there, various transformations can be applied to the spectrogram 
-to enhance its suitablity of specific tasks. For the ASA task, we utilise the 
+to enhance its suitablity for specific tasks. For the ASA task, we utilise the 
 log-mel spectrogram, which is obtained by applying a Mel Filterbank to the spectrogram 
 and taking the logarithm of the outputs, which mimics the human perception 
 of loudness and is a popular choice in the speech processing literature. 
@@ -514,17 +514,17 @@ reducing memory and computational demands, which is crucial for embedded devices
 HAs, and they often enhance the distinction between speech and background noise, 
 which is a desirable property for speech processing tasks such as ASA and SE.
 \section{Related Work}
-As this project will chain two algorithms—Acoustic Speech Analysis (ASA) and Speech Enhancement, 
+As this project will chain two algorithms: Acoustic Speech Analysis and Speech Enhancement, 
 to form a state-dependent model, we will briefly cover the related work for each task.
 Additionally, we will cover the idea of Green AI and how it can be applied to the development of the models.
 
-\subsection{Acoustic Scene Analysis (ASA)}
+\subsection{Acoustic Scene Analysis}
 % TODO: Talk aobut why neural approach is better than classical maybe 
 We will give a more mathematical formulation of the ASA task in section \ref{sec:methodology-asa}. 
 But conceptually, the task is to classify an input signal into one of the pre-defined scenes/classes.
 
-Typically, the two approaches to ASA are to  
-operate on the frequency domain or the time domain otherwise known as end-to-end models 
+Typically, the two approaches to ASA operate 
+in the frequency domain or the time domain, otherwise known as end-to-end models, 
 since they operate in the raw waveform directly. 
 There is an equal amount of research on both approaches, 
 such as the articles by \citet{schindler_multi-temporal_2018} and \citet{kim_specmix_2021} 
@@ -533,8 +533,7 @@ and \citet{kumar_end_2020} in the latter case (time domain).
 
 A novel dataset was developed in response to the inadequacies of existing ASA databases for HA processing. 
 This dataset was developed by \citet{Huwel2020HearDS} and is called the HEAR-DS dataset (for more details, see Chapter \ref{sec:datasets}).
-The original paper on the HEAR-DS dataset illustrates its applicability by employing a Convolutional Neural Network (CNN) for ASA 
-in the frequency domain. 
+The original paper on the HEAR-DS dataset illustrates its applicability by employing a Convolutional Neural Network (CNN) for ASA in the frequency domain. 
 
 While in this part of the dissertation we will be using the frequency domain approach,
 we will be exploring the time domain approach in part 2 of this dissertation. 
@@ -572,12 +571,12 @@ This enhancement is crucial in applications where speech intelligibility is esse
 % TODO: Talk about why we are using a neural-network based approach
 There are many different approaches to speech enhancement, from more traditional methods such as spectral subtraction, or Wiener filtering
 to more modern methods that incorporate neural networks. In this dissertation, we will be using a neural network based approach.
-But even within the neural network based approach, there are different techniques that can be used to enhance the speech signal. 
+But even within the neural network-based approach, there are different techniques that can be used to enhance the speech signal. 
 Neural network-based speech enhancement algorithms are categorised into four primary types \cite{katagiri_handbook_2000}:
 \label{sec:se-methods}
 \begin{itemize}
    \item \textbf{Time-Domain Filtering} - Trains a neural network with noisy inputs (background + speech) and clean targets (speech only). 
-   This involves working with the waveform directly; however it is not without its challenges and is still an active area of research \citep{saleem_time_2024}.
+   This involves working with the waveform directly; however, it is not without its challenges and is still an active area of research \citep{saleem_time_2024}.
    \item \textbf{Transform-Domain Filtering} - Trains a neural network with noisy inputs (background + speech) and clean targets (speech only). 
    The difference between this and the Time-Domain Filtering approach is that the input is transformed into the frequency domain 
    (whether that be a Fourier transform, or a Mel Spectrogram, Mel-Frequency Cepstral Coefficients (MFCCs), LPC, etc.). The advantage of this 
@@ -626,7 +625,7 @@ potentially more energy efficient or that we could investigate expanding
 the model. On the flip-side, if the model is using more FLOPs than a HA device, 
 then we know that the model is potentially too large for a HA device and we need
 to look for ways to reduce the model size. It also helps that there is load
-of literature on reducing the FLOP(s) of DNNs (e.g. \cite{liu_simple_2023}) so
+of literature on reducing the FLOP(s) of DNNs (e.g. \cite{liu_simple_2023}), so
 using FLOP(s) as a metric is good not only from a reproducibility standpoint, 
 but from a development standpoint as well. 
 
@@ -651,10 +650,10 @@ In the following we outline some of the issues we found with the paper.
    precision, recall and F1 scores to get a more holistic view of the model's performance. 
    \item \textbf{Claim on SGD Optimiser} - The paper claims that the Stochastic Gradient Descent (SGD) 
    optimiser was used over the Adam optimiser due to the sensitivity of the Adam optimiser in 
-   initialisation. They cite this with a paper by \citet{} 
+   initialisation. They cite this with a paper by \citet{Reddi2019convergenceadam},
    but after reading it, while it says 
    Adam can lead to poor convergence in `\textit{some settings}',
-   so it would have been insightful to see from \citet{Huwel2020HearDS}
+   thus it would have been insightful to see from \citet{Huwel2020HearDS}
    if this is the case for the ASA task.
    \item \textbf{Feasibility} - Furthermore, given that 
    this is a dataset tailored for HA research, it would have been insightful 
@@ -687,9 +686,9 @@ Despite the claim of `real-time speech enhancement', the paper
 lacks an evaluation on the model's real-time inference capabilities 
 and does not address the feasibility of the model in a HA device. 
 Given that HA applicability was mentioned as part of their abstract,
-it appears that the original authors were at least partly 
+it appears that the original authors were at least partially 
 aware of the potential of the model in such contexts. However, 
-no further elaboration was given in the paper.
+no further elaboration was given in the paper. 
 
 This is a common trend in the SE literature, where multiple papers
 introduce SE models that highlight applications for HAs without 
@@ -703,6 +702,8 @@ of HA devices, leaving a critical gap in assessing practical feasibility.
 This dissertation aims to bridge this gap by introducing an approach 
 for evaluating the feasibility of SE models on HA devices, informed by 
 recent insights into their computational constraints.
+
+
 
 % Additionally, there is much less discussion of SE models when considering multiple 
 % environments, which could be due to limited datasets that cover a wide range of environments 
@@ -950,7 +951,7 @@ so that no time frames are dropped, but the frequency dimension will change; how
 So, the stride of the convolutions is set to $(1 \times 2)$ throughout and the kernel size is set to $(2 \times 3)$. 
 This has the effect of reducing the frequency dimension by a factor of 2 during encoding and increasing it by a factor of 2 during decoding.
 \citet{tan18_interspeech} introduced a Long-Short Term Memory (LSTM) between the encoder and decoder to help with 
-the temporal dynamics of speech. So a 2-layer LSTM with 1024 units is used between the encoder and decoder. This 
+the temporal dynamics of speech. So, a 2-layer LSTM with 1024 units is used between the encoder and decoder. This 
 requires the need to reshape the output of the LSTM before it is passed into the decoder.
 % Table \ref{tab:speech-enhancement-output-sizes} shows the output sizes of the layers in the model assuming 
 % that 161 frequency bins are used, so an input of size $T \times 161$ is used.
@@ -1030,7 +1031,7 @@ $f$ can be represented as a piecewise function:
       x & \text{otherwise}
    \end{cases}
 \end{equation}
-In other words, the state-dependent model $f$ will apply the SE model $h_{\epsilon}$ to the input $x$ if the ASA model $g$ maps $x$ to \(\epsilon\).
+In other words, the state-dependent model $f$ will apply the SE model $h_{\epsilon}$ to input $x$ if the ASA model $g$ maps $x$ to \(\epsilon\).
 For example, if an HA user is situated in an environment characterised as `Wind Turbulence and Speech',
 the state-dependent model will invoke the SE model that has been trained on this scenario to enhance the input signal $x$.
 The state-dependent model is inspired by the unveiling of the Spheric Clarity DNN model by Phonak \citep{Hasemann2024PhonakSphere} in late 2024
@@ -1043,7 +1044,7 @@ With the methodological foundation laid out in the preceding chapters, we can no
 Although we hinted at some of those hypotheses in the preceding chapters and sections, as a means of clarity, 
 we will be outlining the hypotheses again here and in more detail so that the reader can have a comprehensive understanding of both the objectives and the rationale behind the experiments we will be doing.
 Once we outline the hypotheses, another section is dedicated towards the datasets that will be used to validate the hypotheses.
-Once that is done, the reader will be in a position to now analyse the results of the experiments which will be presented in Chapters \ref{chap:asa-experiments} and \ref{chap:se-experiments}.
+Once that is done, the reader will be in a position to analyse the results of the experiments which will be presented in Chapters \ref{chap:asa-experiments} and \ref{chap:se-experiments}.
 \section{Hypotheses}
 \label{sec:hypotheses}
 \begin{enumerate}
@@ -1119,7 +1120,7 @@ Furthermore, the researchers artificially created a new environment, \textit{Int
 This is done by taking speech samples from the
 \chime{5} dataset \cite{barker18_fifth_2018}. This environment is supposed to mimic the 
 typical conversational speech that occurs in a real-world scenario. We however, decided to use the \chime{6} dataset which 
-supercedes the \chime{5} dataset \cite{barker18_fifth_2018} by correcting the alignment of audio channels and the researchers 
+supersedes the \chime{5} dataset \cite{barker18_fifth_2018} by correcting the alignment of audio channels and the researchers 
 recommend the use of the \chime{6} dataset instead of \chime{5} for any new research so we will use that instead. This could 
 be an important factor as the methodology of creating the \textit{Interferring Speakers} environment is by finding 10s 
 segments of speech that contain multiple speakers, so if the alignment of audio channels is not correct, the recordings 
@@ -1141,7 +1142,7 @@ At the REC-SIT level, the raw dataset comprises multiple cuts, each cut not nece
 In accordance with the methodology of the original study, each cut was segmented into 10s snippets.
 Table \ref{tab:hear-ds-stats} presents the distribution of samples in the various environments after segmentation.
 In general, our statistics are largely consistent with the original report, though with minor discrepancies in the \textit{Interferring Speakers} and \textit{Cocktail Party} environments.
-Specifically, our version of the \textit{Interferring Speakers} environment comprises 1,364 samples compared to the 1,481 reported originally, a difference that may be attributable to the alignment issues mentioned above in the CHiME 5 dataset.
+Specifically, our version of the \textit{Interferring Speakers} environment comprises 1,364 samples compared to the 1,481 reported originally, a difference that may be attributable to the alignment issues mentioned above in the \chime{5} dataset.
 Similarly, the \textit{Cocktail Party} environment contains 716 samples in our dataset as opposed to 667 in the original report — a discrepancy that could potentially result from a typographical error in the original document. 
 
 \begin{table}[h]
@@ -1155,7 +1156,7 @@ Similarly, the \textit{Cocktail Party} environment contains 716 samples in our d
       In-Traffic & 1000 \\ 
       In-Vehicle & 1094 \\
       Quiet Indoors & 951 \\ 
-      Reveberant & 1007 \\ 
+      Reverberant & 1007 \\ 
       Music & 2991 \\
       Interferring Speakers & 1364 \\
       \hline
@@ -1240,17 +1241,17 @@ there is potential for future work to employ the data augmentation technique `Sp
 \label{chap:asa-experiments}
 \section{Data Preparation}
 \label{sec:data-preparation}
-As one of our hypotheses is to be able to replicate the results of the paper by \citet{Huwel2020HearDS}, 
+As one of our hypotheses is to replicate the results of the paper by \citet{Huwel2020HearDS}, 
 we will be aiming to follow the same approach to prepare the data for the ASA task.
-We outline the approach below:
+We outline the approach in the following.
 
-To prevent overfitting, we will be splitting the data into a training and test set just as the paper did.
-The samples being identified by REC-SITs allow us to do this easily. The paper mentions that they randomly 
+To avoid overfitting, we will divide the data into a training and test set just as the paper did.
+The samples identified by REC-SITs allow us to do this easily. The paper mentions that they randomly 
 assigned each REC-SIT to either the training or test set. It is unclear if 
 that means that theoretically there could be more than one REC-SIT in the test set, which 
-leads to a split that's more skewed towards the test set. We instead, opted to randomly pick 
-one REC-SIT for the test set and the rest for the training set, this gives a more 
-skewed split towards the training set which is more common in the literature.
+leads to a split that is more skewed towards the test set. We instead opted to randomly pick 
+one REC-SIT for the test set and the rest for the training set; this gives a more 
+skewed split towards the training set, which is more common in the literature.
 We will be doing 5 experiments, unlike the paper's 50 due to time constraints. So 
 we have 5 different splits of the data for the training and test set that we will be using 
 for all experiments (including SE).
@@ -1258,16 +1259,15 @@ for all experiments (including SE).
 Secondly, it is unclear if the paper used any data augmentation techniques, and we 
 hypothesised that they perhaps did due to the high epoch count of 240 - to perhaps 
 account for needing to train the model for a longer time to converge. However,
-as one of our hypotheses is to validate the effectiveness of utterance-level data 
+since of our hypotheses is to validate the effectiveness of utterance-level data, 
 augmentation which we investigate in \ref{sec:data-augmentation}, we will 
-for the sake of methodological consistency, not use any data augmentation techniques in the 
-initial experiments. This means that each mixed speech sample will have 15
+not use any augmentation in the baseline for methodological consistency. This means that each mixed speech sample will have 15
 SNR levels that will be trained and tested for [-21, -18, -15, -12, -9, -6, -3, 0, 3, 6, 9, 12, 15, 18, 21].
 
 Thirdly, as the CNN model excepts a logmel spectrogram as input, we need to convert the waveform
 to a logmel spectrogram. The paper decides to only use the ITC channel for the input, so we 
 will follow suit.
-As for the feature transformation \(\phi\), we will be using the same approach as the paper. Namely, 
+For the feature transformation \(\phi\), we will be using the same approach as the paper. Namely, 
 \begin{equation}
 \phi(x_l, x_r) = \frac{20\log_{10}\left(M X_{L}^{1} \right) + 20\log_{10}\left(M X_{R}^{1}\right)}{2}
 \label{eq:logmel}
@@ -1278,7 +1278,7 @@ the resulting magnitude spectrograms after doing STFT on the left and right chan
 
 In terms of the parameters of the STFT, we will be using a FFT window length of 1024 samples with a window length of 40ms and a hop length of 20ms. It is 
 unclear which window function was used, but we will be using a Hann window as is standard in the literature.
-After computing the STFT, we then do a mel filter bank transformation to get the mel filter bank coefficients. 
+After computing the STFT, we then perform a mel filter bank transformation to obtain the mel filter bank coefficients. 
 Of which we extract 40 mel bands. For a 10s snippet of audio, the resulting tensor is of shape $40 \times 500$.
 To control for the training time not being affected by the IO 
 calls to retrieve the samples and then computing the logmel spectrograms,
@@ -1288,7 +1288,7 @@ As mentioned in the methodology section, we will be training 3 models
 (net-8, net-20 and net-32) so in the following experiments, we will 
 be training these models with the configurations outlined below.
 
-All of the experiments were done using PyTorch with a batch size of 32.
+All of the experiments were performed with PyTorch on a batch size of 32.
 
 \section{Baseline: Fixed Learning Rate SGD Approach}
 \begin{figure}[h]
@@ -1309,15 +1309,15 @@ All of the experiments were done using PyTorch with a batch size of 32.
    \label{fig:training-curves}
 \end{figure}
 With the data preparation out of the way, we can now move on to the experiments.
-For the baseline, we will be following with the paper's approach of using the following 
+For the baseline, we will follow the approach of the paper with using the following 
 learning rates: [0.05, 0.01, 0.001, 0.0005, 0.0002, 0.0001].
 The learning rate in the paper is changed every 40 epochs, however, as that means doing 
 240 epochs, we decided to do 120 epochs instead and so change the learning rate every 20 epochs.
-As can be seen by Figure \ref{fig:fixed-lr-sgd-losses}, the model already converges by 120 epochs,
-indicating that the aditional epochs in the original paper were not necessary. 
-Moreover, the minimal variability that is observed in the training curve across the 5 experiments 
-raises questions on why the paper by \citet{Huwel2020HearDS} did 50 experiments. Unfortunately,
-the lack of access to the original paper's training curves means we cannot investigate this further. 
+As can be seen in Figure \ref{fig:fixed-lr-sgd-losses}, the model already converges by 120 epochs,
+indicating that the additional epochs in the original paper were not necessary. 
+Moreover, the minimal variability observed in the training curve in the 5 experiments 
+raises questions about why the paper by \citet{Huwel2020HearDS} did 50 experiments. Unfortunately,
+the lack of access to the original paper's training curves means that we cannot investigate this further. 
 
 \begin{figure}[h]
    \centering
@@ -1329,21 +1329,21 @@ the lack of access to the original paper's training curves means we cannot inves
 \end{figure}
 
 Figure \ref{fig:fixed-lr-sgd-accuracies} demonstrates the model's performance on the test set after training for 120 epochs 
-with the results from the paper by \citet{Huwel2020HearDS} also plotted. It is clear 
+with the results of the paper by \citet{Huwel2020HearDS} also plotted. It is clear 
 that with using a more powerful model, we are able to achieve a higher accuracy 
 as seen by the positive slope of the increasing accuracy with model size.
 Our accuracies are much higher than the paper's, and we are not getting a gradual 
 increase in accuracy as they are. For further investigation, we 
 compare our classwise accuracies of the net-20 model against theirs in Figure 
 \ref{fig:fixed-lr-sgd-classwise-accuracies}. It is encouraging 
-that the overall trend between our results and the paper's are similar. 
-Namely, it seems to be struggling a lot more with the Cocktail Party, Reveberant 
+that the overall trends between our results and the paper's are similar. 
+Namely, it seems to be struggling a lot more with the Cocktail Party, Reverberant 
 Environment and the Speech In Wind Turbulence environments.
-It is also interesting the paper's results have a lot more variance in the classwise accuracies 
+It is also interesting that the paper's results have a lot more variance in the classwise accuracies 
 just as we have seen in the training curves. We can only hypothesise 
 that this is due to the different speech dataset used (CHiME 3 instead of CHiME 2) 
 and perhaps the inclusion of the HRTFs during the speech mixing process. We leave 
-this for future work to be investigated.
+this for future work to investigate.
 
 \begin{figure}[h]
    \centering
@@ -1365,7 +1365,7 @@ how well the model is able to reliably detect the presence of speech
 even when background noise is barely discernible, although it 
 may struggle to differentiate between various environments.
 The highest SNR (21dB) evaluates the model's
-capacity to identify the correct environment in situations with significant background noise, albeit possibly at the expense of accurately detecting the presence of speech.
+ability to identify the correct environment in situations with significant background noise, albeit possibly at the expense of accurately detecting the presence of speech.
 The selection of net-8 and net-32 allows us to assess whether increased model complexity enhances the model's sensitivity to these nuances, particularly in terms of capturing subtle differences in performance across varying SNR conditions.
 
 \begin{figure}[h]
@@ -1386,11 +1386,11 @@ The selection of net-8 and net-32 allows us to assess whether increased model co
    \caption{The performance of the net-8 model at SNR -21 (\subref{fig:fixed-lr-sgd-snr--21}) and 21 (\subref{fig:fixed-lr-sgd-snr-21}).}
 \end{figure}
 
-Figure \ref{fig:fixed-lr-sgd-snr--21} and \ref{fig:fixed-lr-sgd-snr-21} shows 
+Figures \ref{fig:fixed-lr-sgd-snr--21} and \ref{fig:fixed-lr-sgd-snr-21} show 
 the performance of the net-8 model at SNR -21 and 21 respectively.
-Clearly, the discussed problems above are evident in the results. 
+Clearly, the discussed above problems are evident in the results. 
 It is interesting to note that in the SNR -21 case, 
-the model has a significant precision rate, but a low recall rate. 
+the model has a significant precision rate but a low recall rate. 
 When paired with the confusion matrix, the model 
 is unsure whether to classify the sample as non-speech or speech
 which is presumably due to the added difficulty of distinguishing 
@@ -1418,17 +1418,17 @@ granted it seems to be more conflated in what environment the speech is coming f
    \caption{The performance of the net-32 model at SNR -21 (\subref{fig:fixed-lr-sgd-snr--21-net-32}) and 21 (\subref{fig:fixed-lr-sgd-snr-21-net-32}).}
 \end{figure}
 
-Figure \ref{fig:fixed-lr-sgd-snr--21-net-32} and \ref{fig:fixed-lr-sgd-snr-21-net-32} shows 
+Figures \ref{fig:fixed-lr-sgd-snr--21-net-32} and \ref{fig:fixed-lr-sgd-snr-21-net-32} show 
 the performance of the net-32 model at SNR -21 and 21 respectively.
-As a whole, the net-32 model is less prone to misclassification, 
-as evidenced by the higher F1 scores. Though, it is interesting, that in the 
+In general, the net-32 model is less prone to misclassification, 
+as evidenced by the higher F1 scores. However, it is interesting that in the 
 net-32 model, the F1 score for Speech in Music is worse than the net-8 model.
 Given the complexity of this particular environment, it suggests that 
-there is more work to be done on this particular environment. 
+more work is needed on this particular environment. 
 
 Overall, these more in-depth results not only emphasise 
 how difficult the ASA task can be in the presence of speech (especially 
-if it's not a binary classification task), but also 
+if it is not a binary classification task), but also 
 presents a promising direction for further refinement of the model's performance across varying acoustic challenges
 in future work.
 % The paper also presents the confusion matrix for the net-20 model, and our confusion matrix 
@@ -1469,15 +1469,15 @@ and perhaps to better mimic the distribution of the sounds, it might
 be better to use a weighted sampling. We leave this as 
 potential future work.
 
-Figure \ref{fig:data-augmentation-losses} and \ref{fig:data-augmentation-times} shows 
+Figures \ref{fig:data-augmentation-losses} and \ref{fig:data-augmentation-times} show 
 the resulting training curves and training times for the net-8, net-20 and net-32 models
-when now using the data augmentation approach. The plateu of the training curves 
-are similar to the baseline, but the training times have at least 
-a 5 fold reduction. While the cross entropy loss is higher, this is 
-to be expected as there is less samples during training and since the formula for 
+when now using the data augmentation approach. The plateau of the training curves 
+is similar to the baseline, but the training times have at least 
+5-fold reduction. While the cross entropy loss is higher, this is 
+to be expected as there are less samples during training and since the formula for 
 Cross-Entropy loss is a weighted sum of the negative log likelihood of 
 the correct class, a lower number of samples means that the loss 
-will be higher. When we have a look at the test accuracy (Figure \ref{fig:data-augmentation-accuracies}),
+will be higher. When we look at the test accuracy (Figure \ref{fig:data-augmentation-accuracies}),
 we see that there is no significant difference in the performance of the model 
 but the training time has been reduced by a factor of 5.
 
@@ -1502,12 +1502,12 @@ but the training time has been reduced by a factor of 5.
 
 \section{Adam Optimiser Approach}
 Since we established that the data augmentation approach is effective, we wanted to see 
-if using a different optimiser would either yield better performance or reduce the 
+if the use of a different optimiser would yield better performance or reduce the 
 training time. Additionally, since we noticed in the earlier experiments 
 that the model was converging much earlier than the 120 epochs (let alone the suggested 
 240 epochs), thus we wanted to adopt an early stopping approach as well.
 \citet{Huwel2020HearDS} mentions that the use of Adam is sensitive to the initialisation 
-and so that is why they opted for the SGD approach. 
+and so they they opted for the SGD approach. 
 They back this up with a paper by \citet{} 
 but after reading it, while it says 
 Adam can lead to poor convergence in `\textit{some settings}'
@@ -1537,11 +1537,11 @@ we will be taking this forward to investigate this.
 Figure \ref{fig:adam-optimiser-losses} and \ref{fig:adam-optimiser-times} shows 
 the training curves and training times for the net-8, net-20 and net-32 models
 when using the Adam optimiser. We can see that the training curves converge to a 
-similar loss as to the one in \ref{sec:data-augmentation}, but the training times 
+loss similar as to the one in \ref{sec:data-augmentation}, but the training times 
 are in some cases reduced by 50 \%, which is due to the early stopping approach.
 While there seems to be evidence of this sensitivity (as observed by the slightly larger spread 
 of the training curves), it is not as pronounced as the paper suggested and 
-could maybe suggest that the setting this optimiser is being used 
+could possibly suggest that the setting this optimiser is being used 
 is not as bad. 
 
 \section{Validating against TUT Acoustic Scenes 2016}
@@ -1553,17 +1553,17 @@ is not as bad.
    \label{fig:tut-asa-results}
 \end{figure}
 As a means of validating that the implementation is correct, 
-we wanted to see if we can get similar results to a different paper 
+we wanted to see if we can get results similar to those of a paper 
 that is doing ASA. In particular, we will be using the paper by 
 \citet{schindler_multi-temporal_2018}. It uses the TUT Acoustic Scenes 2016 dataset
 as described in Section \ref{sec:datasets}.
 
 Figure \ref{fig:tut-asa-results} shows two accuracy curves, one for our results 
-and one for the results from \citet{schindler_multi-temporal_2018}. For their results 
-we reported two models, the single resolution model which is their baseline, 
-and the multi-resolution model which is their proposed model. They also 
+and one for the results from \citet{schindler_multi-temporal_2018}. For their results, 
+we reported two models, the single resolution model, which is their baseline, 
+and the multi-resolution model, which is their proposed model. They also 
 report results with and without augmentation, though their augmentation techniques 
-are going to be different to ours as our data augmentation technique is more 
+are going to be different from ours as our data augmentation technique is more 
 concerned with the speech mixing process whereas theirs is a more general 
 data augmentation technique and they utilise techniques such as pitch shifting and 
 time stretching to name a few. However, we leave it for future work 
@@ -1578,14 +1578,14 @@ if we can get any improvements in performance.
 \section{Feasibility} 
 We tested the feasibility of the task from a HA perspective by benchmarking 
 the model's parameter count and required floating point operations [FLOP(s)].
-Contrast this with FLOPs which is the number of FLOPs per second. Based on 
+Contrast this with FLOPs which is the number of FLOP(s) per second. Based on 
 FLOP(s) and FLOPs, we can calculate the theoretical inference time of the model.
 Table \ref{tab:model-comparison} shows the results for the net-8, net-20 and net-32 models.
 Given that the state of the art models of HAs have capabilities of 
 7,700 million FLOPs and models with 5 million parameters, our models are well within these limits.
-The theoretical inference times would all be well under the acceptable latency for HAs.
-Future work would be to investigate on a low-powered device that has similar 
-capabilities to that of HAs. 
+The theoretical inference times would all be well below the acceptable latency for HAs.
+Future work would be to investigate on a low-power device that has capabilities 
+similar to that of HAs. 
 
 \begin{table}[h]
    \centering
@@ -1605,24 +1605,24 @@ capabilities to that of HAs.
 
 \chapter{Speech Enhancement Experiments}
 \label{chap:se-experiments}
-We split the chapter into three parts. We first outline the data preperation processs 
+We split the chapter into three parts. We first outline the data preparation processs 
 and the deviations done from the ASA task. We then present the results of the speech 
-enhancement task on the \heards dataset. Afterwards, as a means of validation, we 
-validate the model on the \vbd dataset and compare the results from 
-\citet{kim_specmix_2021}. Lastly, just as we did for the ASA task, we will be 
-discussing the feasibility of the task from a HA perspective.
+enhancement task in the \heards dataset. Afterwards, as a means of validation, we 
+validate the model in the \vbd dataset and compare the results from 
+\citet{kim_specmix_2021}. Lastly, just as we did for the ASA task, we will 
+discuss the feasibility of the task from a HA perspective.
 
 \section{Data Preparation}
 We for the most part incorporated the same data preparation approach as the ASA task, so consult Section \ref{sec:data-preparation} for 
-more in depth detail. The differences deviate in the feature transformation, 
+more in-depth detail. The differences deviate in the feature transformation, 
 since we will now not use the logmel transformation, but instead use the standard 
 spectrogram. It is worth noting that in \vbd, the samples 
-are mono, so we use them as is, but in \heards, the samples are dual-channel (left and right microphone), 
+are mono, so we use them as is, but in \heards, the samples are dual channel (left and right, microphones), 
 so for exploration we just use the left channel. In a deployment scenario, we would train two models, one for the left 
-and one for the right channel and use the respective model in the respective HA device.
+and one for the right channel, and use the respective model on the respective HA device.
 % Furthermore, the requirement to store at least twice as many samples necessitates a proportional increase in memory capacity. Memory usage scales linearly with the number of SNR levels. Training on 15 SNR levels, as was done for the ASA task, proved infeasible for the present dissertation. Consequently, the speech signal was mixed with background noise at only 5 SNR levels—\([-10, -5, 0, 5, 10]\) dB—in order to avoid IO bottlenecks and degradation during model execution, given that the waveforms are stored in memory. For context, even with 5 SNR levels, approximately 50 GB of memory was required for the HEAR-DS training set. Although this range provides a robust basis for evaluating model performance, future work could investigate the impact of incorporating a broader range of SNR levels.
-Additionally, due to needing to load both the noisy and clean speech signals 
-during training, we need to twice as much compared to the ASA task.
+Additionally, the need to load both the noisy and clean speech signals 
+during training, means that twice as much memory is needed compared to the ASA task.
 So training on 15 SNR levels was not feasible for this task 
 in this part of the dissertation. As such, we only 
 mix the speech signal with the background noise at 5 SNR levels - [-10, -5, 0, 5, 10] dB.
@@ -1648,8 +1648,8 @@ at that SNR level.
 % 
 
 \section{HEAR-DS Results}
-We created 5 train+test splits of the \heards dataset as in the ASA task so we can 
-get a more insightful analysis of the model's performance. Since there 
+We created five train+test splits of the \heards dataset as in the ASA task to obtain a 
+more in depth analysis of the model's performance. Since there 
 are 6 speech environments, we trained 6 SE models, one for each environment. 
 Since there are a different number of samples for each environment, 
 the convergence of the training curves are different. 
@@ -1659,7 +1659,7 @@ the performance at shorter time segments is left for future work.
 
 Figure \ref{fig:hear-ds-training-curves} shows the training curves for the 
 6 SE models. Notably compared to the ASA task, the training curves for each 
-environment have more variance, which could be for numerous reasons such 
+environment have more variance, which could be for numerous reasons, such 
 as the initialisation of weights being an important factor. We leave this 
 for future work to investigate.
 
@@ -1673,20 +1673,20 @@ for future work to investigate.
 In terms of how the model performs, we look at the STOI and PESQ scores at each SNR level.
 Table \ref{tab:hear-ds-baseline} shows the baseline (unprocessed) average STOI and PESQ scores for different environments at various SNR levels.
 Then after processing the speech signal, we get the results shown in Table \ref{tab:hear-ds-processed}.
-A few interesting observations can be made from the table. Firstly, the model 
+Some interesting observations can be made from the table. Firstly, the model 
 seems to perform better at lower SNR levels, i.e. 
 the difference in increase in STOI and PESQ scores is higher at lower SNR levels.
-This is a good sign as this is arguably the more challenging scenario 
+This is a good sign as this is arguably the most challenging scenario 
 as the speech signal is more difficult to understand since the background noise 
 is more dominant. Secondly, there is a higher proportional increase in the STOI 
-scores compared to the PESQ scores. This suggests that the model is able 
+scores compared to PESQ scores. This suggests that the model is able 
 to remove more of the noise, but perhaps at the cost of speech distortion. 
 This is an important factor to consider and is certainly something we 
-will be investigating in future work and of which we elaborate more in Section \ref{sec:future-work}.
-Just to show an indication of the speech seperation, Figures \ref{fig:rev-spec}, \ref{fig:wind-spec}, \ref{fig:music-spec} and \ref{fig:in-vehicle-spec}
-show the spectrograms of the clean, noisy and enhanced speech signals for a selection of environments.
+will be investigate in future work and which we elaborate more in Section \ref{sec:future-work}.
+Just to show an indication of the speech separation, Figures \ref{fig:rev-spec}, \ref{fig:wind-spec}, \ref{fig:music-spec} and \ref{fig:in-vehicle-spec}
+show the spectrograms of the clean, noisy, and enhanced speech signals for a selection of environments.
 Although the enhanced signals demonstrate significant noise reduction, residual noise is 
-observable in the initial and final segments. Nonetheless, these initial results 
+observable in the initial and final segments. However, these initial results 
 represent a promising start in prioritising speech over noise.
 .
 % As can be seen, it is quite evident that the background noise is removed, though there's evidence 
@@ -1772,7 +1772,7 @@ represent a promising start in prioritising speech over noise.
 
 \section{Validating against VOICEBANK + DEMAND}
 In order to validate the implementation of the proposed model, we compare the results 
-against the work by \citet{kim_specmix_2021} who proposed the SpecMix technique. 
+with the work by \citet{kim_specmix_2021} who proposed the SpecMix technique. 
 Although a direct comparison with the original CED model reported by \citet{tan18_interspeech} 
 would have been ideal, practical constraints — notably the extensive dataset requirements 
 (exceeding 500\,h of data) and the reproducibility challenges discussed in Section \ref{sec:criticism} — 
@@ -1780,13 +1780,13 @@ required an alternative comparison. Consequently, the evaluation was performed a
 introducing the SpecMix technique, which has been applied to a range of audio-related 
 tasks, including speech enhancement \citep{kim_specmix_2021}. Consistent with the study 
 by \citet{kim_specmix_2021}, the \vbd dataset was employed for experimental 
-validation. The paper itself compares against other tehcniques including Mixup \citep{zhang_mixup_2017},
+validation. The paper itself is compared with other techniques including Mixup \citep{zhang_mixup_2017},
 CutMix \citep{yun_cutmix_2019} and SpecAugment \citep{park_specaugment_2019}. In terms 
 of the model that \citet{kim_specmix_2021} used, for the SE task, they 
-took inspiration from the U-Net \citep{ronneberger_unet_2015} architecture.
+took inspiration from the U-Net architecture \citep{ronneberger_unet_2015}.
 It has similarities to the CED model that is employed in this dissertation 
 since it also uses an encoder-decoder architecture. But the main difference 
-lies in its final layer which is another neural network called the 
+lies in its final layer, which is another neural network called the 
 'Phase Sensitive Mask'. Suffice to say, the complexity of the model 
 is likely higher than the CED model so we should expect the model 
 to perform better.
@@ -1799,20 +1799,20 @@ to perform better.
 \end{figure}
 As a dataset already contains the noisy and clean speech signals, we do not 
 have the luxury of having control over the SNR levels, which as a 
-consequence means we cannot analyse the performance of the model at different 
-SNR levels. But given that this is a validation of the model's implementation, 
+consequence means that  we cannot analyse the performance of the model at different 
+SNR levels. However given that this is a validation of the model's implementation, 
 we can at least compare the results against the paper which proposed the SpecMix technique.
-Additionally, the dataset is split into a training and test set, so no 
-manual splitting was needed here. 
-After training the model 5 times, we get the resulting training curve shown in Figure \ref{fig:se-voicebank-training-losses}.
+Additionally, the dataset is split into a training and a test set, so 
+manual splitting was not required here. 
+After training the model five times, we get the resulting training curve shown in Figure \ref{fig:se-voicebank-training-losses}.
 No early stopping was applied here, so the model was trained for 120 epochs which was the maximum number of epochs set however,
 by observing the training curves, we can see that the model has converged by then. 
 
-After testing the model on the test set, we get the results shown in Table \ref{tab:voice_enhancement_metrics}.
+After testing the model in the test set, we get the results shown in Table \ref{tab:voice_enhancement_metrics}.
 \citet{kim_specmix_2021} did not report the STOI metric, so we only compare the PESQ scores.
-But as we can see, the model is just about on par with the reported results from the paper.
+But, as we can see, the model is just about on par with the reported results from the paper.
 This is a reassuring sign that not only the model's implementation is correct, but also
-that the model is able to generalise to a new dataset. For future work it would 
+that the model is able to generalise to a new dataset. For future work, it would 
 be interesting to see if employing the techniques mentioned and proposed by \citet{kim_specmix_2021}
 would improve the performance of the model when using the CED model. 
 
@@ -1853,11 +1853,11 @@ would improve the performance of the model when using the CED model.
 \end{table}
 To evaluate the SE task from a hardware perspective, we look at the FLOPs and parameters of the CED model.
 Table \ref{tab:ced-model-metrics} presents the FLOPs and parameter counts for 10 second samples, 
-indicating much higher complexity than the ASA task. While the model was trained on 10s samples 
+indicating a much higher complexity than the ASA task. Although the model was trained on 10s samples 
 as mentioned in the beginning of this chapter, it is worth investigating the performance of the model 
 on shorter time segments. Accordingly, estimates for 1s and 5s samples are also provided, albeit 
 provisionally, since the STFT parameters have not been validated for these durations. Nevertheless,
-these theoreitcal inference times are outside the acceptable latency for HAs so future work at 
+these theoretical inference times are outside the acceptable latency for HAs so future work at 
 the first stage would be to reduce the FLOPs of the model of which we discuss more in Section \ref{sec:future-work}.
 \footnotetext{{Assumes a 7,700M FLOPs capable device and that the formula in \ref{eq:inference-time} is used.}}
 % Benchmarking CRNN on cpu...
@@ -1893,10 +1893,10 @@ the first stage would be to reduce the FLOPs of the model of which we discuss mo
 \chapter{Conclusions}
 \label{chap:conclusions}
 \section{Review}
-In this part of the dissertation we explored the novel datatset \heards by \citet{Huwel2020HearDS}.
+In this part of the dissertation we explore the novel datatset \heards by \citet{Huwel2020HearDS}.
 The very first hypothesis was to see if the ASA model shown by \citet{Huwel2020HearDS} 
 could be reproduced. We were not able to fully reproduce the accuracies that the paper 
-reports and we attribute this to a small deviation
+reports, and we attribute this to a small deviation
 in the speech mixing dataset, and the omission of 
 the HRTF during speech mixing in the paper. We also 
 extended the analysis of the model's performance 
@@ -1905,11 +1905,11 @@ due to the inherent imbalance in the dataset.
 
 Secondly, we hypothesised that the ASA model 
 would be able to generalise and be trained 
-faster if utterance-level data augmentation was utilised. 
+faster if utterance-level data augmentation were utilised. 
 While the training times were reduced, the performance 
-of the model was found to be slighly worse. 
+of the model was found to be slightly worse. 
 
-Thirdly, we decided to see if the claim by \citet{Huwel2020HearDS} 
+Third, we decided to see if the claim by \citet{Huwel2020HearDS} 
 that the use of the Adam optimiser was not suited 
 for the ASA task was valid. We found that the model 
 trained using the Adam optimiser received 
@@ -1925,17 +1925,17 @@ who used the TUT Acoustic Scenes 2016 dataset to
 train an ASA model. Through this validation, we 
 found that the model's implementation is correct 
 and that the model is also able to generalise to 
-a new dataset which is a good sign.
+a new dataset, which is a good sign.
 
-Lastly on the ASA front, 
-the hypothesis aof the feasibility 
+Lastly, on the ASA front, 
+the feasibility hypothesis 
 of the ASA model being used in a HA was 
 evaluated. We did this by considering 
 the state of the art HAs capability, and through that, 
 it suggests that the ASA model is capable of being used 
 in a HA.
 
-To date we have not found any publications on 
+To date, we have not found any publications on 
 using the \heards dataset for the SE task, so we 
 took it upon ourselves to create a SE model 
 for the dataset. Inspired by \citet{katagiri_handbook_2000}'s
@@ -1944,7 +1944,7 @@ be called a state dependent model. Our final hypothesis was
 that of pertaining of whether the SE model inspired 
 by \citet{tan18_interspeech} would be able to 
 generalise to the \heards dataset. This was found 
-to be possible but there is certainly room for improvement 
+to be possible, but there is certainly room for improvement 
 from a performance perspective. Due to the model's 
 complexity, we validated the model's implementation 
 against the work by \citet{kim_specmix_2021} who proposed 
@@ -1957,17 +1957,17 @@ in a HA was evaluated. This was found to be rejected
 with absolute certainty. The model's latency is too high and 
 it is because of the high number of parameters and 
 consequently high FLOPs required to process the 
-signal in an acceptable manner for a HA user to not 
+signal in an acceptable manner for an HA user to not 
 notice the delay.
 
 \section{Future Work}
 \label{sec:future-work}
 This dissertation opens several promising avenues for future exploration.
-First, the current SE model is unsuitable for state-dependent deployment
+First, the current SE model is not suitable for state-dependent deployment
 in hearing aids. A potential solution is to develop a model trained on
 shorter speech segments, possibly coupled with efforts to reduce the model
-FLOP count as suggested by \citet{liu_simple_2023}. In addition, refining
-hyperparameter settings or reconsidering the model architecture may be 
+FLOP(s) count as suggested by \citet{liu_simple_2023}. In addition, refining
+hyper-parameter settings or reconsidering the model architecture may be 
 beneficial such as considering time domain/end-to-end models.
 
 There is also an exciting area of research in 
@@ -1978,7 +1978,7 @@ this approach \citep{Hasemann2024PhonakSphere}.
 These methods share similarities to the Generative Adversarial Network (GAN)  
 as described in \citet{Bai2022PerceptualLoss}. 
 In this context, \citet{Fu2018QualityNet} introduced 
-QualityNet, an end-to-end network for estimating PESQ scores without a clean
+QualityNet, an end-to-end network to estimate PESQ scores without a clean
 reference. They then presented the applicability of the model to the SE task
 to build a GAN based framework called MetricGAN.
 Building on this, \citet{Bai2022PerceptualLoss} extended QualityNet
@@ -1996,10 +1996,10 @@ Currently, the feasibility of the models is done by
 assuming that the latency of a model can be 
 calculated by considering the FLOP(s) of the device 
 benchmarking the model. It would be interesting to see 
-if this actually holds on lower powered devices 
+if this actually holds on lower-powered devices 
 such as a microcontroller or a Raspberry Pi.
 
-Lastly for reproducibility, mixing the \heards dataset 
+Lastly, for reproducibility, mixing the \heards dataset 
 with the \chime{2} dataset and the incorporation of 
 a HRTF is something that could be investigated in the future.
 
