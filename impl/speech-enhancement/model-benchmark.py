@@ -146,5 +146,16 @@ def benchmark_model_with_thop(model, input_shape, model_name, device='cpu',
 
 # benchmark the CRNN model
 model = CRNN()
-benchmark_model_with_thop(model, (1, 205, 161), "CRNN", device='cuda', save_results=True, output_dir='output/benchmarks')
-benchmark_model_with_thop(model, (1, 205, 161), "CRNN", device='cpu', save_results=True, output_dir='output/benchmarks')
+# calcualte shape size given the input shape 
+input_shape = None 
+# input is 16 KHz, at 160000 samples (10s), 1 channel  
+input_shape = (1, 1, 16000)
+# generate random input tensor  of that shape 
+input_tensor = np.random.randn(*input_shape)
+# run magphase on that
+import librosa
+mag, phase = librosa.magphase(librosa.stft(input_tensor, n_fft=320, hop_length=160, win_length=320, window='hann'))
+
+# benchmark the model 
+benchmark_model_with_thop(model, (1,mag.shape[3], mag.shape[2]), "CRNN", device='cuda', save_results=True, output_dir='output/benchmarks')
+benchmark_model_with_thop(model, (1,mag.shape[3], mag.shape[2]), "CRNN", device='cpu', save_results=True, output_dir='output/benchmarks')

@@ -1,15 +1,17 @@
-import os 
+import os
 import pickle
 import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
 import seaborn as sns
 from typing import Dict, List
-from constants import MODELS
+# from constants import MODELS
 from sklearn.linear_model import LogisticRegression
 from sklearn.preprocessing import PolynomialFeatures
 from sklearn.linear_model import LinearRegression
 from sklearn.pipeline import make_pipeline
+from pesq import pesq
+from pystoi import stoi
 
 def load_experiment_results_HEARDS(base_folder: str = 'models', max_experiments: int = 5) -> Dict:
     """
@@ -54,6 +56,48 @@ def load_experiment_results_TUT(base_folder: str = 'models/full_adam_240epochs_3
                 obj['naive_total_accuracies'] = obj['total_accuracies']
                 results['TUT-experiment'].append(obj)
 
+    return results
+
+def load_experiment_results_SE_HEARDS(base_folder: str = 'experiments/') -> Dict:
+    """
+    Load results from SE experiments for different model configurations.
+    Returns a dictionary with experiment types as keys and lists of results as values.
+    Each result contains losses and metrics for each environment.
+    """
+    environments = [
+        'Music', 'ReverberantEnvironment', 'QuietIndoors',
+        'InVehicle', 'WindTurbulence', 'InTraffic'
+    ]
+    results = {env: [] for env in environments}
+    
+    # Look for SE experiment folders
+    for folder in os.listdir(base_folder):
+        if not os.path.isdir(os.path.join(base_folder, folder)):
+            continue
+            
+        # Check if this is an SE experiment folder
+        if folder.startswith('hear-ds-speech-enh-exp-'):
+            # Load results for each environment
+            for env in environments:
+                obj = {}
+                # losses_InTraffic.csv etc
+                losses_file = os.path.join(base_folder, folder, f'losses_{env}.csv')
+                with open(losses_file, 'rb') as f:
+                    # csv file read
+                    losses = pd.read_csv(f)
+                    # epoch, loss
+                    # lets convert to list of losses
+                    obj['losses'] = losses['Loss'].tolist()
+                
+                # results_InTraffic.pkl
+                results_file = os.path.join(base_folder, folder, f'results_{env}.pkl')
+                try:
+                    with open(results_file, 'rb') as f:
+                        obj['results'] = pickle.load(f)
+                except Exception as e:
+                    print(f"Error loading results for {env}: {e}")
+                results[env].append(obj)
+    
     return results
 
 def load_class_labels(base_folder: str, exp_type: str, model_name: str) -> Dict[int, str]:
@@ -865,33 +909,464 @@ def plot_average_accuracies(results: Dict, output_dir: str):
                     bbox_inches='tight', dpi=300)
         plt.close()
 
+def plot_se_training_losses(results: Dict, output_dir: str):
+    """Plot training losses for all environments across experiments."""
+    # Define a color palette for different environments
+    colors = sns.color_palette("husl", len(results))
+    
+    plt.figure(figsize=(12, 6))
+    
+    for env_idx, (env_name, env_results) in enumerate(results.items()):
+        # Collect losses from all experiments for this environment
+        all_losses = []
+        for exp in env_results:
+            if 'losses' in exp:
+                losses = exp['losses']
+                if isinstance(losses, list):
+                    all_losses.append(losses)
+        
+        if not all_losses:  # Skip if no data for this environment
+            continue
+            
+        # Find the maximum length
+        max_len = max(len(loss) for loss in all_losses)
+        
+        # Pad shorter sequences with NaN
+        padded_losses = []
+        for loss in all_losses:
+            if len(loss) < max_len:
+                padded = np.pad(loss, (0, max_len - len(loss)), 
+                              mode='constant', constant_values=np.nan)
+            else:
+                padded = loss
+            padded_losses.append(padded)
+        
+        # Stack arrays and compute statistics
+        losses_array = np.stack(padded_losses)
+        mean_losses = np.nanmean(losses_array, axis=0)
+        std_losses = np.nanstd(losses_array, axis=0)
+        
+        # Plot mean with confidence interval
+        epochs = range(1, max_len + 1)
+        plt.plot(epochs, mean_losses, label=env_name, color=colors[env_idx])
+        plt.fill_between(epochs, 
+                       mean_losses - std_losses,
+                       mean_losses + std_losses,
+                       alpha=0.2, color=colors[env_idx])
+    
+    plt.title('Training Loss Over Time (HEAR-DS Dataset)', fontsize=12)
+    plt.xlabel('Epoch', fontsize=10)
+    plt.ylabel('Loss', fontsize=10)
+    plt.legend(fontsize=9)
+    plt.grid(True, alpha=0.3)
+    plt.tight_layout()
+    
+    # Save the plot
+    os.makedirs(output_dir, exist_ok=True)
+    plt.savefig(os.path.join(output_dir, 'hear-ds_training_losses.png'),
+               bbox_inches='tight', dpi=300)
+    plt.close()
+
+def calculate_hear_ds_metrics(results: Dict):
+    """
+    Calculate and print the STOI and PESQ metrics for both baseline and processed audio.
+    Results are formatted as LaTeX tables.
+    """
+    snrs = [-10, -5, 0, 5, 10]
+    environments = ['Music', 'WindTurbulence', 'InTraffic', 'InVehicle', 'QuietIndoors', 'ReverberantEnvironment']
+    
+    # Initialize dictionaries to store metrics
+    baseline_metrics = {env: {'stoi': {snr: [] for snr in snrs}, 
+                            'pesq': {snr: [] for snr in snrs}} for env in environments}
+    processed_metrics = {env: {'stoi': {snr: [] for snr in snrs}, 
+                             'pesq': {snr: [] for snr in snrs}} for env in environments}
+    
+    # Collect metrics from all experiments
+    for env, env_results in results.items():
+        for exp in env_results:
+            if 'results' in exp:
+                results_data = exp['results']
+                # Process baseline metrics
+                if 'before_pesq' in results_data and 'before_stoi' in results_data:
+                    for snr in snrs:
+                        if snr in results_data['before_pesq']:
+                            if results_data['before_pesq'][snr] is not None:
+                                baseline_metrics[env]['pesq'][snr].append(results_data['before_pesq'][snr])
+                        if snr in results_data['before_stoi']:
+                            if results_data['before_stoi'][snr] is not None:
+                                baseline_metrics[env]['stoi'][snr].append(results_data['before_stoi'][snr])
+                
+                # Process enhanced metrics
+                if 'after_pesq' in results_data and 'after_stoi' in results_data:
+                    for snr in snrs:
+                        if snr in results_data['after_pesq']:
+                            if results_data['after_pesq'][snr] is not None:
+                                processed_metrics[env]['pesq'][snr].append(results_data['after_pesq'][snr])
+                        if snr in results_data['after_stoi']:
+                            if results_data['after_stoi'][snr] is not None:
+                                processed_metrics[env]['stoi'][snr].append(results_data['after_stoi'][snr])
+    
+    # Calculate averages
+    def calculate_averages(metrics_dict):
+        avg_dict = {}
+        for env, env_metrics in metrics_dict.items():
+            avg_dict[env] = {'stoi': {}, 'pesq': {}}
+            for metric in ['stoi', 'pesq']:
+                for snr in snrs:
+                    values = env_metrics[metric][snr]
+                    # values is a list of lists, so we need to flatten it
+                    flattened_values = [item for sublist in values for item in sublist]
+                    avg_dict[env][metric][snr] = np.mean(flattened_values) if flattened_values else 0
+        return avg_dict
+    
+    baseline_avg = calculate_averages(baseline_metrics)
+    processed_avg = calculate_averages(processed_metrics)
+    
+    # Print LaTeX tables
+    def print_latex_table(metrics, title):
+        print(f"\\begin{{table}}[h]")
+        print(f"   \\centering")
+        print(f"   \\begin{{tabular}}{{l|{'c'*5}|{'c'*5}}}")
+        print(f"      \\toprule")
+        print(f"      Environment & \\multicolumn{{5}}{{c|}}{{STOI}} & \\multicolumn{{5}}{{c}}{{PESQ}} \\\\")
+        print(f"      \\cmidrule(lr){{2-6}} \\cmidrule(lr){{7-11}}")
+        print(f"      SNR (dB) & -10 & -5 & 0 & 5 & 10 & -10 & -5 & 0 & 5 & 10 \\\\")
+        print(f"      \\midrule")
+        
+        for env in environments:
+            stoi_values = [f"{metrics[env]['stoi'][snr]:.2f}" for snr in snrs]
+            pesq_values = [f"{metrics[env]['pesq'][snr]:.2f}" for snr in snrs]
+            print(f"      {env} & {' & '.join(stoi_values)} & {' & '.join(pesq_values)} \\\\")
+        
+        print(f"      \\bottomrule")
+        print(f"   \\end{{tabular}}")
+        print(f"   \\caption{{{title}}}")
+        print(f"   \\label{{tab:hear-ds-{'baseline' if title.startswith('Baseline') else 'processed'}}}")
+        print(f"\\end{{table}}")
+    
+    print("\nBaseline Metrics:")
+    print_latex_table(baseline_avg, "Baseline (unprocessed) STOI and PESQ scores for different environments at various SNR levels.")
+    
+    print("\nProcessed Metrics:")
+    print_latex_table(processed_avg, "Processed STOI and PESQ scores for different environments at various SNR levels.")
+
+def plot_audio_spectrograms(sample_dir: str, output_dir: str, env: str):
+    """
+    Plot spectrograms of clean, noisy, and enhanced audio files side by side.
+    Args:
+        sample_dir: Directory containing the audio files and metrics
+        output_dir: Directory to save the plots
+    """
+    import librosa
+    import librosa.display
+    
+    # Get all sample directories
+    sample_dirs = [d for d in os.listdir(sample_dir) if d.startswith('pesq_top_') or d.startswith('stoi_top_')]
+    done = set()
+    
+    for sample in sample_dirs:
+        # Construct file paths
+        base = "_".join(sample.split('_')[0:4])
+        if base in done:
+            continue
+        done.add(base)
+        clean_path = os.path.join(sample_dir, base + '_clean.wav')  
+        noisy_path = os.path.join(sample_dir, base + '_noisy.wav')
+        enhanced_path = os.path.join(sample_dir, base + '_enhanced.wav')
+        metrics_path = os.path.join(sample_dir, base + '_metrics.txt')
+
+        # Read metrics
+        with open(metrics_path, 'r') as f:
+            metrics = f.read()
+        
+        # Read audio files
+        y_clean, sr = librosa.load(clean_path, sr=None)
+        y_noisy, _ = librosa.load(noisy_path, sr=None)
+        y_enhanced, _ = librosa.load(enhanced_path, sr=None)
+        
+        # Calculate metrics for clean and noisy
+        pesq_clean = pesq(sr, y_clean, y_clean, 'wb')
+        stoi_clean = stoi(y_clean, y_clean, sr, extended=True)
+        
+        pesq_noisy = pesq(sr, y_clean, y_noisy, 'wb')
+        stoi_noisy = stoi(y_clean, y_noisy, sr, extended=True)
+
+        # Calculate metrics for enhanced
+        pesq_enh = pesq(sr, y_clean, y_enhanced, 'wb')
+        stoi_enh = stoi(y_clean, y_enhanced, sr, extended=True)
+        
+        # Create figure with 3 subplots and a metrics text box
+        fig = plt.figure(figsize=(10, 8))
+        gs = fig.add_gridspec(4, 1, height_ratios=[1, 1, 1, 0.2])
+        
+        ax1 = fig.add_subplot(gs[0])
+        ax2 = fig.add_subplot(gs[1])
+        ax3 = fig.add_subplot(gs[2])
+        ax_metrics = fig.add_subplot(gs[3])
+        
+        # Plot spectrograms
+        def plot_spectrogram(y, ax, title, pesq_val, stoi_val):
+            # Use higher n_fft and hop_length for better resolution
+            n_fft = 2048
+            hop_length = 512
+            D = librosa.amplitude_to_db(np.abs(librosa.stft(y, n_fft=n_fft, hop_length=hop_length)), ref=np.max)
+            img = librosa.display.specshow(D, y_axis='log', x_axis='time', sr=sr, 
+                                         hop_length=hop_length, ax=ax)
+            ax.set_title(f'{title}\nPESQ: {pesq_val:.2f} | STOI: {stoi_val:.2f}', pad=10)
+            # Remove all axis elements
+            ax.axis('off')
+            return img
+        
+        # Plot each spectrogram with metrics in title
+        plot_spectrogram(y_clean, ax1, 'Clean Audio', pesq_clean, stoi_clean)
+        plot_spectrogram(y_noisy, ax2, 'Noisy Audio', pesq_noisy, stoi_noisy)
+        plot_spectrogram(y_enhanced, ax3, 'Enhanced Audio', pesq_enh, stoi_enh)
+        
+        # Add metrics as text in a separate subplot
+        ax_metrics.axis('off')
+        ax_metrics.text(0.5, 0.5, metrics, ha='center', va='center', fontsize=8,
+                       bbox=dict(facecolor='white', alpha=0.5, edgecolor='none'))
+        
+        # Adjust layout
+        plt.tight_layout()
+        
+        # Save plot with higher DPI
+        os.makedirs(os.path.join(output_dir, env), exist_ok=True)
+        plt.savefig(os.path.join(output_dir, env, f'spectrograms_{base}.png'),
+                   bbox_inches='tight', dpi=600)
+        plt.close()
+
+        # Create log-mel spectrograms
+        fig = plt.figure(figsize=(10, 8))
+        gs = fig.add_gridspec(4, 1, height_ratios=[1, 1, 1, 0.2])
+        
+        ax1 = fig.add_subplot(gs[0])
+        ax2 = fig.add_subplot(gs[1])
+        ax3 = fig.add_subplot(gs[2])
+        ax_metrics = fig.add_subplot(gs[3])
+        
+        # Plot log-mel spectrograms
+        def plot_logmel_spectrogram(y, ax, title, pesq_val, stoi_val):
+            # Use higher n_fft and hop_length for better resolution
+            n_fft = 2048
+            hop_length = 512
+            n_mels = 128
+            
+            # Compute mel spectrogram
+            mel_spec = librosa.feature.melspectrogram(y=y, sr=sr, n_fft=n_fft, 
+                                                    hop_length=hop_length, n_mels=n_mels)
+            # Convert to log scale
+            log_mel_spec = librosa.power_to_db(mel_spec, ref=np.max)
+            
+            # Display the spectrogram
+            img = librosa.display.specshow(log_mel_spec, y_axis='mel', x_axis='time', 
+                                         sr=sr, hop_length=hop_length, ax=ax)
+            ax.set_title(f'{title}\nPESQ: {pesq_val:.2f} | STOI: {stoi_val:.2f}', pad=10)
+            # Remove all axis elements
+            ax.axis('off')
+            return img
+        
+        # Plot each log-mel spectrogram with metrics in title
+        plot_logmel_spectrogram(y_clean, ax1, 'Clean Audio', pesq_clean, stoi_clean)
+        plot_logmel_spectrogram(y_noisy, ax2, 'Noisy Audio', pesq_noisy, stoi_noisy)
+        plot_logmel_spectrogram(y_enhanced, ax3, 'Enhanced Audio', pesq_enh, stoi_enh)
+        
+        # Add metrics as text in a separate subplot
+        ax_metrics.axis('off')
+        ax_metrics.text(0.5, 0.5, metrics, ha='center', va='center', fontsize=8,
+                       bbox=dict(facecolor='white', alpha=0.5, edgecolor='none'))
+        
+        # Adjust layout
+        plt.tight_layout()
+        
+        # Save log-mel spectrogram plot
+        plt.savefig(os.path.join(output_dir, env, f'spectrograms_logmel_{base}.png'),
+                   bbox_inches='tight', dpi=600)
+        plt.close()
+
+        # Create magnitude spectrograms
+        fig = plt.figure(figsize=(10, 8))
+        gs = fig.add_gridspec(4, 1, height_ratios=[1, 1, 1, 0.2])
+        
+        ax1 = fig.add_subplot(gs[0])
+        ax2 = fig.add_subplot(gs[1])
+        ax3 = fig.add_subplot(gs[2])
+        ax_metrics = fig.add_subplot(gs[3])
+        
+        # Plot magnitude spectrograms
+        def plot_magnitude_spectrogram(y, ax, title, pesq_val, stoi_val):
+            # Use higher n_fft and hop_length for better resolution
+            n_fft = 2048
+            hop_length = 512
+            
+            # Compute magnitude spectrogram
+            D = np.abs(librosa.stft(y, n_fft=n_fft, hop_length=hop_length))
+            
+            # Display the spectrogram
+            img = librosa.display.specshow(D, y_axis='log', x_axis='time', sr=sr, 
+                                         hop_length=hop_length, ax=ax)
+            ax.set_title(f'{title}\nPESQ: {pesq_val:.2f} | STOI: {stoi_val:.2f}', pad=10)
+            # Remove all axis elements
+            ax.axis('off')
+            return img
+        
+        # Plot each magnitude spectrogram with metrics in title
+        plot_magnitude_spectrogram(y_clean, ax1, 'Clean Audio', pesq_clean, stoi_clean)
+        plot_magnitude_spectrogram(y_noisy, ax2, 'Noisy Audio', pesq_noisy, stoi_noisy)
+        plot_magnitude_spectrogram(y_enhanced, ax3, 'Enhanced Audio', pesq_enh, stoi_enh)
+        
+        # Add metrics as text in a separate subplot
+        ax_metrics.axis('off')
+        ax_metrics.text(0.5, 0.5, metrics, ha='center', va='center', fontsize=8,
+                       bbox=dict(facecolor='white', alpha=0.5, edgecolor='none'))
+        
+        # Adjust layout
+        plt.tight_layout()
+        
+        # Save magnitude spectrogram plot
+        plt.savefig(os.path.join(output_dir, env, f'magnitude_spectra_{base}.png'),
+                   bbox_inches='tight', dpi=600)
+        plt.close()
+
+def load_voice_enhancement_results(base_folder: str = 'experiments') -> Dict:
+    """
+    Load results from voice enhancement experiments.
+    Returns a dictionary with experiment numbers as keys and results as values.
+    """
+    results = {}
+    for folder in os.listdir(base_folder):
+        if folder.startswith('voicebank-enh-exp-'):
+            exp_num = int(folder.split('-')[-1])
+            results[exp_num] = {}
+            
+            
+            # Load metrics
+            metrics_file = os.path.join(base_folder, folder, 'results.pkl')
+            if os.path.exists(metrics_file):
+                with open(metrics_file, 'rb') as f:
+                    metrics = pickle.load(f)
+                    results[exp_num]['metrics'] = metrics
+    
+    return results
+
+def plot_voice_enhancement_results(results: Dict, output_dir: str):
+    """Plot training curves and metrics for voice enhancement experiments."""
+    # Plot training curves
+    plt.figure(figsize=(10, 6))
+    
+    # Collect all losses
+    all_losses = []
+    for exp_num, exp_data in results.items():
+        if 'metrics' in exp_data and 'losses' in exp_data['metrics']:
+            losses = exp_data['metrics']['losses']
+            all_losses.append(losses)
+    
+    if all_losses:
+        # Find maximum length
+        max_len = max(len(losses) for losses in all_losses)
+        
+        # Pad shorter sequences with NaN
+        padded_losses = []
+        for losses in all_losses:
+            if len(losses) < max_len:
+                padded = np.pad(losses, (0, max_len - len(losses)), 
+                              mode='constant', constant_values=np.nan)
+            else:
+                padded = losses
+            padded_losses.append(padded)
+        
+        # Stack arrays and compute statistics
+        losses_array = np.stack(padded_losses)
+        mean_losses = np.nanmean(losses_array, axis=0)
+        min_losses = np.nanmin(losses_array, axis=0)
+        max_losses = np.nanmax(losses_array, axis=0)
+        
+        # Plot mean with spread region
+        epochs = range(1, max_len + 1)
+        plt.plot(epochs, mean_losses, label='Mean Loss', color='blue')
+        plt.fill_between(epochs, min_losses, max_losses,
+                       alpha=0.2, color='blue', label='_nolegend_')
+    
+    plt.title('Training Loss over Time (VOICEBANK + DEMAND)')
+    plt.xlabel('Epoch')
+    plt.ylabel('Loss')
+    plt.legend()
+    plt.grid(True, alpha=0.3)
+    plt.tight_layout()
+    plt.savefig(os.path.join(output_dir, 'voice_enhancement_training_curves.png'),
+               bbox_inches='tight', dpi=300)
+    plt.close()
+    
+    # Create metrics table
+    metrics_data = []
+    for exp_num, exp_data in results.items():
+        if 'metrics' in exp_data:
+            metrics = exp_data['metrics']
+            row = {
+                'Experiment': f'Exp {exp_num}',
+                'STOI (Noisy)': metrics.get('before_stoi', 0),
+                'STOI (Enhanced)': metrics.get('after_stoi', 0),
+                'PESQ (Noisy)': metrics.get('before_pesq', 0),
+                'PESQ (Enhanced)': metrics.get('after_pesq', 0)
+            }
+            metrics_data.append(row)
+    
+    if metrics_data:
+        df = pd.DataFrame(metrics_data)
+        # print("\nVoice Enhancement Metrics:")
+        # print(df.to_string(index=False))
+        
+        # Save metrics to CSV
+        df.to_csv(os.path.join(output_dir, 'voice_enhancement_metrics.csv'), index=False)
+        
+        # Generate LaTeX table
+        print("\nLaTeX Table:")
+        print("\\begin{table}[h]")
+        print("\\centering")
+        print("\\begin{tabular}{l|cc}")
+        print("\\toprule")
+        print("Condition & STOI & PESQ \\\\")
+        print("\\midrule")
+        
+        # Calculate mean values across experiments
+        mean_stoi_noisy = np.mean([list(row['STOI (Noisy)'].values()) for row in metrics_data])
+        mean_stoi_enh = np.mean([list(row['STOI (Enhanced)'].values()) for row in metrics_data])
+        mean_pesq_noisy = np.mean([list(row['PESQ (Noisy)'].values()) for row in metrics_data])
+        mean_pesq_enh = np.mean([list(row['PESQ (Enhanced)'].values()) for row in metrics_data])
+        
+        print(f"Noisy & {mean_stoi_noisy:.2f} & {mean_pesq_noisy:.2f} \\\\")
+        print(f"SpecMix & X & X \\\\")
+        print(f"Our Method & {mean_stoi_enh:.2f} & {mean_pesq_enh:.2f} \\\\")
+        print("\\bottomrule")
+        print("\\end{tabular}")
+        print("\\caption{Average STOI and PESQ scores for noisy and enhanced speech}")
+        print("\\label{tab:voice_enhancement_metrics}")
+        print("\\end{table}")
+
 def generate_all_plots(output_dir: str = 'output/visualizations'):
     """Generate all visualization plots."""
     os.makedirs(output_dir, exist_ok=True)
     
-    # Load and plot HEARDS results
-    results = load_experiment_results_HEARDS()
+    # Load and plot voice enhancement results
+    # voice_results = load_voice_enhancement_results()
+    # plot_voice_enhancement_results(voice_results, output_dir)
     
-    # Create subdirectories for each model and experiment type
-    for model_name in MODELS.keys():
-        model_dir = os.path.join(output_dir, model_name)
-        os.makedirs(model_dir, exist_ok=True)
-        for exp_type in results.keys():
-            exp_dir = os.path.join(model_dir, exp_type)
-            os.makedirs(exp_dir, exist_ok=True)
+    # Load and plot SE results
+    # results_se = load_experiment_results_SE_HEARDS()
+    # calculate_hear_ds_metrics(results_se)
     
-    plot_training_losses(results, output_dir)
-    plot_average_accuracies(results, output_dir)
-    plot_classwise_accuracies(results, output_dir)
-    plot_training_times(results, output_dir)
-    plot_confusion_matrices(results, output_dir)
-    plot_class_metrics(results, output_dir)
-    plot_extreme_snr_performance(results, output_dir)
+    # Plot spectrograms for top samples
+    sample_dirs = [
+        # ('WindTurbulence', '/workspace/experiments/hear-ds-speech-enh-exp-2/top_samples_WindTurbulence'),
+        # ('InTraffic', '/workspace/experiments/hear-ds-speech-enh-exp-2/top_samples_InTraffic'),
+        ('InVehicle', '/workspace/experiments/hear-ds-speech-enh-exp-2/top_samples_InVehicle'),
+        ('Music', '/workspace/experiments/hear-ds-speech-enh-exp-2/top_samples_Music'),
+        # ('QuietIndoors', '/workspace/experiments/hear-ds-speech-enh-exp-2/top_samples_QuietIndoors'),
+        # ('ReverberantEnvironment', '/workspace/experiments/hear-ds-speech-enh-exp-2/top_samples_ReverberantEnvironment')
+    ]
+    for env, sample_dir in sample_dirs:
+        plot_audio_spectrograms(sample_dir, output_dir, env)
 
-    # Load and plot TUT results
-    results_tut = load_experiment_results_TUT('models/full_adam_240epochs_32batchsize_TUT')
-    plot_training_losses(results_tut, output_dir)
-    plot_average_accuracies(results_tut, output_dir)
 
 if __name__ == "__main__":
     generate_all_plots() 
