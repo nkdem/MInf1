@@ -1039,12 +1039,11 @@ in which if the HA user is faced in a 'Speech in Loud Noise' environment, the in
 
 \chapter{Experimental Setup}
 \label{chap:experimental_setup}
-With the methodological foundation laid out in the preceding chapters, we can now outline the hypotheses we aim to validate.
-While we hinted at some of those hypotheses in the preceding chapters and sections, as a means of clarity, 
-we will be outlining the hypotheses again here and in more detail so that the reader can have a comprehensive understanding of 
-both the objectives and the rationale behind the experiments we will be doing.
+With the methodological foundation laid out in the preceding chapters, we can now outline the hypotheses that we aim to validate.
+Although we hinted at some of those hypotheses in the preceding chapters and sections, as a means of clarity, 
+we will be outlining the hypotheses again here and in more detail so that the reader can have a comprehensive understanding of both the objectives and the rationale behind the experiments we will be doing.
 Once we outline the hypotheses, another section is dedicated towards the datasets that will be used to validate the hypotheses.
-Once that's done, the reader will be in a position to now analyse the results of the experiments which will be presented in Chapters \ref{chap:asa-experiments} and \ref{chap:se-experiments}.
+Once that is done, the reader will be in a position to now analyse the results of the experiments which will be presented in Chapters \ref{chap:asa-experiments} and \ref{chap:se-experiments}.
 \section{Hypotheses}
 \label{sec:hypotheses}
 \begin{enumerate}
@@ -1053,10 +1052,10 @@ Once that's done, the reader will be in a position to now analyse the results of
    Achieving replication is crucial as it brings us a step closer to our vision of creating a state-dependent model in the next part of the dissertation.
    % TODO: Ask Hao if I should rephrase this to reject Huwel's claim that SGD is better than Adam due to weight initialisation issues?
    \item \textbf{Effectiveness of Utterance-Level Data Augmentation}. We hypothesise 
-   that if we mix the speech signal with SNR at an utterance level, we will be able 
+   that if we mix the speech signal with the SNR at an utterance level, we will be able 
    to reduce the training time of the model and have similar performance to that of using 
    every SNR level per epoch. 
-   Once again validating this hypothesis will speed up the development process going forward, 
+   Once again, validating this hypothesis will speed up the development process going forward, 
    since if true, there will be less samples per epoch and thus less training time. 
    \item \textbf{Capability of the Speech Enhancement Model}.
    We hypothesise that the methodological approach detailed in Section \ref{sec:se-model} to 
@@ -1068,16 +1067,16 @@ Once that's done, the reader will be in a position to now analyse the results of
    % We believe this could be due to the fact that with a shallower model, the parameters of the models 
    % are less likely to be able to be fitted in such a way that all environments are catered for. 
    \item \textbf{Feasibility of Deployment on Hearing Aid Devices}.
-   With the evaluation of the models with respect to the number of FLOPs and the size of the models,
+   With the evaluation of the models with respect to the number of FLOP(s) and the size of the models,
    we aim to show that the models we implement are able to be deployed on HA devices. 
-   This is a really important hypothesis to validate, otherwise any work 
+   This is a really important hypothesis to validate; otherwise any work 
    we do would not allow us to create a state-dependent model if the dependent models 
    are not able to be deployed on HA devices.
    \item \textbf{Comparative Performance of the Adam Optimiser.}
-   It is hypothesised that using the Adam optimiser will result in a faster convergence with comparable performance to that of using a fixed learning rate Stochastic Gradient Descent (SGD) method, as employed in \citet{Huwel2020HearDS}.
-   Validating this hypothesis will speed up the development process going forward, 
-   enabling uniformity across subsequent experimental iterations. Additionally,
-   it will allow us to reach the objective of creating a state-dependent model faster due to acceleration of the development process.
+   It is hypothesised that use of the Adam optimiser will result in a faster convergence with performance comparable to that of using a fixed learning rate Stochastic Gradient Descent (SGD) method, as used in \citet{Huwel2020HearDS}.
+   Validating this hypothesis will speed up the development process in the future, 
+   and enable uniformity across subsequent experimental iterations. Additionally,
+   it will allow us to reach the objective of creating a state-dependent model faster because of the acceleration of the development process.
 \end{enumerate}
 
 \section{Datasets}
@@ -1101,49 +1100,49 @@ Once that's done, the reader will be in a position to now analyse the results of
 
 \subsection{HEAR-DS}
 \label{sec:hear-ds}
-\heards is a dataset created by \citet{Huwel2020HearDS} which is specially tailored for Hearing Aid (HA) research. 
+\heards is a dataset created by \citet{Huwel2020HearDS} that is specially designed for Hearing Aid (HA) research. 
 It consists of recordings captured on a dummy head equipped with three microphones per side: one In-The-Canal (ITC) [in the ear] and two Behind-The-Ear (BTE) microphones (front and rear).
 Each sample is recorded in either the left or right channel and decomposed into its respective microphone channels (BTE\_front, BTE\_rear, ITC), available in 48kHz/32bit format.
-In the paper, the researchers used only the ITC samples, so for the scope of this project, we will only use the ITC samples as well. 
-As the researchers were based in Germany, any recordings that they took were situated in Germany.
+In the paper, the researchers used only the ITC samples, so for the scope of this project, we will use only the ITC samples as well. 
+Because the researchers were based in Germany, any recordings that they took were situated in Germany.
 The dataset provides 7 environments:
 \begin{itemize}
    \item \textbf{Cocktail Party} - Covers situations such as multiple speakers in a noisy environment or 'babble' noise. The paper mentions that this was mimicked by recording them in a university cafeteria or at a senior citizens' meeting.
-   \item \textbf{Wind Turbulence} - Concerns the sound that is produced when wind passes through a microphone.
-   \item \textbf{In-Traffic} - Samples where traffic noise is dominant such as bus stations or sidewalks. The researchers controlled for this environment to not be similar to the \textit{Wind Turbulence} environment by choosing 'calm' days for the recordings.
-   \item \textbf{In-Vehicle} - The sounds produced when seated inside a car. The researchers controlled for this environment to not be similar to the \textit{In-Traffic} or \textit{Wind Turbulence} environments by ensuring the windows were closed. 
+   \item \textbf{Wind Turbulence} - Concerns the sound that is produced when the wind passes through a microphone.
+   \item \textbf{In-Traffic} - Samples where traffic noise is dominant such as bus stations or sidewalks. The researchers controlled for this environment not to be similar to the \textit{Wind Turbulence} environment by choosing 'calm' days for the recordings.
+   \item \textbf{In-Vehicle} - The sounds produced when sitting inside a car. The researchers controlled for this environment to not be similar to the \textit{In-Traffic} or \textit{Wind Turbulence} environments by ensuring the windows were closed. 
    \item \textbf{Quiet Indoors} - Mimic noises produced in a typical household such as washing dishes, clock ticking, etc. The researchers controlled for variability by recording the samples in several flats (rural, city centre, etc).
    \item \textbf{Reveberant} - Samples in highly reverberant environments such as a railway station hall, staircases or a church. 
    \item \textbf{Music} - The data is actually taken from the GTZAN dataset \cite{tzanetakis_musical_2002} and is used to test the model's ability to classify music.
 \end{itemize}
-Additionally, the researchers artificially created a new environment, \textit{Interferring Speakers}, which are samples that contain speech from multiple speakers. 
-This is done by taking speech samples from the 
+Furthermore, the researchers artificially created a new environment, \textit{Interferring Speakers}, which are samples that contain speech from multiple speakers. 
+This is done by taking speech samples from the
 \chime{5} dataset \cite{barker18_fifth_2018}. This environment is supposed to mimic the 
 typical conversational speech that occurs in a real-world scenario. We however, decided to use the \chime{6} dataset which 
 supercedes the \chime{5} dataset \cite{barker18_fifth_2018} by correcting the alignment of audio channels and the researchers 
 recommend the use of the \chime{6} dataset instead of \chime{5} for any new research so we will use that instead. This could 
 be an important factor as the methodology of creating the \textit{Interferring Speakers} environment is by finding 10s 
 segments of speech that contain multiple speakers, so if the alignment of audio channels is not correct, the recordings 
-may have a delay between the left and right channels which could have potentialy affected the results of the paper. 
+may have a delay between the left and right channels, which could potentially affect the results of the paper. 
 In any case, the way this environment was created is unclear from the paper, but we do the following approach to create the environment:
 \begin{enumerate}
-   \item The code processes \chime{6} sessions to find 10-second segments containing overlapping speech from multiple speakers.
+   \item The code processes \chime{6} sessions to find 10-second segments that contain overlapping speech from multiple speakers.
    \item For each segment, it extracts audio from the reference speaker's microphone and saves both left and right channels.
 \end{enumerate}
 
 To prevent the model from overfitting and increase the diversity of the data, the researchers provided multiple REC-SITs (Recording Situations) for each environment.
-In the case of the \textit{Music} environment, each REC-SIT represents a different genre of music. This has some potential to cause issues 
+In the case of the \textit{Music} environment, each REC-SIT represents a different genre of music. This has some potential to cause problems, 
 and we discuss this in more detail once we aim to reproduce the results of the paper (Chapter \ref{chap:asa-experiments}).  % TODO: Explain the issue later
 As for the artificially created \textit{Interferring Speakers} environment, it is unclear how they define REC-SITs for this environment. 
-What I did was to extract the session ID from the \chime{6} dataset and use that as the REC-SIT, which 
+What we did was to extract the session ID from the \chime{6} dataset and use that as the REC-SIT, which 
 gives us a total of 16 REC-SITs for this environment.
 
-At the REC-SIT level, the raw dataset comprises multiple cuts, with each cut not necessarily of uniform duration.
+At the REC-SIT level, the raw dataset comprises multiple cuts, each cut not necessarily of uniform duration.
 In accordance with the methodology of the original study, each cut was segmented into 10s snippets.
-Table \ref{tab:hear-ds-stats} presents the distribution of samples across the various environments after segmentation.
-Overall, our statistics are largely consistent with the original report, albeit with minor discrepancies in the \textit{Interferring Speakers} and \textit{Cocktail Party} environments.
-Specifically, our version of the \textit{Interferring Speakers} environment comprises 1,364 samples compared to the 1,481 reported originally, a difference that may be attributable to the aforementioned alignment issues in the CHiME 5 dataset.
-Similarly, the \textit{Cocktail Party} environment contains 716 samples in our dataset as opposed to 667 in the original report—a discrepancy that could potentially result from a typographical error in the original document. 
+Table \ref{tab:hear-ds-stats} presents the distribution of samples in the various environments after segmentation.
+In general, our statistics are largely consistent with the original report, though with minor discrepancies in the \textit{Interferring Speakers} and \textit{Cocktail Party} environments.
+Specifically, our version of the \textit{Interferring Speakers} environment comprises 1,364 samples compared to the 1,481 reported originally, a difference that may be attributable to the alignment issues mentioned above in the CHiME 5 dataset.
+Similarly, the \textit{Cocktail Party} environment contains 716 samples in our dataset as opposed to 667 in the original report — a discrepancy that could potentially result from a typographical error in the original document. 
 
 \begin{table}[h]
    \centering
@@ -1172,13 +1171,13 @@ The speech mixing that the paper described is something we
 will have to deviate from, at least for this part of the dissertation.
 Firstly, while the paper uses a head-related transfer function (HRTF) to mix the speech signal with the background noise,
 we will not be using it due to time constraints and the scarcity of readily usable libraries.
-Additionally, the paper uses the \chime{2} dataset \citep{vincent_second_2013} to mix the speech signal with background noise.
+Furthermore, the paper uses the \chime{2} dataset \citep{vincent_second_2013} to mix the speech signal with background noise.
 However, this is not a dataset we were able to get in time for this part 
 of the dissertation, so instead we will be using the \chime{3} dataset \citep{barker_third_2015} to mix the speech signal with background noise.
 We discuss this limitation in more detail in Section \ref{sec:future-work}.
 Otherwise, the speech mixing itself is done in a similar manner to the paper.
 Firstly, the paper mentions that they ensure that each mixed 10-second snippet contains at least 7.5 seconds of speech.
-The speakers are picked at random and for better generalisation, the speaker is also randomly 
+The speakers are picked at random, and for better generalisation, the speaker is also randomly 
 picked at each SNR level, so the same snippet of background noise is very likely 
 to have different speech signals mixed with it at different SNR levels.
 Given that we will be training and testing the model, the need for a training and test set is imperative. 
@@ -1188,15 +1187,15 @@ Given that we will be training and testing the model, the need for a training an
 
 \subsection{CHiME-3}
  As mentioned earlier, we opted for using the \chime{3} dataset to mix the speech signal with the background noise. 
-\chime{3} is a dataset published in 2015 for ASR tasks, and was dedicated to improving the performance of mobile devices 
-in everyday, noisy environments. The vocabulary of the speech samples is taken from a subset of the Wall Street Journal (WSJ0) corupus \citep{wsj0}.
-For brevity, we won't go into the details of the environments, as we 
+\chime{3} is a dataset published in 2015 for ASR tasks and was dedicated to improving the performance of mobile devices 
+in noisy, everyday environments. The vocabulary of the speech samples is taken from a subset of the Wall Street Journal (WSJ0) corpus \citep{wsj0}.
+For brevity, we will not go into the details of the environments, as we 
 are only interested in the speech samples. 
 We use the development set for the mixing process,
 and since this dataset contains noisy samples, we will only use clean speech samples 
 which is the BOOTH environment.
 
-It contains 10 hours of data from 4 speakers. This could be a problem in both tasks (ASA and Speech Enhancements), in the former
+It contains 10 hours of data from 4 speakers. This could be a problem in both tasks (ASA and Speech Enhancements); in the former
 we could be overfitting to the data due to the Pigeon-hole principle i.e. we have much more background samples than speech samples, 
 and in the latter, the enhancement model may not generalise well to real-world scenarios due to the small size of the dataset. 
 
@@ -1209,34 +1208,34 @@ and in the latter, the enhancement model may not generalise well to real-world s
 In the paper by \citet{Huwel2020HearDS}, the authors used the \chime{5} dataset to create the \textit{Interferring Speakers} environment for the \heards dataset.
 However, since the \chime{6} dataset supersedes \chime{5} with improved audio channel alignment, we opted to use \chime{6} for our implementation.
 \chime{6} (and \chime{5}) was a dataset created for the Speech Seperation and Recognition Challenge in 2020. It 
-focuses on conversational speech in everyday home environments and particular emphasis was placed on 
+focuses on conversational speech in everyday home environments, and particular emphasis was placed on 
 eliciting a 'dinner party' scenario i.e. a mixture of speech from multiple speakers. It was not 
 clear from the paper what sets were used for the creation of the \textit{Interferring Speakers} environment 
 however, they did provide a table of number of samples in each environment. From the table, we 
 were able to deduce that they must have used the training, development and evaluation sets for the creation of the \textit{Interferring Speakers} environment.
 As mentioned in Section \ref{sec:hear-ds}, there is a slight discrepancy in the number of samples in the \textit{Interferring Speakers} environment, 
-that we obtained and the number of samples reported in the paper. We hypothesise that this is due to the aforementioned alignment issues in the \chime{5} dataset.
+that we obtained and the number of samples reported in the paper. We hypothesise that this is due to the alignment issues aforementioned in the \chime{5} dataset.
 The dataset itself contains 50 hours of data from 48 speakers.
 
 \subsection{TUT Acoustic Scenes 2016}
-As mentioned in the previous chapter, I came across better results than the baseline model in the paper by \citet{Huwel2020HearDS} 
+As mentioned in the previous chapter, we were getting better results than the baseline model in the paper by \citet{Huwel2020HearDS} 
 so as a means of validation, I decided to use the TUT Acoustic Scenes 2016 dataset \citep{mesaros_tut_2016} to test the performance of the model.
-In particular, I will comparing the results by \citet{schindler_multi-temporal_2018}. The paper presents a multi-temporal approach to ASA, and 
+In particular, we will be comparing the results by \citet{schindler_multi-temporal_2018}. The paper presents a multi-temporal approach to ASA, and 
 the authors have used the development set of the TUT Acoustic Scenes 2016 dataset for their experiments. It is worth stressing 
-that this dataset contains background noise only, and the paper does not evaluate it with speech, so when we use it to validate 
-the model, we will maintain the same approach as the paper.
+that this dataset contains background noise only and the paper does not evaluate it with speech, so when we use it to validate 
+the model, we will maintain the same approach as in the paper.
 The TUT Acoustic Scenes 2016 dataset contains 10 hours of data from 10 environments.
 For brevity, we skip the details of the environments, and focus on the results we obtained, though consult the paper for more details.
 
 \subsection{VOICEBANK + DEMAND}
 Just as with the motivation of using TUT Acoustic Scenes 2016 for validating the model's performance in ASA,
-we will be doing model validaton of speech enhancement. 
+we will be doing model validation of speech enhancement. 
 For this, we have chosen a dataset collated here at Edinburgh University by \citet{valentini-botinhao_speech_2016}. 
-As the name of the dataset suggests, it is a culimination of the VOICEBANK \citep{voicebank} and DEMAND \citep{demand} datasets, 
+As the name of the dataset suggests, it is a culmination of the VOICEBANK \citep{voicebank} and DEMAND \citep{demand} datasets, 
 where the former contains clean speech samples and the latter contains noisy background samples.
 We have chosen in particular to use the paper by \citet{kim_specmix_2021} to validate the model's performance.
-The reason is two-fold. Besides the paper also using the \vbd dataset
-potential for future work to employ the data augmentation technique `SpecMix' proposed in the paper.
+The reason is two-fold. IN addition to the paper also using the \vbd dataset,
+there is potential for future work to employ the data augmentation technique `SpecMix' proposed.
 \chapter{Acoustic Scene Analysis Experiments}
 \label{chap:asa-experiments}
 \section{Data Preparation}
