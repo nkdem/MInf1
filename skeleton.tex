@@ -1150,9 +1150,9 @@ The speech mixing that the paper described is something we
 will have to deviate from, at least for this part of the dissertation.
 Firstly, while the paper uses a head-related transfer function (HRTF) to mix the speech signal with the background noise,
 we will not be using it due to time constraints and the scarcity of readily usable libraries.
-Additionally, the paper uses the CHiME 2 dataset \citep{vincent_second_2013} to mix the speech signal with background noise.
+Additionally, the paper uses the \chime{2} dataset \citep{vincent_second_2013} to mix the speech signal with background noise.
 However, this is not a dataset we were able to get in time for this part 
-of the dissertation, so instead we will be using the CHiME 3 dataset \citep{barker_third_2015} to mix the speech signal with background noise.
+of the dissertation, so instead we will be using the \chime{3} dataset \citep{barker_third_2015} to mix the speech signal with background noise.
 We discuss this limitation in more detail in Section \ref{sec:future-work}.
 Otherwise, the speech mixing itself is done in a similar manner to the paper.
 Firstly, the paper mentions that they ensure that each mixed 10-second snippet contains at least 7.5 seconds of speech.
@@ -1164,7 +1164,7 @@ Given that we will be training and testing the model, the need for a training an
 % Table \ref{tab:dataset-stats} shows that the CHiME 3 dataset contains 4 speakers, and conveniently enough an equal split of gender,
 % thus we ensured for generalisability that each set contained a male and female speaker. 
 
-\subsection{CHiME3}
+\subsection{CHiME-3}
  As mentioned earlier, we opted for using the \chime{3} dataset to mix the speech signal with the background noise. 
 \chime{3} is a dataset published in 2015 for ASR tasks, and was dedicated to improving the performance of mobile devices 
 in everyday, noisy environments. The vocabulary of the speech samples is taken from a subset of the Wall Street Journal (WSJ0) corupus \cite{wsj0}.
@@ -1183,7 +1183,7 @@ and in the latter, the enhancement model may not generalise well to real-world s
 % Nevertheless, we will continue with the paper's approach to set up a baseline. The data was already in 16KHz so we did not need to 
 % resample it. 
 
-\subsection{CHiME 5/CHiME 6}
+\subsection{CHiME-5/CHiME-6}
 In the paper by \citet{Huwel2020HearDS}, the authors used the \chime{5} dataset to create the \textit{Interferring Speakers} environment for the \heards dataset.
 However, since the \chime{6} dataset supersedes \chime{5} with improved audio channel alignment, we opted to use \chime{6} for our implementation.
 \chime{6} (and \chime{5}) was a dataset created for the Speech Seperation and Recognition Challenge in 2020. It 
@@ -1193,7 +1193,7 @@ clear from the paper what sets were used for the creation of the \textit{Interfe
 however, they did provide a table of number of samples in each environment. From the table, we 
 were able to deduce that they must have used the training, development and evaluation sets for the creation of the \textit{Interferring Speakers} environment.
 As mentioned in Section \ref{sec:hear-ds}, there is a slight discrepancy in the number of samples in the \textit{Interferring Speakers} environment, 
-that we obtained and the number of samples reported in the paper. We hypothesise that this is due to the aforementioned alignment issues in the CHiME 5 dataset.
+that we obtained and the number of samples reported in the paper. We hypothesise that this is due to the aforementioned alignment issues in the \chime{5} dataset.
 The dataset itself contains 50 hours of data from 48 speakers.
 
 \subsection{TUT Acoustic Scenes 2016}
